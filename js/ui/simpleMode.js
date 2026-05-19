@@ -22,6 +22,13 @@ function isSimpleMode() {
 function applyMode(simple) {
   localStorage.setItem(LS_KEY, simple ? '1' : '0');
   document.body.classList.toggle('simple-mode', simple);
+  // After bar height changes, pull the epicycle canvas back into view if
+  // it ended up below the minimum clearance (e.g. a stale saved position).
+  const ec = document.getElementById('epicycle-canvas');
+  if (ec) {
+    const bottom = parseFloat(ec.style.bottom);
+    if (!isNaN(bottom) && bottom < 136) ec.style.bottom = '136px';
+  }
 }
 
 export function initSimpleMode(model) {
