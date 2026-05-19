@@ -132,12 +132,32 @@ const _INNER_PAD    = _BORDER_PAD + _FRET_H + 4;  // = 17 — safe y for text
 const STORE_KEY = 'epicycle-overlay-pos';
 
 export class EpicycleOverlay {
-  constructor(canvas, model) {
+  constructor(model) {
+    // Create canvas and inject directly into body — bypasses any ancestor
+    // overflow:hidden / stacking-context issues that hid the old static element.
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.cssText = [
+      'position:fixed',
+      'right:12px',
+      'bottom:150px',
+      'width:280px',
+      'height:280px',
+      'z-index:9500',
+      'border-radius:10px',
+      'cursor:grab',
+      'user-select:none',
+      'touch-action:none',
+      'pointer-events:auto',
+      'box-shadow:0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)',
+    ].join(';');
+    document.body.appendChild(canvas);
+
     this._canvas   = canvas;
     this._model    = model;
     this._ctx      = canvas.getContext('2d');
     this._dpr      = 1;
-    this._cssSize  = CSS_SIZE;   // current size in CSS px — updated by resize
+    this._cssSize  = CSS_SIZE;
     this._dragging = false;
     this._dragOffX = 0;
     this._dragOffY = 0;

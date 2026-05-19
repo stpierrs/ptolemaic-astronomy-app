@@ -466,8 +466,7 @@ requestAnimationFrame(() => {
   });
 });
 
-const epicycleCanvasEl = document.getElementById('epicycle-canvas');
-if (epicycleCanvasEl) new EpicycleOverlay(epicycleCanvasEl, model);
+const _epicycleOverlay = new EpicycleOverlay(model);
 
 const viewForPanels = document.getElementById('view');
 if (viewForPanels) buildInfoPanels(viewForPanels);
@@ -790,9 +789,8 @@ window.demos = demos;
 // ── Feature 2: Screenshot / Share Export ────────────────────────────────
 {
   const headerEl = document.querySelector('header');
-  const epicycleCanvasEl2 = document.getElementById('epicycle-canvas');
   if (headerEl) {
-    buildShareButton(headerEl, model, canvas, epicycleCanvasEl2);
+    buildShareButton(headerEl, model, canvas, _epicycleOverlay._canvas);
     // Gate share behind freemium: intercept click before shareExport handles it
     const shareBtn = headerEl.querySelector('.header-action-btn[title*="Screenshot"], .header-action-btn[title*="Share"]');
     if (shareBtn) {
