@@ -46,7 +46,7 @@ The app loads `css/styles.min.css`, **not** `css/styles.css`. Whenever you edit 
 After CSS or JS changes, bump `CACHE_VERSION` in `sw.js`:
 
 ```js
-const CACHE_VERSION = 'ptol-v5'; // increment each deploy
+const CACHE_VERSION = 'ptol-v6'; // increment each deploy
 ```
 
 This forces existing users to get fresh files immediately.

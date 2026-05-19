@@ -68,8 +68,6 @@
          an approximated moon — off enough that eclipse demos land at
          the wrong UTC moment. Right? -->
     <div id="meeus-warning" hidden></div>
-    <!-- Epicycle corner inset — animated deferent + epicycle diagram -->
-    <canvas id="epicycle-canvas" aria-hidden="true"></canvas>
   </div>
 
   <!-- Splash screen — shown on first load, fades out when model is ready -->
@@ -88,6 +86,8 @@
   </footer>
 </main>
 
+<!-- Epicycle corner inset — position:fixed, outside #view's overflow:hidden -->
+<canvas id="epicycle-canvas" aria-hidden="true"></canvas>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
