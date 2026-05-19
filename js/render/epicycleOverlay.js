@@ -379,6 +379,15 @@ export class EpicycleOverlay {
   }
 
   _draw() {
+    // Hide when the astrology modal is open — the diagram is astronomy-only.
+    const astroApp = document.getElementById('astrology-app');
+    const astrologyOpen = astroApp && !astroApp.hidden;
+    if (astrologyOpen) {
+      this._canvas.style.display = 'none';
+      return;
+    }
+    this._canvas.style.display = '';
+
     const s   = this._model.state;
     const ctx = this._ctx;
     const dpr = this._dpr;
