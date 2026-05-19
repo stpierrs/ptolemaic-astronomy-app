@@ -278,10 +278,6 @@ Cada campo de estado vive en el hash de la URL para que un setup del sim se pued
 
 # Créditos
 
-- **Fred Espenak** (NASA GSFC retirado, AstroPixels) — catálogos de eclipses utilizados por el refinador de demos de eclipses.
-- **R.H. van Gent** (Utrecht) — Almagest Ephemeris Calculator, fuente para el port de Ptolomeo.
-- **Shane St. Pierre** — encuadre conceptual y el empuje para realmente construir una demostración interactiva funcional.
-- **Walter Bislin** — inspiración visual y de diseño para el modelo interactivo.
 - **HYG v41** (David Nash / astronexus) — datos de estrellas brillantes.
 - **OpenNGC** (Mattia Verga) — catálogo de galaxias.
 - **VizieR / CDS** (Véron-Cetty & Véron 2010) — catálogo de cuásares.

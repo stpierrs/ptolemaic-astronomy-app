@@ -163,15 +163,3 @@ doing exactly what the historical model does.
 * **Astrology tab** — natal charts, aspects, dignities, planetary hours
 * **Demos tab** — scripted animations with Prev / Next / Pause / Stop
 * **Info tab** — links to Ptolemy, the *Almagest*, and celestial navigation resources
-
----
-
-## Special thanks
-
-* **Shane St. Pierre** — conceptual framing and original design of the model
-* **Walter Bislin** — visual style and layout inspiration
-* **Fred Espenak** — eclipse catalogues and observed-position tables at
-  [AstroPixels](https://www.astropixels.com/eclipses/)
-* **Roohif** — flight-path KMZ data behind the Flight Routes demo group
-* **R.H. van Gent** (Utrecht University) — *Almagest* Ephemeris Calculator, source for the
-  Ptolemaic deferent + epicycle constants
