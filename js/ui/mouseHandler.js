@@ -378,7 +378,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
 
   // Ray-cast from the canvas pixel down to the disc plane (FE)
   // or globe sphere (GE) and read back lat/lon. That's how we
-  // know where on the flat earth the cursor is pointing. Right?
+  // know where on the ground plane the cursor is pointing.
   const cursorToLatLon = (offsetX, offsetY) => {
     if (!renderer || !renderer.sm || !renderer.sm.camera) return null;
     const cam = renderer.sm.camera;

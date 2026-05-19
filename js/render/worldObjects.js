@@ -1,4 +1,4 @@
-// All the visible scene objects for the flat earth dome model. Each one
+// All the visible scene objects for the Ptolemaic geocentric model. Each one
 // exposes an update(model) method called every frame after the model
 // recomputes its state. Right?
 
@@ -265,7 +265,7 @@ function bezierQuad(p0, p1, p2, samples = 32) {
 
 // --- Heavenly-vault 360° longitude ring ------------------------------------
 //
-// A canonical ring around the flat earth disc rim showing the full
+// A canonical ring around the geocentric ground plane rim showing the full
 // 360° longitude reference. Built once from canonicalLatLongToDisc;
 // projection-independent. This is the outer-circumference azimuth
 // marker the Heavenly view reads against. Right?
@@ -505,7 +505,7 @@ export class DomeCausticOverlay {
 // Globe heavenly vault: a translucent shell concentric with the
 // terrestrial globe at c.GlobeVaultRadius. GE-only. True positions
 // of celestial bodies live on this shell — it's the GE analogue
-// of the flat earth dome. I mean, it's the same concept. Right?
+// of the Ptolemaic celestial vault — the same concept mapped to the GE sphere.
 export class GlobeHeavenlyVault {
   constructor() {
     this.group = new THREE.Group();
@@ -815,7 +815,7 @@ export class DiscBase {
     this.group = new THREE.Group();
     this.group.name = 'disc-base';
 
-    // Ocean fill: flat circle at z=0 — the flat earth disc base. Right?
+    // Ocean fill: flat circle at z=0 — the geocentric ground plane base.
     const circGeom = new THREE.CircleGeometry(feRadius, 128);
     const circMat = new THREE.MeshBasicMaterial({ color: 0xb3d6f2 });
     const circ = new THREE.Mesh(circGeom, circMat);
@@ -832,7 +832,7 @@ export class DiscBase {
   update() {}
 }
 
-// --- Named latitude circles on the flat earth disc -----------------------
+// --- Named latitude circles on the geocentric ground plane ---------------
 //
 // Equator, tropics (± obliquity of the ecliptic), polar circles.
 // These show us where the sub-solar and sub-lunar ground points live
@@ -1044,8 +1044,8 @@ export class GroundPoint {
       this.dot.lookAt(0, 0, 0);
       this.dot.rotateY(Math.PI);
     } else {
-      // Flat earth disc — the sub-solar / sub-lunar dot lands at the
-      // geographic lat/lon via AE disc coords, regardless of map art. Right?
+      // Ground plane — the sub-solar / sub-lunar dot lands at the
+      // geographic lat/lon via AE disc coords, regardless of map art.
       const p = canonicalLatLongToDisc(latDeg, lonDeg, feRadius);
       this.dot.position.set(p[0], p[1], 1e-3);
       this.dot.rotation.set(0, 0, 0);
@@ -1053,7 +1053,7 @@ export class GroundPoint {
   }
 }
 
-// --- Day / night shadow on the flat earth disc ----------------------------
+// --- Day / night shadow on the geocentric ground plane --------------------
 //
 // A transparent overlay that darkens regions far from the sun's foot-point.
 // The sun sits on the vault of the heavens at (x, y, z>0); its foot-point
@@ -1179,7 +1179,7 @@ void main() {
 // normal, the cone-z=0 intersection is an ellipse, not a circle,
 // whenever sun and moon aren't directly overhead. As the eclipse
 // progresses the ellipse stretches, rotates, and slides across the
-// flat earth disc — that's the real eclipse path behaviour. Right?
+// ground plane — that's the eclipse path geometry.
 //
 // Sun / moon radii default to FE-scale constants chosen so the typical
 // shadow is visible. They can be overridden via state fields
@@ -1432,8 +1432,8 @@ export class Shadow {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'shadow';
-    // Geometry is a disc slightly larger than the flat earth disc.
-    // The fragment shader discards fragments outside feRadius. Right?
+    // Geometry is a disc slightly larger than the ground plane.
+    // The fragment shader discards fragments outside feRadius.
     const geom = new THREE.CircleGeometry(feRadius * 1.02, 128);
 
     this.material = new THREE.ShaderMaterial({
@@ -1523,7 +1523,7 @@ export class DiscGrid {
   }
 }
 
-// --- Dome — the vault of the heavens over the flat earth disc -----------
+// --- Dome — the vault of the heavens over the geocentric ground plane ----
 
 export class VaultOfHeavens {
   constructor(clippingPlanes = []) {
@@ -1641,7 +1641,7 @@ export class ObserversOpticalVault {
     // Local north/east/up axes.
     //   +x north → green, +y east → blue, +z up (zenith) → red.
     // Red marks "perpendicular to the ground" — reads the same on the
-    // flat earth disc and the GE sphere. Green/blue stay tangent. Right?
+    // ground plane and the GE sphere. Green/blue stay tangent.
     const axisLen = 1;
     const axes = [
       0, 0, 0, axisLen, 0, 0, // +x north
@@ -5043,7 +5043,7 @@ export class Discworld {
 //   'vortex2' — stacked dual vortex, an upper "inner" donut reaching the
 //               equator circle and a lower "outer" donut reaching the
 //               dome circumference; brighter + softer amber tones so the
-//               two read as distinct fields, with the flat earth
+//               two read as distinct fields, with the ground plane
 //               suspended at z = 0 between them
 export class ToroidalVortex {
   constructor(variant = 'single', clippingPlanes = []) {

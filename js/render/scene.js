@@ -113,7 +113,7 @@ export class SceneManager {
 
     // Clip anything below the disc at z=0. That way bodies below the
     // horizon get hidden automatically — the inner celestial sphere and
-    // stars don't bleed through the flat earth disc. Right?
+    // stars don't bleed through the geocentric ground plane.
     this.renderer.localClippingEnabled = true;
     this.clipBelowDisc = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
@@ -174,9 +174,9 @@ export class SceneManager {
     // Camera math reads camObs; vault placement still uses obs. Right?
     const camObs = s.ObserverAtCenter ? [0, 0, 0] : obs;
     // The disc clip plane is FE-only — cuts world z<0 to hide anything
-    // beneath the flat earth disc. GE has no flat ground plane, so we
+    // beneath the geocentric ground plane. GE has no flat ground plane, so we
     // turn clipping off there. Sub-horizon bodies, the cap's lower half,
-    // and the back of the celestial sphere all need to render. Right?
+    // and the back of the celestial sphere all need to render.
     this.renderer.localClippingEnabled = !ge;
     // In GE InsideVault the camera sits just above the sphere surface.
     // Horizon dip is √(2h/R), so smaller h means a tighter gap at the

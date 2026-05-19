@@ -1,19 +1,20 @@
-# Conceptual Flat Earth Model
+# Ptolemaic Astronomy & Astrology Simulator
 
-An interactive, browser-based conceptual model of the flat-earth cosmology built
-with three.js. The scene draws the stationary disc, the observer's optical
-vault (a flattened cap onto which stars, sun, moon, and planets project), and
-the heavenly vault above it. All geometry is unit-less — every distance is a
-ratio of the flat-earth disc radius.
+An interactive, browser-based simulation of Ptolemy's geocentric cosmology, built with three.js.
+The scene renders the observer's position on the ground plane, the vault of the heavens above, and
+the optical dome onto which the Sun, Moon, stars, and planets are projected. Every motion in the sky
+is driven by Ptolemy's deferent-and-epicycle machinery, tuned to the period constants published in
+the *Almagest* (c. 150 CE). No heliocentric constants. No gravitational constant. Just the sky,
+described the way Ptolemy described it.
 
 ## Live demo
 
-Hosted on GitHub Pages — see the "Pages" link on this repo.
+`https://stpierrs.github.io/ptolemaic-astronomy-app/`
 
 ## Running locally
 
-No build step. It's a static site, but browsers block ES-module imports over
-`file://`, so you need any local HTTP server:
+No build step. It's a static site, but browsers block ES-module imports over `file://`, so you need
+any local HTTP server:
 
     python3 -m http.server 8000
 
@@ -26,41 +27,39 @@ Then open <http://localhost:8000>.
 * **Time tab** — day of year, time, date-time.
 * **Show tab** — visibility toggles for land, grid, shadow terminator,
   starfield, rays, declination circles, etc.
-* **Demos tab** — scripted camera/time animations illustrating key points
-  of the conceptual model.
+* **Demos tab** — scripted camera/time animations illustrating key phenomena
+  from the Almagest.
 
-The "ⓘ About" button in the header explains the model's stance on the
-lat/long graticule and the fictitious center-of-earth observer.
+The "ⓘ About" button in the header explains the model's geocentric geometry and the
+relationship between the observer, the optical vault, and the heavenly vault.
+
+## Historical basis
+
+The ephemeris runs directly on Ptolemy's *Almagest* tables — the same mathematical
+framework used by astronomers from 150 CE through the early 1600s:
+
+- The Sun rides an eccentric circle with a moving apogee.
+- Each planet rides a deferent carrying an epicycle, with the equant point accounting
+  for non-uniform motion.
+- Mercury has the extra moving-deferent mechanism Ptolemy devised to match observation.
+- The Moon's model includes the crank mechanism for evection.
+- Fixed-star positions receive classical precession, nutation, and aberration corrections.
+
+This is an educational tool and historical recreation, not a navigation instrument.
 
 ## Special Thanks
 
-This project is built on ideas and groundwork from people whose work
-pointed the way:
-
 * **Shane St. Pierre** — for the conceptual framing and the push to actually
-  build a working, interactive demonstration of the model.
-* **Walter Bislin** — for the visual style and layout inspiration that shaped
-  the look and feel of this interactive model.
-* **Fred Espenak** — for the public eclipse catalogues and
-  observed-position tables on
-  [AstroPixels](https://www.astropixels.com/eclipses/), used by the
-  eclipse-demo refiner to pin the moment of each historical eclipse
-  to its observed time. See `js/core/ephemerisAstropixels.js` and
+  build a working, interactive demonstration of the Ptolemaic model.
+* **Walter Bislin** — for visual style and layout inspiration.
+* **Fred Espenak** — for the public eclipse catalogues and observed-position
+  tables on [AstroPixels](https://www.astropixels.com/eclipses/), used by the
+  eclipse-demo refiner to pin the moment of each historical eclipse to its
+  observed time. See `js/core/ephemerisAstropixels.js` and
   `js/data/astropixelsEclipses.js` for the runtime attribution.
-* **Roohif** — for the flight-path KMZ data behind the
-  Flight Routes demo group. The `Southern Non-Stop` city / leg list
-  and the QF27/28 actual-flight-track waypoints (lat / lon /
-  altitude / per-point air speed / ground speed / heading / wind)
-  bundled in `js/data/flightRoutes.js` and
-  `js/data/flightTracks.js` are parsed straight from his KMZ
-  archive. The Equal Arc demos and the QF27/28 actual-flight
-  playbacks lean entirely on that dataset.
+* **Roohif** — for the flight-path KMZ data behind the Flight Routes demo group.
+* **R.H. van Gent** (Utrecht University) — Almagest Ephemeris Calculator, the
+  source for the Ptolemaic deferent + epicycle code the simulation runs on.
 
-Additional credits baked into the ephemeris machinery:
-
-* **R.H. van Gent** (Utrecht University) — Almagest Ephemeris
-  Calculator, the source for the Ptolemaic deferent + epicycle code
-  the sim runs on.
-
-Without their inspiration, their published theory, and their public
-data tables, this wouldn't exist.
+Without their work, their published theory, and their public data tables,
+this wouldn't exist.

@@ -19,7 +19,7 @@
 
 import * as THREE from 'three';
 
-const EPS_LIFT = 1e-4; // tiny z-lift so we don't z-fight the flat earth disc plane
+const EPS_LIFT = 1e-4; // tiny z-lift so we don't z-fight the ground plane
 
 // -------------------------------------------------------------------------
 // GeoJSON path — continent shapes from Natural Earth data
@@ -139,7 +139,7 @@ export function buildGeoJsonLand(geojson, projection, {
 // canonical coordinate shell — graticule, tropics, longitude ring,
 // azimuth grid — without any map artwork on top. Right?
 
-// Black flat earth disc with white continent outlines — this is
+// Black ground-plane disc with white continent outlines — this is
 // the ae_lineart projection. We build a solid-black backdrop circle
 // then run Natural Earth ring vertices through projection.project and
 // lay them down as white LineSegments. No filled shapes — just

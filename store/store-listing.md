@@ -33,7 +33,6 @@ Just the sky doing what the sky does, described the way Ptolemy described it.
 - Adjust observer latitude, date, and time — explore midnight sun, polar
   night, equinox, solstice
 - 24-hour flight route overlays showing real southern hemisphere routes
-  across the flat disc
 - Constellation overlays, celestial navigation stars, and a full starfield
   with precession, nutation, and aberration corrections
 - Eclipse demo library: solar and lunar eclipses with ground tracks
@@ -52,7 +51,7 @@ This is a conceptual model and educational tool, not a navigation instrument.
 ---
 
 ## Keywords (App Store — 100 chars, comma-separated)
-flat earth, astronomy, Ptolemy, epicycle, solar system, simulator, eclipse, stargazing, celestial
+Ptolemy, Almagest, geocentric, epicycle, astronomy, astrology, simulator, eclipse, stargazing, celestial
 
 ---
 

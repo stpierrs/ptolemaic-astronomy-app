@@ -1,1 +1,1 @@
-this is my flat earth model project. i want you to have full control and publish to my github at https://stpierrs.github.io/conceptual_flat_earth_model/ 
+This is a historically accurate Ptolemaic astronomy and astrology app. It simulates Ptolemy's geocentric cosmology as described in the *Almagest* (c. 150 CE), using deferent-and-epicycle mechanics for all celestial bodies. Publish to GitHub Pages at https://stpierrs.github.io/ptolemaic-astronomy-app/

@@ -1,4 +1,4 @@
-// App bootstrap — wires everything together for the flat earth model.
+// App bootstrap — wires everything together for the Ptolemaic geocentric model.
 
 import { FeModel } from './core/app.js';
 import { Renderer } from './render/index.js';
