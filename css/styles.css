@@ -2403,6 +2403,111 @@ header {
 /* ════════════════════════════════════════════════════════════════════════
    Feature AS-9 — Paywall Modal
    ════════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════════
+   Simple Mode
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* In simple mode: hide search row + tab bar, shrink bottom bar */
+body.simple-mode .bar-search-row  { display: none; }
+body.simple-mode .tab-icon-row    { display: none; }
+body.simple-mode #tab-popups      { display: none !important; }
+body.simple-mode #bottom-bar      { height: 74px; } /* 42px bar-quick + 32px simple-bar */
+body.simple-mode #info-bar        { bottom: 74px; }
+
+/* Header toggle: show "Simple Mode" button only in full mode */
+.simple-mode-header-btn           { display: none; }
+body:not(.simple-mode) .simple-mode-header-btn { display: flex; }
+
+/* Simple bar — sits where .tab-icon-row was */
+#simple-bar {
+  display: none;
+  flex: 0 0 32px;
+  align-items: stretch;
+  border-top: 1px solid var(--border);
+  background: rgba(10, 14, 22, 0.0); /* inherits from bottom-bar */
+  overflow: hidden;
+}
+body.simple-mode #simple-bar { display: flex; }
+
+/* Planet buttons strip — scrolls horizontally if needed */
+.simple-bar-planets {
+  flex: 1 1 0;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  gap: 1px;
+  padding: 0 2px;
+}
+.simple-bar-planets::-webkit-scrollbar { display: none; }
+
+.simple-planet-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.simple-planet-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--fg);
+}
+.simple-planet-btn.on {
+  color: var(--planet-color, var(--accent));
+  background: rgba(0,0,0,0.18);
+}
+.spb-symbol {
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+}
+.spb-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* On narrow screens, hide text labels so symbols stay visible */
+@media (max-width: 480px) {
+  .spb-label { display: none; }
+  .simple-planet-btn { padding: 0 8px; }
+}
+
+/* "Full Controls" button — right side of simple bar */
+.simple-full-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+  background: rgba(212,160,32,0.10);
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.simple-full-btn:hover { background: rgba(212,160,32,0.22); }
+.sfb-arrow { font-size: 15px; font-weight: 400; }
+
+/* Parchment theme adjustments */
+.theme-parchment body.simple-mode #bottom-bar { background: rgba(240, 232, 210, 0.96); }
+
 #paywall-modal {
   position: fixed;
   inset: 0;
