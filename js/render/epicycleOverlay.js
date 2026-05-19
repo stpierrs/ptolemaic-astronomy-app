@@ -132,7 +132,9 @@ const _INNER_PAD    = _BORDER_PAD + _FRET_H + 4;  // = 17 — safe y for text
 const STORE_KEY = 'epicycle-overlay-pos';
 
 export class EpicycleOverlay {
-  constructor(model) {
+  // Accepts both new style: (model)  and old style: (canvasEl, model)
+  constructor(modelOrCanvas, maybeModel) {
+    const model = (maybeModel != null) ? maybeModel : modelOrCanvas;
     // Create canvas, inject directly into <body>, all styles inline —
     // no CSS file, no HTML placement, no stacking-context surprises.
     const canvas = document.createElement('canvas');
