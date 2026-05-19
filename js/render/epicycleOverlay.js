@@ -153,7 +153,6 @@ export class EpicycleOverlay {
     canvas.style.boxShadow  = '0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)';
     canvas.style.background = 'rgba(10,5,1,0.92)';
     document.body.appendChild(canvas);
-    console.log('[EpicycleOverlay] canvas appended to body', canvas.style.bottom, canvas.style.right);
 
     this._canvas   = canvas;
     this._model    = model;
@@ -174,11 +173,8 @@ export class EpicycleOverlay {
 
     // RAF loop — reads model state each frame so animation rate exactly
     // matches the simulation's playback speed.
-    let _errLogged = false;
     const tick = () => {
-      try { this._draw(); } catch (e) {
-        if (!_errLogged) { console.error('[EpicycleOverlay] draw error:', e); _errLogged = true; }
-      }
+      this._draw();
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
