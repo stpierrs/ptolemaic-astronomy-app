@@ -39,8 +39,8 @@ const JMOON_COLORS = {
   ananke: '#c87890', carme: '#c87888', pasiphae: '#b888c8', sinope: '#9898c8',
 };
 
-// Bump this version whenever the saved schema changes (v3 adds 'size').
-const STORE_VERSION = 3;
+// Bump this version whenever the saved schema changes (v4: position:fixed).
+const STORE_VERSION = 4;
 
 const MIN_SIZE = 160;   // smallest the overlay can be dragged to (CSS px)
 const MAX_SIZE = 520;   // largest
@@ -187,7 +187,8 @@ export class EpicycleOverlay {
         }
         const sz        = this._cssSize;
         const minBottom = 136;   // stay above 122px bar + 14px clearance
-        const bottom    = Math.max(saved.bottom, minBottom);
+        const maxBottom = Math.max(minBottom, window.innerHeight - sz);
+        const bottom    = Math.max(minBottom, Math.min(maxBottom, saved.bottom));
         const right     = Math.max(0, Math.min(window.innerWidth - sz, saved.right));
         this._canvas.style.right  = `${right}px`;
         this._canvas.style.bottom = `${bottom}px`;
@@ -288,7 +289,7 @@ export class EpicycleOverlay {
       const zoom   = parseFloat(getComputedStyle(el).zoom) || 1;
       const size   = this._cssSize * zoom;
       const right  = Math.max(0, window.innerWidth  - rect.left - size);
-      const bottom = Math.max(136, window.innerHeight - rect.top  - size);
+      const bottom = Math.max(136, Math.min(window.innerHeight - size, window.innerHeight - rect.top - size));
       el.style.right  = `${right}px`;
       el.style.bottom = `${bottom}px`;
       el.style.left   = 'auto';

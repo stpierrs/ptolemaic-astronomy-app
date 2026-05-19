@@ -344,7 +344,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 
 /* Epicycle corner inset — animated Ptolemaic diagram, draggable */
 #epicycle-canvas {
-  position: absolute;
+  position: fixed;
   bottom: 108px;
   right: 12px;
   width: 280px;
@@ -2411,8 +2411,8 @@ header {
 body.simple-mode .bar-search-row  { display: none; }
 body.simple-mode .tab-icon-row    { display: none; }
 body.simple-mode #tab-popups      { display: none !important; }
-body.simple-mode #bottom-bar      { height: 74px; } /* 42px bar-quick + 32px simple-bar */
-body.simple-mode #info-bar        { bottom: 74px; }
+body.simple-mode #bottom-bar      { height: 78px; } /* 46px bar-quick + 32px simple-bar */
+body.simple-mode #info-bar        { bottom: calc(78px * var(--ui-zoom)); }
 
 /* Header toggle: show "Simple Mode" button only in full mode */
 .simple-mode-header-btn           { display: none; }
