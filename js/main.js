@@ -790,7 +790,7 @@ window.demos = demos;
 {
   const headerEl = document.querySelector('header');
   if (headerEl) {
-    buildShareButton(headerEl, model, canvas, _epicycleOverlay._canvas);
+    buildShareButton(headerEl, model, canvas, _epicycleOverlay ? _epicycleOverlay._canvas : null);
     // Gate share behind freemium: intercept click before shareExport handles it
     const shareBtn = headerEl.querySelector('.header-action-btn[title*="Screenshot"], .header-action-btn[title*="Share"]');
     if (shareBtn) {

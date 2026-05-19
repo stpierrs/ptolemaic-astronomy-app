@@ -39,8 +39,8 @@ const JMOON_COLORS = {
   ananke: '#c87890', carme: '#c87888', pasiphae: '#b888c8', sinope: '#9898c8',
 };
 
-// Bump this version whenever the saved schema changes (v4: position:fixed).
-const STORE_VERSION = 4;
+// Bump this version whenever the saved schema changes (v5: self-injected canvas).
+const STORE_VERSION = 5;
 
 const MIN_SIZE = 160;   // smallest the overlay can be dragged to (CSS px)
 const MAX_SIZE = 520;   // largest
@@ -133,24 +133,22 @@ const STORE_KEY = 'epicycle-overlay-pos';
 
 export class EpicycleOverlay {
   constructor(model) {
-    // Create canvas and inject directly into body — bypasses any ancestor
-    // overflow:hidden / stacking-context issues that hid the old static element.
+    // Create canvas, inject directly into <body>, all styles inline —
+    // no CSS file, no HTML placement, no stacking-context surprises.
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = [
-      'position:fixed',
-      'right:12px',
-      'bottom:150px',
-      'width:280px',
-      'height:280px',
-      'z-index:9500',
-      'border-radius:10px',
-      'cursor:grab',
-      'user-select:none',
-      'touch-action:none',
-      'pointer-events:auto',
-      'box-shadow:0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)',
-    ].join(';');
+    canvas.style.position   = 'fixed';
+    canvas.style.right      = '12px';
+    canvas.style.bottom     = '150px';
+    canvas.style.width      = '280px';
+    canvas.style.height     = '280px';
+    canvas.style.zIndex     = '9500';
+    canvas.style.borderRadius = '10px';
+    canvas.style.cursor     = 'grab';
+    canvas.style.userSelect = 'none';
+    canvas.style.touchAction = 'none';
+    canvas.style.pointerEvents = 'auto';
+    canvas.style.boxShadow  = '0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)';
     document.body.appendChild(canvas);
 
     this._canvas   = canvas;
