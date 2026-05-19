@@ -2411,8 +2411,12 @@ header {
 body.simple-mode .bar-search-row  { display: none; }
 body.simple-mode .tab-icon-row    { display: none; }
 body.simple-mode #tab-popups      { display: none !important; }
-body.simple-mode #bottom-bar      { height: 74px; } /* 42px bar-quick + 32px simple-bar */
-body.simple-mode #info-bar        { bottom: 74px; }
+/* 46px bar-quick (theme) + 32px simple-bar = 78px */
+body.simple-mode #bottom-bar      { height: 78px; }
+body.simple-mode #info-bar        { bottom: calc(78px * var(--ui-zoom)); }
+/* Hide country-hop presets and P1/P2 in simple mode — too cluttered */
+body.simple-mode .geo-hops        { display: none !important; }
+body.simple-mode .bar-left .presets { display: none !important; }
 
 /* Header toggle: show "Simple Mode" button only in full mode */
 .simple-mode-header-btn           { display: none; }
