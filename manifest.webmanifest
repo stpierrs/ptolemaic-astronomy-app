@@ -1,0 +1,32 @@
+{
+  "name": "Ptolemaic Astronomy Simulator",
+  "short_name": "Ptolemaic",
+  "description": "Ptolemaic epicycle simulator. Watch planets, the Sun, and Moon move in real time via deferent and epicycle orbits from a geocentric perspective.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e121a",
+  "theme_color": "#0e121a",
+  "categories": ["education"],
+  "icons": [
+    {
+      "src": "assets/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/ac_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

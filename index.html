@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta id="theme-color-meta" name="theme-color" content="#0e121a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Ptolemaic Astronomy &amp; Astrology</title>
+<meta name="description" content="Ptolemaic Astronomy &amp; Astrology — interactive epicycle simulator and natal chart calculator. Track the seven classical planets via deferent and epicycle orbits, and cast Ptolemaic birth charts from the Tetrabiblos.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/ac_logo.png">
+<link rel="apple-touch-icon" href="assets/ac_logo.png">
+<link rel="preload" href="css/styles.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="css/styles.min.css"></noscript>
+<!-- importmap goes first — Firefox locks the module pipeline the moment
+     a modulepreload fires, and after that any bare specifier like
+     `import 'three'` just fails to resolve. Keep this above all the
+     modulepreload links. Right? -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "./assets/vendor/three.module.min.js"
+  }
+}
+</script>
+<link rel="modulepreload" href="assets/vendor/three.module.min.js">
+<link rel="preload" href="assets/ne_110m_land.geojson" as="fetch" type="application/geo+json" crossorigin>
+<link rel="modulepreload" href="js/main.js">
+<link rel="modulepreload" href="js/render/index.js">
+<link rel="modulepreload" href="js/render/worldObjects.js">
+<link rel="modulepreload" href="js/core/app.js">
+<link rel="modulepreload" href="js/ui/controlPanel.js">
+<link rel="modulepreload" href="js/ui/i18n.js">
+</head>
+<body>
+
+<main id="app">
+  <header>
+    <h1 id="app-title">Ptolemaic Astronomy &amp; Astrology</h1>
+    <p class="sub" id="app-subtitle">Ptolemy's epicycle model. Distances are unitless (r = 1).</p>
+    <p class="sub-note">Runs on Ptolemy's epicycles.</p>
+    <div class="info-box">
+      <button class="info-btn" type="button" aria-label="About this model" id="about-btn">ⓘ <span data-i18n="about_btn">About</span></button>
+      <button class="info-btn" type="button" aria-label="Feature legend" id="legend-btn">📖 <span data-i18n="legend_btn">Legend</span></button>
+      <div class="info-popup" id="about-popup" hidden>
+        <p data-i18n="about_p1">This simulator animates Ptolemy's geocentric astronomy as described in the Almagest (c. 150 AD). Each planet rides an epicycle — a small circle whose centre moves along a larger deferent circle centred near Earth. The overlapping rotations reproduce retrograde motion, the varying speeds of the planets, and the seasons, all without invoking a moving Earth.</p>
+        <p data-i18n="about_p2">Ptolemy's model rests on the Two-Sphere Model: a stationary Earth at the centre surrounded by a rotating celestial sphere carrying the fixed stars. The coordinate systems of both spheres are direct mirrors of each other — declination equals latitude, right ascension equals longitude (convertible via 15° per hour). Every point in the sky has a precisely corresponding Geographic Position (GP) on Earth's surface at every instant in time.</p>
+        <p data-i18n="about_p3">This one-to-one correspondence between the celestial and terrestrial spheres is the foundation of celestial navigation. A navigator measures a star's altitude, looks up its GP in the Nautical Almanac, and computes their distance from that GP. Two or three such observations intersect to fix position at sea. The Nautical Almanac, the graticule of lat/lon, and the intercept method of navigation all descend directly from Ptolemy's two-sphere framework — open the Info tab to learn more.</p>
+      </div>
+      <div class="info-popup legend-popup" id="legend-popup" hidden></div>
+    </div>
+  </header>
+
+  <div id="view">
+    <div id="load-bar"><div id="load-bar-fill"></div></div>
+    <canvas id="feCanvas"></canvas>
+    <div id="hud"></div>
+    <!-- S009 — Tracker HUD. Sits below the main HUD and stays hidden
+         until the user picks a TrackerTarget in the Tracker tab. Right? -->
+    <div id="tracker-hud"></div>
+    <!-- Tracking-info pop-up — pixel-art for whatever body is selected
+         plus its readout panel. Built by `buildTrackingInfoPopup`
+         in trackingInfoPopup.js. Right? -->
+    <div id="tracking-info-popup" hidden></div>
+    <!-- S200 — warning banner. Only shows when the active source uses
+         an approximated moon — off enough that eclipse demos land at
+         the wrong UTC moment. Right? -->
+    <div id="meeus-warning" hidden></div>
+    <!-- Epicycle corner inset — animated deferent + epicycle diagram -->
+    <canvas id="epicycle-canvas" aria-hidden="true"></canvas>
+  </div>
+
+  <!-- Splash screen — shown on first load, fades out when model is ready -->
+  <div id="splash-screen">
+    <img id="splash-icon" src="assets/icon-1024.png" alt="" width="200" height="200">
+    <p id="splash-title">Ptolemaic Astronomy &amp; Astrology</p>
+  </div>
+
+  <footer id="desc">
+    <!-- Static stand-in for the live status line — matches the format
+         of `defaultStatus` in main.js so the browser has something real
+         to paint before the JS even loads. main.js replaces it once the
+         model has its first real value. Right? -->
+    <p class="desc-dynamic">0.0°N — within observer's optical vault — daylight.</p>
+    <a class="privacy-link" href="privacy.html" target="_blank" rel="noopener">Privacy</a>
+  </footer>
+</main>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+.vscode/
+.idea/
+android/
+ios/
+dist/
+www/
+*.jks
+*.keystore
+release.properties
+.github_token
+.claude/
