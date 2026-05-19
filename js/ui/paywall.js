@@ -1,37 +1,46 @@
 // Paywall modal — shown when the user tries to access a premium feature.
 //
-// The modal is created once on buildPaywall() and shown/hidden via showPaywall()
-// / hidePaywall(). Purchase and restore delegate to the Capacitor IAP bridge.
+// UI shows subscription plans (monthly / annual) as the primary offer.
+// The legacy one-time unlock is retained for restore flows but not shown
+// as a primary CTA. Activate by setting DEV_BYPASS = false in purchase.js.
 
-import { unlock } from '../core/purchase.js';
-import { purchasePro, restorePurchases } from '../core/capacitorIAP.js';
+import { unlock, setSubscribed, PLANS } from '../core/purchase.js';
+import { purchaseSubscription, purchasePro, restorePurchases } from '../core/capacitorIAP.js';
 
 let _modal = null;
 
 /** Create the paywall modal and append it to document.body (hidden). */
 export function buildPaywall() {
-  if (_modal) return; // already built
+  if (_modal) return;
 
   _modal = document.createElement('div');
   _modal.id = 'paywall-modal';
   _modal.setAttribute('aria-modal', 'true');
   _modal.setAttribute('role', 'dialog');
-  _modal.setAttribute('aria-label', 'Go Premium');
+  _modal.setAttribute('aria-label', 'Unlock Premium');
 
   _modal.innerHTML = `
     <div id="paywall-card">
       <div class="pw-icon">🌌</div>
-      <h2 class="pw-title">Go Premium</h2>
-      <p class="pw-subtitle">Unlock the full cosmos</p>
+      <h2 class="pw-title">Unlock the Full Cosmos</h2>
       <ul class="pw-features">
-        <li><span class="pw-check">✓</span> All 8 classical planets</li>
+        <li><span class="pw-check">✓</span> All 7 classical planets</li>
         <li><span class="pw-check">✓</span> All 16 Jupiter moons</li>
         <li><span class="pw-check">✓</span> Constellation overlay</li>
         <li><span class="pw-check">✓</span> Parchment theme</li>
         <li><span class="pw-check">✓</span> Screenshot &amp; share</li>
-        <li><span class="pw-check">✓</span> Future updates forever</li>
       </ul>
-      <button id="pw-unlock-btn" class="pw-btn pw-btn-primary" type="button">Unlock — $4.99</button>
+      <div class="pw-plan-group">
+        <button id="pw-annual-btn" class="pw-btn pw-plan-btn pw-plan-featured" type="button">
+          <span class="pw-plan-badge">Best value — save 50%</span>
+          <span class="pw-plan-label">Annual</span>
+          <span class="pw-plan-price">$29.99 / year</span>
+        </button>
+        <button id="pw-monthly-btn" class="pw-btn pw-plan-btn" type="button">
+          <span class="pw-plan-label">Monthly</span>
+          <span class="pw-plan-price">$4.99 / month</span>
+        </button>
+      </div>
       <button id="pw-restore-btn" class="pw-btn pw-btn-secondary" type="button">Restore Purchase</button>
       <button id="pw-dismiss-btn" class="pw-btn pw-btn-ghost" type="button">Maybe later</button>
       <p id="pw-status" class="pw-status" aria-live="polite"></p>
@@ -40,8 +49,9 @@ export function buildPaywall() {
 
   document.body.appendChild(_modal);
 
-  const statusEl = _modal.querySelector('#pw-status');
-  const unlockBtn = _modal.querySelector('#pw-unlock-btn');
+  const statusEl   = _modal.querySelector('#pw-status');
+  const annualBtn  = _modal.querySelector('#pw-annual-btn');
+  const monthlyBtn = _modal.querySelector('#pw-monthly-btn');
   const restoreBtn = _modal.querySelector('#pw-restore-btn');
   const dismissBtn = _modal.querySelector('#pw-dismiss-btn');
 
@@ -50,36 +60,45 @@ export function buildPaywall() {
     statusEl.style.color = isError ? '#ff8080' : '#a8d8a0';
   }
 
-  function setBusy(busy) {
-    unlockBtn.disabled = busy;
+  function setBusy(busy, activeBtn) {
+    annualBtn.disabled  = busy;
+    monthlyBtn.disabled = busy;
     restoreBtn.disabled = busy;
-    unlockBtn.textContent = busy ? 'Processing…' : 'Unlock — $4.99';
+    if (activeBtn && busy) activeBtn.dataset.originalText = activeBtn.querySelector('.pw-plan-price').textContent;
+    if (activeBtn && busy) activeBtn.querySelector('.pw-plan-price').textContent = 'Processing…';
+    if (activeBtn && !busy && activeBtn.dataset.originalText) {
+      activeBtn.querySelector('.pw-plan-price').textContent = activeBtn.dataset.originalText;
+    }
   }
 
-  unlockBtn.addEventListener('click', async () => {
-    setBusy(true);
+  async function handleSubscription(period) {
+    const btn = period === 'annual' ? annualBtn : monthlyBtn;
+    setBusy(true, btn);
     setStatus('');
     try {
-      const result = await purchasePro();
+      const result = await purchaseSubscription(period);
       if (result && result.success) {
-        unlock();
-        setStatus('Unlocked! Thank you.');
+        setSubscribed(period);
+        setStatus(`Subscribed! Thank you.`);
         setTimeout(() => hidePaywall(), 1200);
       } else if (result && result.cancelled) {
-        setStatus('Purchase cancelled.', false);
+        setStatus('Purchase cancelled.');
       } else {
         setStatus('Purchase not completed.', true);
       }
     } catch (err) {
-      console.error('[Paywall] purchase error:', err);
+      console.error('[Paywall] subscription error:', err);
       setStatus(err && err.message ? err.message : 'Purchase failed.', true);
     } finally {
-      setBusy(false);
+      setBusy(false, btn);
     }
-  });
+  }
+
+  annualBtn.addEventListener('click',  () => handleSubscription('annual'));
+  monthlyBtn.addEventListener('click', () => handleSubscription('monthly'));
 
   restoreBtn.addEventListener('click', async () => {
-    setBusy(true);
+    restoreBtn.disabled = true;
     setStatus('Restoring…');
     try {
       const result = await restorePurchases();
@@ -93,18 +112,16 @@ export function buildPaywall() {
       console.error('[Paywall] restore error:', err);
       setStatus('Restore failed.', true);
     } finally {
-      setBusy(false);
+      restoreBtn.disabled = false;
     }
   });
 
   dismissBtn.addEventListener('click', hidePaywall);
 
-  // Close on backdrop click
   _modal.addEventListener('click', (e) => {
     if (e.target === _modal) hidePaywall();
   });
 
-  // Close on Escape
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && _modal && !_modal.hidden) hidePaywall();
   });

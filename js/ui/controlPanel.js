@@ -578,8 +578,8 @@ const FIELD_GROUPS = [
         ]},
         // step 0.0001° is about 0.36" — sub-arcsecond granularity
         // for precision Stellarium-parity checks at a specific location.
-        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.0001 },
-        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.0001 },
+        { key: 'ObserverLat',  label: 'Latitude',  unit: '°', min: -90,  max:  90,  step: 0.0001 },
+        { key: 'ObserverLong', label: 'Longitude', unit: '°', min: -180, max: 180,  step: 0.0001 },
         // Observer.Elevation is now the gaze pitch, 0°–90° above the
         // horizon. Bound to CameraHeight which drives first-person look
         // in Optical mode — and in Heavenly it's orbit elevation, same
@@ -614,34 +614,27 @@ const FIELD_GROUPS = [
         } },
       ]},
       { title: 'Camera', rows: [
-        { key: 'CameraDirection', label: 'CameraDir',    unit: '°', min: -180, max: 180, step: 0.1 },
-        { key: 'CameraHeight',    label: 'CameraHeight', unit: '°', min: -30,  max: 89.9, step: 0.1 },
-        { key: 'CameraDistance',  label: 'CameraDist',   unit: '',  min: 2,    max: 100,  step: 0.1 },
-        { key: 'Zoom',            label: 'Zoom',         unit: 'x', min: 0.1,  max: 10,   step: 0.01 },
+        { key: 'CameraDirection', label: 'Direction', unit: '°', min: -180, max: 180, step: 0.1 },
+        { key: 'CameraHeight',    label: 'Pitch',     unit: '°', min: -30,  max: 89.9, step: 0.1 },
+        { key: 'CameraDistance',  label: 'Distance',  unit: '',  min: 2,    max: 100,  step: 0.1 },
+        { key: 'Zoom',            label: 'Zoom',      unit: 'x', min: 0.1,  max: 10,   step: 0.01 },
       ]},
-      { title: 'Vault of the Heavens', rows: [
-        { key: 'VaultSize',   label: 'VaultSize',   unit: '', min: 1,   max: 5,   step: 0.01 },
-        { key: 'VaultHeight', label: 'VaultHeight', unit: '', min: 0.1, max: 1.0, step: 0.001 },
-      ]},
-      { title: 'Optical Vault', rows: [
-        { key: 'OpticalVaultSize',   label: 'Size',   unit: '', min: 0.1,  max: 1.0, step: 0.01 },
-        { key: 'OpticalVaultHeight', label: 'Height', unit: '', min: 0.05, max: 1.0, step: 0.01 },
-      ]},
-      { title: 'Body Vaults', rows: [
-        { key: 'StarfieldVaultHeight', label: 'Starfield', unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'MoonVaultHeight',      label: 'Moon',      unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'SunVaultHeight',       label: 'Sun',       unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'MercuryVaultHeight',   label: 'Mercury',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'VenusVaultHeight',     label: 'Venus',     unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'MarsVaultHeight',      label: 'Mars',      unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'JupiterVaultHeight',   label: 'Jupiter',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'SaturnVaultHeight',    label: 'Saturn',    unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        // 
-        { key: 'UranusVaultHeight',    label: 'Uranus',    unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        { key: 'NeptuneVaultHeight',   label: 'Neptune',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
-      ]},
-      { title: 'Rays', rows: [
-        { key: 'RayParameter', label: 'RayParam', unit: '', min: 0.5, max: 2.0, step: 0.01 },
+      { title: 'Vault Heights', rows: [
+        { key: 'VaultSize',            label: 'Heavenly Vault Size',   unit: '', min: 1,    max: 5,   step: 0.01 },
+        { key: 'VaultHeight',          label: 'Heavenly Vault Height', unit: '', min: 0.1,  max: 1.0, step: 0.001 },
+        { key: 'OpticalVaultSize',     label: 'Optical Vault Size',    unit: '', min: 0.1,  max: 1.0, step: 0.01 },
+        { key: 'OpticalVaultHeight',   label: 'Optical Vault Height',  unit: '', min: 0.05, max: 1.0, step: 0.01 },
+        { key: 'StarfieldVaultHeight', label: 'Starfield',             unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'MoonVaultHeight',      label: 'Moon',                  unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'SunVaultHeight',       label: 'Sun',                   unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'MercuryVaultHeight',   label: 'Mercury',               unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'VenusVaultHeight',     label: 'Venus',                 unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'MarsVaultHeight',      label: 'Mars',                  unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'JupiterVaultHeight',   label: 'Jupiter',               unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'SaturnVaultHeight',    label: 'Saturn',                unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'UranusVaultHeight',    label: 'Uranus',                unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'NeptuneVaultHeight',   label: 'Neptune',               unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'RayParameter',         label: 'Ray Parameter',         unit: '', min: 0.5,  max: 2.0, step: 0.01 },
       ]},
     ],
   },
@@ -696,99 +689,10 @@ const FIELD_GROUPS = [
   // Tracker tab — multi-select button grid where we pick bodies to track.
   // Toggling a button adds or removes its id from TrackerTargets. Every
   // tracked body gets a HUD block with source readouts and a
-  // colored ground point on the AE map disc. Right?
+  // colored ground point on the AE map disc. Groups ordered most-used first:
+  // planets → constellations → moons → nav stars → deep-sky → settings.
   {
     tab: 'Tracker', groups: [
-      { title: 'Ephemeris', rows: [
-        { key: 'BodySource', label: 'Source', select: [
-          { value: 'ptolemy',   label: "Ptolemy (Almagest, historical constants)" },
-          { value: 'ibnshatir', label: "Ibn al-Shatir (Double-Epicycle) — 1620–2200, ±0.15°" },
-        ]},
-        { key: 'StarApplyPrecession', label: 'Precession',  bool: true },
-        { key: 'StarApplyNutation',   label: 'Nutation',    bool: true },
-        { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
-        { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
-      ]},
-      { title: 'Starfield', rows: [
-        { key: 'StarfieldType', label: 'Starfield', select: [
-          { value: 'random',      label: 'Default (random)' },
-          { value: 'chart-dark',  label: 'Chart (dark)' },
-          { value: 'chart-light', label: 'Chart (light)' },
-          { value: 'celnav',      label: 'Cel Nav (named stars)' },
-          { value: 'ae_aries',    label: 'AE Aries' },
-          { value: 'ae_aries_2',  label: 'AE Aries 2' },
-          { value: 'ae_aries_3',  label: 'AE Aries 3' },
-          { value: 'alphabeta',   label: 'Alpabeta Field' },
-        ]},
-        { key: 'DynamicStars', label: 'Starfield Mode',
-          boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
-        { key: 'PermanentNight', label: 'Permanent night', bool: true },
-      ]},
-      { title: 'Tracker Options', rows: [
-        { actions: [
-          { buttonLabel: 'Clear All',
-            onClick: (m) => m.setState({
-              TrackerTargets: [],
-              ShowConstellationLines: false,
-            }) },
-          { buttonLabel: 'Track All',
-            onClick: (m) => m.setState({
-              TrackerTargets: [
-                'sun', 'moon',
-                'mercury', 'venus', 'mars', 'jupiter',
-                'saturn', 'uranus', 'neptune',
-                ...JUPITER_MOON_DEFS.map((md) => `jmoon:${md.id}`),
-                ...CEL_NAV_STARS.map((x) => `star:${x.id}`),
-                ...CATALOGUED_STARS.map((x) => `star:${x.id}`),
-                ...BLACK_HOLES.map((x) => `star:${x.id}`),
-                ...QUASARS.map((x) => `star:${x.id}`),
-                ...GALAXIES.map((x) => `star:${x.id}`),
-                ...SATELLITES.map((x) => `star:${x.id}`),
-              ],
-              ShowCelNav: true, ShowBlackHoles: true,
-              ShowQuasars: true, ShowGalaxies: true,
-              ShowSatellites: true,
-            }) },
-          { buttonLabel: 'Clear Trace',
-            onClick: (m) => m.setState({ ClearTraceCount: (m.state.ClearTraceCount | 0) + 1 }) },
-        ]},
-        { key: 'ShowStars',            label: 'Stars (master)',           bool: true },
-        { key: 'ShowCelestialBodies',  label: 'Celestial Bodies (master)', bool: true },
-        { key: 'ShowVault',            label: 'Heavenly Vault',           bool: true },
-        { key: 'ShowOpticalVault',     label: 'Optical Vault',            bool: true },
-        { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
-        { key: 'ShowGPTracer',         label: 'Trace GP',                 bool: true },
-        { key: 'ShowOpticalVaultTrace', label: 'Trace Optical Vault',     bool: true },
-        { key: 'ShowTraceUnder',       label: 'Show Under',               bool: true },
-        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode',   bool: true },
-        { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
-        { key: 'ShowSunTrack',         label: 'Sun Track',                bool: true },
-        { key: 'ShowMoonTrack',        label: 'Moon Track',               bool: true },
-        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid',       bool: true },
-        { key: 'ShowAzimuthRing',      label: 'Azimuth ring',             bool: true },
-        { key: 'ShowFacingVector',     label: 'Facing Vector / N-S-E-W',  bool: true },
-        { key: 'ShowCelestialPoles',   label: 'Celestial Poles',          bool: true },
-        { key: 'ShowDecCircles',       label: 'Declination Circles',      bool: true },
-        { key: 'ShowGPPath',           label: 'GP Path',                  bool: true },
-        { key: 'GPPathDays',           label: 'GP Path Span (days)', unit: '', min: 1, max: 1095, step: 1 },
-        { key: 'ShowCentralAngle',     label: 'Central Angle',            bool: true },
-        { key: 'ShowInscribedAngle',   label: 'Inscribed Angle',          bool: true },
-        { key: 'ShowStellariumOverlay', label: 'Stellarium Overlay',      bool: true },
-        { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
-        { key: 'ShowDomeCaustic',      label: 'Dome Caustic',             bool: true },
-      ]},
-      { title: 'Refraction', rows: [
-        { key: 'Refraction', label: '"Astronomical"', select: [
-          { value: 'off',       label: 'Off' },
-          { value: 'bennett',   label: 'Bennett' },
-          { value: 'seidelman', label: 'Seidelman' },
-        ]},
-        { key: 'ShowGeocentricPosition', label: 'Show Geocentric Position', bool: true },
-        { key: 'RefractionPressureMbar', label: 'Pressure', unit: 'mbar',
-          min: 800, max: 1100, step: 0.25 },
-        { key: 'RefractionTemperatureC', label: 'Temperature', unit: '°C',
-          min: -40, max: 50, step: 0.5 },
-      ]},
       { title: 'Celestial Bodies', rows: [
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
@@ -819,71 +723,9 @@ const FIELD_GROUPS = [
           { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
         ]},
       ]},
-      { title: "Jupiter's Moons", rows: [
-        { label: '', buttonLabel: 'Enable Galilean',
-          onClick: (m) => m.setState({
-            TrackerTargets: [
-              ...new Set([
-                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
-                ...GALILEAN_MOON_IDS.map((id) => `jmoon:${id}`),
-              ]),
-            ],
-          }) },
-        { label: '', buttonLabel: 'Enable All Moons',
-          onClick: (m) => m.setState({
-            TrackerTargets: [
-              ...new Set([
-                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
-                ...JUPITER_MOON_DEFS.map((md) => `jmoon:${md.id}`),
-              ]),
-            ],
-          }) },
-        { label: '', buttonLabel: 'Disable All Moons',
-          onClick: (m) => {
-            const ids = new Set(JUPITER_MOON_DEFS.map((md) => `jmoon:${md.id}`));
-            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
-            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
-          } },
-        { key: 'TrackerTargets', label: '', buttonGrid: [
-          ...JUPITER_MOON_DEFS.map((md) => {
-            const hex = (JUPITER_MOON_COLORS[md.id] || 0x778899).toString(16).padStart(6, '0');
-            return { value: `jmoon:${md.id}`, label: md.name, color: `#${hex}` };
-          }),
-        ]},
-      ]},
-      { title: 'Cel Nav', rows: [
-        { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
-        { label: '', buttonLabel: 'Enable All',
-          onClick: (m) => m.setState({
-            TrackerTargets: [
-              ...new Set([
-                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
-                ...CEL_NAV_STARS.map((s) => `star:${s.id}`),
-              ]),
-            ],
-            ShowCelNav: true,
-          }) },
-        { label: '', buttonLabel: 'Disable All',
-          onClick: (m) => {
-            const ids = new Set(CEL_NAV_STARS.map((s) => `star:${s.id}`));
-            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
-            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
-          } },
-        { key: 'TrackerTargets', label: '', buttonGrid:
-          [...CEL_NAV_STARS]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((s) => ({ value: `star:${s.id}`, label: s.name, color: '#ffe8a0' })),
-        },
-      ]},
       { title: 'Constellations', rows: [
         { key: 'ShowConstellationLines', label: 'Outlines', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
-        // Constellation name buttons — clicking one toggles all
-        // its stars in TrackerTargets. Stars already in the set get
-        // removed, otherwise the whole roster gets added. Right?
-        // "Orion's Belt" at the top is just the three belt stars
-        // (Mintaka, Alnilam, Alnitak) — no separate constellation
-        // line since Orion's outline already draws them.
         { layout: 'wrap', actions: [
           {
             buttonLabel: "Orion's Belt",
@@ -949,11 +791,6 @@ const FIELD_GROUPS = [
           } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
-            // All constellation-member stars, whether they came via
-            // a celnav link or a standalone catalogued id. I mean,
-            // the same star can live in both catalogs. Cel-nav overlap
-            // stars get cel-nav yellow so they pop against the white
-            // constellation-only stars at a glance. Right?
             const celById = new Map(CEL_NAV_STARS.map((s) => [s.id, s]));
             const catById = new Map(CATALOGUED_STARS.map((s) => [s.id, s]));
             const seen = new Set();
@@ -976,6 +813,62 @@ const FIELD_GROUPS = [
             list.sort((a, b) => a.label.localeCompare(b.label));
             return list;
           })(),
+        },
+      ]},
+      { title: "Jupiter's Moons", rows: [
+        { label: '', buttonLabel: 'Enable Galilean',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...GALILEAN_MOON_IDS.map((id) => `jmoon:${id}`),
+              ]),
+            ],
+          }) },
+        { label: '', buttonLabel: 'Enable All Moons',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...JUPITER_MOON_DEFS.map((md) => `jmoon:${md.id}`),
+              ]),
+            ],
+          }) },
+        { label: '', buttonLabel: 'Disable All Moons',
+          onClick: (m) => {
+            const ids = new Set(JUPITER_MOON_DEFS.map((md) => `jmoon:${md.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
+        { key: 'TrackerTargets', label: '', buttonGrid: [
+          ...JUPITER_MOON_DEFS.map((md) => {
+            const hex = (JUPITER_MOON_COLORS[md.id] || 0x778899).toString(16).padStart(6, '0');
+            return { value: `jmoon:${md.id}`, label: md.name, color: `#${hex}` };
+          }),
+        ]},
+      ]},
+      { title: 'Cel Nav', rows: [
+        { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...CEL_NAV_STARS.map((s) => `star:${s.id}`),
+              ]),
+            ],
+            ShowCelNav: true,
+          }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(CEL_NAV_STARS.map((s) => `star:${s.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
+        { key: 'TrackerTargets', label: '', buttonGrid:
+          [...CEL_NAV_STARS]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((s) => ({ value: `star:${s.id}`, label: s.name, color: '#ffe8a0' })),
         },
       ]},
       { title: 'Black Holes', rows: [
@@ -1069,9 +962,6 @@ const FIELD_GROUPS = [
             m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
           } },
         { key: 'TrackerTargets', label: '', buttonGrid:
-          // Preserve user-supplied order (not alphabetised) — the
-          // sequence on Roohif's celestial-theodolite list reflects
-          // the observation timeline.
           CEL_THEO_STARS.map((s) => ({
             value: `star:${s.extId || s.id}`,
             label: s.name,
@@ -1103,9 +993,100 @@ const FIELD_GROUPS = [
             .map((x) => ({ value: `star:${x.id}`, label: x.name, color: '#66ff88' })),
         },
       ]},
+      { title: 'Display Options', rows: [
+        { actions: [
+          { buttonLabel: 'Clear All',
+            onClick: (m) => m.setState({
+              TrackerTargets: [],
+              ShowConstellationLines: false,
+            }) },
+          { buttonLabel: 'Track All',
+            onClick: (m) => m.setState({
+              TrackerTargets: [
+                'sun', 'moon',
+                'mercury', 'venus', 'mars', 'jupiter',
+                'saturn', 'uranus', 'neptune',
+                ...JUPITER_MOON_DEFS.map((md) => `jmoon:${md.id}`),
+                ...CEL_NAV_STARS.map((x) => `star:${x.id}`),
+                ...CATALOGUED_STARS.map((x) => `star:${x.id}`),
+                ...BLACK_HOLES.map((x) => `star:${x.id}`),
+                ...QUASARS.map((x) => `star:${x.id}`),
+                ...GALAXIES.map((x) => `star:${x.id}`),
+                ...SATELLITES.map((x) => `star:${x.id}`),
+              ],
+              ShowCelNav: true, ShowBlackHoles: true,
+              ShowQuasars: true, ShowGalaxies: true,
+              ShowSatellites: true,
+            }) },
+          { buttonLabel: 'Clear Trace',
+            onClick: (m) => m.setState({ ClearTraceCount: (m.state.ClearTraceCount | 0) + 1 }) },
+        ]},
+        { key: 'ShowStars',            label: 'Stars (master)',           bool: true },
+        { key: 'ShowCelestialBodies',  label: 'Celestial Bodies (master)', bool: true },
+        { key: 'ShowVault',            label: 'Heavenly Vault',           bool: true },
+        { key: 'ShowOpticalVault',     label: 'Optical Vault',            bool: true },
+        { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
+        { key: 'ShowGPTracer',         label: 'Trace GP',                 bool: true },
+        { key: 'ShowOpticalVaultTrace', label: 'Trace Optical Vault',     bool: true },
+        { key: 'ShowTraceUnder',       label: 'Show Under',               bool: true },
+        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode',   bool: true },
+        { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
+        { key: 'ShowSunTrack',         label: 'Sun Track',                bool: true },
+        { key: 'ShowMoonTrack',        label: 'Moon Track',               bool: true },
+        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid',       bool: true },
+        { key: 'ShowAzimuthRing',      label: 'Azimuth ring',             bool: true },
+        { key: 'ShowFacingVector',     label: 'Facing Vector / N-S-E-W',  bool: true },
+        { key: 'ShowCelestialPoles',   label: 'Celestial Poles',          bool: true },
+        { key: 'ShowDecCircles',       label: 'Declination Circles',      bool: true },
+        { key: 'ShowGPPath',           label: 'GP Path',                  bool: true },
+        { key: 'GPPathDays',           label: 'GP Path Span (days)', unit: '', min: 1, max: 1095, step: 1 },
+        { key: 'ShowCentralAngle',     label: 'Central Angle',            bool: true },
+        { key: 'ShowInscribedAngle',   label: 'Inscribed Angle',          bool: true },
+        { key: 'ShowStellariumOverlay', label: 'Stellarium Overlay',      bool: true },
+        { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
+        { key: 'ShowDomeCaustic',      label: 'Dome Caustic',             bool: true },
+      ]},
+      { title: 'Starfield', rows: [
+        { key: 'StarfieldType', label: 'Starfield', select: [
+          { value: 'random',      label: 'Default (random)' },
+          { value: 'chart-dark',  label: 'Chart (dark)' },
+          { value: 'chart-light', label: 'Chart (light)' },
+          { value: 'celnav',      label: 'Cel Nav (named stars)' },
+          { value: 'ae_aries',    label: 'AE Aries' },
+          { value: 'ae_aries_2',  label: 'AE Aries 2' },
+          { value: 'ae_aries_3',  label: 'AE Aries 3' },
+          { value: 'alphabeta',   label: 'Alpabeta Field' },
+        ]},
+        { key: 'DynamicStars', label: 'Starfield Mode',
+          boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
+        { key: 'PermanentNight', label: 'Permanent night', bool: true },
+      ]},
+      { title: 'Refraction', rows: [
+        { key: 'Refraction', label: 'Refraction Model', select: [
+          { value: 'off',       label: 'Off' },
+          { value: 'bennett',   label: 'Bennett' },
+          { value: 'seidelman', label: 'Seidelman' },
+        ]},
+        { key: 'ShowGeocentricPosition', label: 'Show Geocentric Position', bool: true },
+        { key: 'RefractionPressureMbar', label: 'Pressure', unit: 'mbar',
+          min: 800, max: 1100, step: 0.25 },
+        { key: 'RefractionTemperatureC', label: 'Temperature', unit: '°C',
+          min: -40, max: 50, step: 0.5 },
+      ]},
+      { title: 'Ephemeris', rows: [
+        { key: 'BodySource', label: 'Calculation Model', select: [
+          { value: 'ibnshatir', label: "Ibn al-Shatir — double-epicycle, 1620–2200, ±0.15°" },
+          { value: 'ptolemy',   label: "Ptolemy — Almagest historical constants" },
+        ]},
+        { key: 'StarApplyPrecession', label: 'Precession',  bool: true },
+        { key: 'StarApplyNutation',   label: 'Nutation',    bool: true },
+        { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
+        { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
+      ]},
     ],
   },
 ];
+
 
 function numericRow(model, row) {
   const el = document.createElement('div');
@@ -2596,16 +2577,16 @@ export function buildControlPanel(host, model, demos) {
     Tracker: 'tab_tracker', Demos: 'tab_demos', Info: 'tab_info',
   };
   const TAB_ICONS = {
-    View: '👁', Time: '⏱', Show: '✦', Tracker: '📡', Demos: '▶', Info: 'ⓘ',
+    View: '📍', Time: '⏱', Show: '✦', Tracker: '🪐', Demos: '▶', Info: 'ⓘ',
   };
   // Short subtitle shown beneath each tab label — describes popup contents.
   const TAB_DESC = {
-    View:    'Projection · Map',
-    Time:    'Date · Speed · Zone',
-    Show:    'Sky & Display',
-    Tracker: 'Track Bodies',
-    Demos:   'Eclipse Demos',
-    Info:    'Ptolemy Guide',
+    View:    'Location · Camera',
+    Time:    'Date · Time · Speed',
+    Show:    'Grid · Map · Display',
+    Tracker: 'Planets · Stars · Bodies',
+    Demos:   'Eclipse & Sky Events',
+    Info:    'Guide & Language',
   };
   const registerTab = (label, buildInto, { lazy = false } = {}) => {
     const btn = document.createElement('button');
