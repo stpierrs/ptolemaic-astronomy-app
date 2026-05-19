@@ -2,7 +2,7 @@
 // v2: four slides covering the two modes (astronomy + astrology) and the
 // historical relationship between the Almagest and the Tetrabiblos.
 
-const LS_KEY = 'ptol-onboarding-v2';
+const LS_KEY = 'ptol-onboarding-v3';
 
 export function resetOnboarding() {
   localStorage.removeItem(LS_KEY);
@@ -17,7 +17,11 @@ export function maybeShowOnboarding() {
   const steps = [
     {
       title: 'Two Books, One Universe',
-      body: "Ptolemy wrote two books that defined Western thought for fourteen centuries. The Almagest proved, with mathematical precision, exactly how the heavens move. The Tetrabiblos explained what those movements mean. This app simulates both — the geometry that makes a planet's position calculable, and the astrological framework built on top of it.",
+      body: [
+        "Ptolemy wrote two books that defined Western thought for fourteen centuries. The Almagest proved, with mathematical precision, exactly how the heavens move. The Tetrabiblos explained what those movements mean. This app simulates both.",
+        "Astronomy mode (the default) shows the live geocentric sky: planets riding their deferent and epicycle circles, retrograde loops, and the rotating celestial sphere. Astrology mode opens a full-screen Tetrabiblos interpreter — natal charts, planetary aspects, essential dignities, and hourly rulers — all computed from the same epicycle geometry.",
+        "Switch between the two modes at any time using the ♈ button in the top-right corner of the screen. To return from Astrology mode, tap the ← Astronomy button at the top-left of that screen.",
+      ],
       extra: buildEpicyclePreview(),
     },
     {
@@ -71,10 +75,13 @@ export function maybeShowOnboarding() {
       card.appendChild(extraWrap);
     }
 
-    const body = document.createElement('p');
-    body.className = 'onboarding-body';
-    body.textContent = step.body;
-    card.appendChild(body);
+    const paragraphs = Array.isArray(step.body) ? step.body : [step.body];
+    for (const text of paragraphs) {
+      const body = document.createElement('p');
+      body.className = 'onboarding-body';
+      body.textContent = text;
+      card.appendChild(body);
+    }
 
     const nav = document.createElement('div');
     nav.className = 'onboarding-nav';
