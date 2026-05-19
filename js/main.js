@@ -14,7 +14,7 @@ import { EpicycleOverlay } from './render/epicycleOverlay.js';
 import { buildInfoPanels }  from './ui/infoPanels.js';
 import { buildShareButton }  from './ui/shareExport.js';
 import { buildTimeScrubber } from './ui/timeScrubber.js';
-import { maybeShowOnboarding } from './ui/onboarding.js';
+import { maybeShowOnboarding, resetOnboarding } from './ui/onboarding.js';
 
 import { buildBodyInfoCard } from './ui/bodyInfoCard.js';
 import { buildPaywall, showPaywall } from './ui/paywall.js';
@@ -94,7 +94,9 @@ try {
     setLoadProgress(100); // hide bar even on error
   });
   attachMouseHandler(canvas, model, renderer);
-  attachKeyboardHandler(model);
+  attachKeyboardHandler(model, {
+    onResetOnboarding: () => { resetOnboarding(); maybeShowOnboarding(); },
+  });
 } catch (err) {
   console.error('WebGL unavailable — 3D view disabled:', err);
   const warn = document.createElement('div');

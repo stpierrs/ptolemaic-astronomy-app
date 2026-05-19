@@ -58,10 +58,17 @@ function isFormField(target) {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
-export function attachKeyboardHandler(model) {
+export function attachKeyboardHandler(model, { onResetOnboarding } = {}) {
   const held = new Map(); // key → { start, intervalId }
 
   window.addEventListener('keydown', (e) => {
+    // Ctrl+Shift+R — reset onboarding so the intro shows again on next load.
+    if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+      e.preventDefault();
+      if (onResetOnboarding) onResetOnboarding();
+      return;
+    }
+
     // Spacebar toggles autoplay pause/play.
     if ((e.key === ' ' || e.code === 'Space') && !e.repeat) {
       if (isFormField(e.target)) return;
