@@ -185,7 +185,7 @@ Features:
 • Interactive observer — pan your viewpoint across any latitude/longitude
 • Eclipse demos with historically accurate timing from AstroPixels data
 • Day/night terminator, declination circles, starfield, and constellation overlays
-• Multiple flat-earth map projections (Gleason's AE, equirectangular, orthographic)
+• Multiple geocentric map projections (azimuthal equidistant AE, equirectangular, orthographic)
 • Jupiter's Galilean moons with full ephemeris
 • Multi-language support: English, Czech, Spanish
 • Dark theme optimized for night-sky viewing

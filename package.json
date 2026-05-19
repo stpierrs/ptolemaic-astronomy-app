@@ -1,7 +1,7 @@
 {
   "name": "shanes-model",
   "version": "2.0.0",
-  "description": "Ptolemaic flat-earth astronomy simulator",
+  "description": "Ptolemaic geocentric astronomy and astrology simulator",
   "private": true,
   "scripts": {
     "build":          "node scripts/build-www.js",

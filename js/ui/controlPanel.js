@@ -2293,8 +2293,8 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshLangBtn);
   refreshLangBtn();
 
-  // World-model cycle: FE (flat disc, AE) → GE (globe sphere) → DP
-  // (flat disc, dual-pole AE) → FE. State key `WorldModel`
+  // World-model cycle: FE (geocentric disc, AE) → GE (globe sphere) → DP
+  // (geocentric disc, dual-pole AE) → FE. State key `WorldModel`
   // ('fe' / 'ge' / 'dp'). Button face displays the *current* model.
   // Stacked directly under the grids toggle (▦).
   const btnWorld = document.createElement('button');

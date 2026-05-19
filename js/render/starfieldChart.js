@@ -6,7 +6,7 @@
 // vault overhead, one on the observer's local optical hemisphere,
 // rotated by sidereal time. Same observation, two viewing modes.)
 //
-// 1. Heavenly-vault disc: flat circle at the FE disc centre, radius
+// 1. Heavenly-vault disc: horizontal circle at the geocentric ground-plane centre, radius
 //    FE_RADIUS, lifted to the starfield altitude. Rotates with sidereal
 //    time. Visible from orbital and first-person views alike.
 //

@@ -683,8 +683,8 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     }
 
     // GE mode can dip the camera below the horizon to see the globe's
-    // underside. FE holds a 0° floor — the flat disc has no underside
-    // to look at, you know?
+    // underside. FE holds a 0° floor — the geocentric ground plane has
+    // no underside to render.
     const minPitch = model.state.WorldModel === 'ge' ? -89.9 : 0;
     scheduleMovePatch({
       CameraDirection: model.state.CameraDirection - (dx / w) * ROT_INCR,

@@ -6,7 +6,7 @@
 //
 //   celest   — sky frame, axis at the celestial pole
 //   globe    — observer's local frame: zenith up, east, north
-//   fe-local — flat-earth frame at the observer: +z up
+//   fe-local — geocentric local frame at the observer: +z up
 //   fe       — global disc frame: z=0 is the disc plane
 
 import { ToRad, ToDeg, Limit1 } from '../math/utils.js';
@@ -159,7 +159,7 @@ export function vaultCoordToGlobalFeCoord(v, transMatDomeToFe) {
 // Given a body's vault position in global FE coords and the
 // observer's global FE position, this gives us the unit ray from the
 // observer to the body expressed in local-globe axes — I mean, what
-// the observer actually sees on a flat-earth model where the active
+// the observer actually sees in the geocentric model where the active
 // projection places both the observer and the vault on the disc.
 // Drop-in replacement for `celestCoordToLocalGlobeCoord(...)` when
 // you want the optical vault to follow the FE projection rather than

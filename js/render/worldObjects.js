@@ -360,7 +360,7 @@ export class LongitudeRing {
   }
 
   update(model) {
-    // Hidden in GE (no flat disc rim) and in Optical first-person
+    // Hidden in GE (no ground-plane rim) and in Optical first-person
     // mode — the cap-attached azimuth ring takes over there. Right?
     const s = model.state;
     const ge = s.WorldModel === 'ge';
@@ -1013,7 +1013,7 @@ export class GroundPoint {
   constructor(color) {
     this.group = new THREE.Group();
     this.group.name = 'gp';
-    // Small flat disc on the ground. The shadow overlay writes no
+    // Small ground-point disc. The shadow overlay writes no
     // depth, so depthTest: true lets this show through the shadow
     // while still being occluded by opaque geometry like the observer
     // figure, Yggdrasil, Mt Meru, etc. Right?
@@ -5069,7 +5069,7 @@ export class ToroidalVortex {
           // outer circumference kisses the equator circle (r = 0.5).
           { R: 0.25, r: 0.25, z: +0.25, color: 0xffc870, opacity: 0.70 },
           // Outer donut: larger, softer — raised so its tube midline sits
-          // on the flat-earth plane. The disc then bisects this torus at
+          // on the geocentric ground plane. The disc then bisects this torus at
           // its equator, and its outer circumference reaches the dome
           // edge (r ≈ 0.95).
           { R: 0.55, r: 0.40, z: 0, color: 0xa8652c, opacity: 0.50 },
@@ -5134,7 +5134,7 @@ export class ToroidalVortex {
     }
 
     // Dual variant: cyan boundary ring at z = 0 around the outer donut —
-    // marks the flat-earth plane suspended between the two fields.
+    // marks the geocentric ground plane suspended between the two fields.
     if (variant === 'dual') {
       const R_BOUND = 0.97;
       const N_RING = 128;
