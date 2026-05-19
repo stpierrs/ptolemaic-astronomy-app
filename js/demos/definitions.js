@@ -288,7 +288,7 @@ const ANALEMMA_LATS = [
 // 21st of each month so the four solstice / equinox dates (Mar 21,
 // Jun 21, Sep 21, Dec 21) anchor the figure-8 symmetrically — the
 // other eight samples land halfway between, giving the classic
-// evenly-spaced analemma layout. The epicycle2 pipeline drives
+// evenly-spaced analemma layout. The ibnshatir pipeline drives
 // the position data. Right?
 const ANALEMMA_MONTH_DAYS = [
   3001, // 2025-03-21 — vernal equinox
@@ -422,7 +422,7 @@ const ANALEMMA_DEMOS = [
 // moon to new moon. Sampling daily at the same UTC instant over 28
 // days produces a clean lunar path on the heavenly vault — daily arcs
 // stitched into one continuous trace, with 28 noon-position notches
-// stepping along it. Uses epicycle2 for ephemeris consistency with
+// stepping along it. Uses ibnshatir for ephemeris consistency with
 // the sun analemma variant.
 const SYNODIC_DAYS = 28;
 const SYNODIC_DAY_DURATION_MS = 1500;
