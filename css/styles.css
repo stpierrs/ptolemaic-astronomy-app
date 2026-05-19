@@ -1316,11 +1316,17 @@ footer#desc { display: none; }
   .info-popup { position: fixed; left: 4px; right: 4px; max-width: none; }
 }
 
-/* Phone-sized */
+/* Phone-sized — base tweaks (Ptolemaic section extends these below) */
 @media (max-width: 520px) {
   #bottom-bar .time-btn { min-width: 26px; min-height: 24px; padding: 4px 5px; font-size: 11px; }
   #bottom-bar .body-search { width: 100px; }
   #hud { font-size: 10px; }
+
+  /* Touch-action: prevent double-tap zoom on all buttons */
+  button { touch-action: manipulation; }
+
+  /* Info panel right-side accordions: narrow on phones */
+  .info-panel-body { width: 200px; font-size: 11px; }
 }
 
 /* Flight-routes demo mode: hide the Live Moon Phases collapsible
@@ -1950,6 +1956,105 @@ header .info-box::before {
 }
 @media (max-width: 900px) {
   .tab-popup { bottom: 122px !important; top: 26px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PHONE REVAMP — Stellarium-style bottom nav (≤ 520 px)
+   Collapses the bottom bar to a single tab-icon strip, full-height
+   slide-up panels, and touch-friendly targets throughout.
+   Overrides must come AFTER all Ptolemaic theme rules.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+  /* Set zoom to 1:1 so every explicit px value is face-value — no
+     calc(Xpx * var(--ui-zoom)) gymnastics needed at phone size. */
+  :root { --ui-zoom: 1; }
+
+  /* ── Bottom bar: Stellarium-style icon strip only ──────────── */
+  .bar-search-row { display: none !important; }
+  .bar-quick      { display: none !important; }
+  #bottom-bar     { height: 62px !important; }
+
+  /* ── Overlay bottom offsets match the new 62 px bar ─────────── */
+  #info-bar         { bottom: 62px !important; }
+  #tab-popups       { bottom: 62px !important; }
+  #info-panels-wrap { bottom: 62px !important; }
+  #epicycle-canvas  { bottom: 76px !important; }
+
+  /* ── Tab popups: full-height slide-up sheets ─────────────────── */
+  .tab-popup {
+    position: fixed !important;
+    top: 26px !important;
+    right: 0 !important;
+    bottom: 62px !important;
+    left: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    overflow-y: auto;
+  }
+
+  /* ── Tab icon row: fill bar, comfortable 44 px tap targets ───── */
+  .tab-icon-row { flex: 1 0 auto; align-items: stretch; }
+  .tab-icon-btn {
+    padding: 6px 2px 10px;
+    gap: 2px;
+    min-height: 44px;
+  }
+  .tab-icon-btn .btn-icon     { font-size: 22px; }
+  .tab-icon-btn .btn-label    { font-size: 10px; letter-spacing: 0.07em; }
+  .tab-icon-btn .btn-sublabel { display: none; }
+
+  /* ── HUD: compact so it doesn't eat canvas space ─────────────── */
+  #hud {
+    top: 34px;
+    font-size: 10px;
+    padding: 4px 6px;
+    max-width: 210px;
+  }
+  #hud .moon-phase-wrapper canvas { width: 48px !important; height: 48px !important; }
+  #tracker-hud { top: 200px; }
+
+  /* ── Tracking-info popup: constrain to screen width ─────────── */
+  #tracking-info-popup {
+    max-width: calc(100vw - 8px) !important;
+    min-width: 0 !important;
+  }
+
+  /* ── Group headers: 44 px minimum tap target ────────────────── */
+  .tab-popup .group-header {
+    padding: 10px 12px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  /* ── Form rows: larger inputs for fingers ────────────────────── */
+  .row {
+    grid-template-columns: 74px 62px 14px 1fr;
+    gap: 4px;
+    padding: 5px 0;
+  }
+  .row label { font-size: 11px; }
+  .row input.num {
+    min-height: 34px;
+    font-size: 14px;
+    padding: 5px 6px;
+  }
+  .row input.slider { height: 24px; }
+  .row input[type="date"],
+  .row input[type="time"] { min-height: 34px; font-size: 14px; }
+
+  /* ── Header info popup: full-width on phone ──────────────────── */
+  header .info-popup {
+    font-size: 15px;
+    left: 4px;
+    right: 4px;
+    width: auto;
+    max-width: none;
+  }
+
+  /* ── LOOK UP / EXIT SKY button: keep it comfortable ─────────── */
+  #find-me-btn { padding: 10px 20px; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════
