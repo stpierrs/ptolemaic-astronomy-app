@@ -352,7 +352,6 @@ header .info-popup.legend-popup a { color: var(--accent); }
   pointer-events: auto;
   cursor: grab;
   z-index: 15;
-  zoom: var(--ui-zoom);
   border-radius: 10px;
   user-select: none;
   touch-action: none;

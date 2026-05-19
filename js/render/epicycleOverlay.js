@@ -223,9 +223,8 @@ export class EpicycleOverlay {
     // ── Pointer start ──────────────────────────────────────────────────
     const onStart = (clientX, clientY, isTouch) => {
       const rect  = el.getBoundingClientRect();
-      const zoom  = parseFloat(getComputedStyle(el).zoom) || 1;
-      const localX = (clientX - rect.left) / zoom;
-      const localY = (clientY - rect.top)  / zoom;
+      const localX = clientX - rect.left;
+      const localY = clientY - rect.top;
 
       if (inResizeZone(localX, localY)) {
         // ── Resize mode ──
@@ -264,10 +263,9 @@ export class EpicycleOverlay {
         return;
       }
       if (!this._dragging) return;
-      const zoom   = parseFloat(getComputedStyle(el).zoom) || 1;
       const vw     = window.innerWidth;
       const vh     = window.innerHeight;
-      const size   = this._cssSize * zoom;
+      const size   = this._cssSize;
       let newLeft  = clientX - this._dragOffX;
       let newTop   = clientY - this._dragOffY;
       newLeft = Math.max(0, Math.min(vw - size, newLeft));
@@ -286,8 +284,7 @@ export class EpicycleOverlay {
 
       // Convert back to right/bottom anchoring and save.
       const rect   = el.getBoundingClientRect();
-      const zoom   = parseFloat(getComputedStyle(el).zoom) || 1;
-      const size   = this._cssSize * zoom;
+      const size   = this._cssSize;
       const right  = Math.max(0, window.innerWidth  - rect.left - size);
       const bottom = Math.max(136, Math.min(window.innerHeight - size, window.innerHeight - rect.top - size));
       el.style.right  = `${right}px`;
@@ -301,9 +298,8 @@ export class EpicycleOverlay {
     el.addEventListener('mousemove', (e) => {
       if (this._dragging || this._resizing) return;
       const rect  = el.getBoundingClientRect();
-      const zoom  = parseFloat(getComputedStyle(el).zoom) || 1;
-      const localX = (e.clientX - rect.left) / zoom;
-      const localY = (e.clientY - rect.top)  / zoom;
+      const localX = e.clientX - rect.left;
+      const localY = e.clientY - rect.top;
       el.style.cursor = inResizeZone(localX, localY) ? 'nesw-resize' : 'grab';
     });
     el.addEventListener('mouseleave', () => {
