@@ -46,7 +46,7 @@ function _tryPipeline(id, name, date) {
 
 // Ask for any body by name, get back { ra, dec } in radians.
 // Tries the requested source; if it can't deliver, falls back through FALLBACK_ORDER.
-export function bodyRADec(name, date, source = 'ptolemy') {
+export function bodyRADec(name, date, source = 'ibnshatir') {
   if (name === 'earth') return { ra: 0, dec: 0 };
   tried.clear();
   if (source) {
@@ -63,7 +63,7 @@ export function bodyRADec(name, date, source = 'ptolemy') {
 }
 
 // Same as bodyRADec but tells you which pipeline answered.
-export function bodyRADecRoute(name, date, source = 'ptolemy') {
+export function bodyRADecRoute(name, date, source = 'ibnshatir') {
   if (name === 'earth') return { reading: { ra: 0, dec: 0 }, used: source };
   tried.clear();
   if (source) {

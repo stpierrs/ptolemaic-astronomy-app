@@ -310,11 +310,10 @@ function defaultState() {
     // 'random' | 'chart-dark' | 'chart-light' | 'celnav' — starfield style.
     StarfieldType: 'random',
 
-    // Position source — Ptolemy's deferent + epicycle, the only runtime
-    // ephemeris exposed by the model. (Astropixels / DE405 daily lookup
-    // is reserved for the eclipse-demo refiner and isn't user-selectable
-    // here.)
-    BodySource: 'ptolemy',
+    // Position source — default is Ibn al-Shatir's double-epicycle engine
+    // (Damascus c. 1350, valid 1620–2200, ±0.15° accuracy).
+    // 'ptolemy' selects the original Almagest parameters (~150 CE).
+    BodySource: 'ibnshatir',
 
     // StarTrepidation master switch — forces all three corrections on when true.
     StarApplyPrecession: false,
