@@ -309,7 +309,7 @@ export function buildNatalChartModal(model) {
   function redraw() {
     const date = inputsToDate(dateInput.value, timeInput.value);
     if (isNaN(date.getTime())) return;
-    const src = model.state.BodySource || 'epicycle2';
+    const src = model.state.BodySource || 'ibnshatir';
     let chart;
     try {
       chart = buildNatalChart(date, chartLat, chartLon, src);

@@ -31,7 +31,7 @@ const BODY_SYMBOLS = {
 
 function getAllBodyAzEl(model) {
   const c   = model.computed;
-  const src = model.state.BodySource || 'epicycle2';
+  const src = model.state.BodySource || 'ibnshatir';
   const dt  = model.state.DateTime  || 0;
   const date = new Date(EPOCH + dt * 86400000);
   const out = [];

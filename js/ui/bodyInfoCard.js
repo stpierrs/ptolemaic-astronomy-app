@@ -182,7 +182,7 @@ export function buildBodyInfoCard(model) {
 
     const EPOCH_MS = Date.UTC(2017, 0, 1);
     const dateTime = model.state.DateTime || 0;
-    const source   = model.state.BodySource || 'epicycle2';
+    const source   = model.state.BodySource || 'ibnshatir';
     const date     = new Date(EPOCH_MS + dateTime * 86400000);
 
     setTimeout(() => {
@@ -213,7 +213,7 @@ export function buildBodyInfoCard(model) {
     const dateTime = model.state.DateTime || 0;
     const lat = model.state.ObserverLat  || 0;
     const lon = model.state.ObserverLong || 0;
-    const source = model.state.EphemerisSource || 'epicycle2';
+    const source = model.state.EphemerisSource || 'ibnshatir';
 
     // Run asynchronously so the card slides up immediately.
     setTimeout(() => {

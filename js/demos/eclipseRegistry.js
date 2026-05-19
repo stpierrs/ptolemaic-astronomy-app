@@ -2,7 +2,7 @@
 //
 // Builds a demo definition for every real eclipse in
 // `js/data/astropixelsEclipses.js` (111 events 2021-2040). Each demo
-// refines its landing time against the epicycle2 ephemeris and lands
+// refines its landing time against the ibnshatir ephemeris and lands
 // on the observer's
 // subsolar (or sub-lunar) point at maximum syzygy.
 //
@@ -24,18 +24,18 @@ import {
   greenwichSiderealDeg,
   refineEclipseByMinSeparation,
 } from '../core/ephemerisCommon.js';
-import { ptol, epi2 } from '../core/ephemeris.js';
+import { ptol, ibnshatir } from '../core/ephemeris.js';
 
 // Pick (sunFn, moonFn) pair for a given BodySource value. Both the
 // finder (`refineEclipseByMinSeparation`) and the sky render use the
 // same pair — keeping the demo internally consistent with whatever
 // pipeline is active.
 function ephemerisPair(bodySource) {
-  if (bodySource === 'epicycle2') {
+  if (bodySource === 'ibnshatir') {
     return {
-      sunFn: (d) => epi2.bodyGeocentric('sun', d),
-      moonFn: (d) => epi2.bodyGeocentric('moon', d),
-      label: 'Epicycle2',
+      sunFn: (d) => ibnshatir.bodyGeocentric('sun', d),
+      moonFn: (d) => ibnshatir.bodyGeocentric('moon', d),
+      label: 'Ibn al-Shatir',
     };
   }
   return {

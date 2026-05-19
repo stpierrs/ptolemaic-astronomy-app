@@ -702,8 +702,7 @@ const FIELD_GROUPS = [
       { title: 'Ephemeris', rows: [
         { key: 'BodySource', label: 'Source', select: [
           { value: 'ptolemy',   label: "Ptolemy (Almagest, historical constants)" },
-          { value: 'epicycle',  label: "Ptolemaic (Modern Parameters) — J2000 elements, 943 stars" },
-          { value: 'epicycle2', label: "Ibn al-Shatir (Two-Epicycle) — best accuracy" },
+          { value: 'ibnshatir', label: "Ibn al-Shatir (Double-Epicycle) — 1620–2200, ±0.15°" },
         ]},
         { key: 'StarApplyPrecession', label: 'Precession',  bool: true },
         { key: 'StarApplyNutation',   label: 'Nutation',    bool: true },
@@ -1686,8 +1685,7 @@ export function buildControlPanel(host, model, demos) {
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
   const EPHEM_NAMES = {
     ptolemy:   'Ptolemy',
-    epicycle:  'Ptolemaic (Modern)',
-    epicycle2: 'Ibn al-Shatir',
+    ibnshatir: 'Ibn al-Shatir',
   };
   const refreshInfoBar = () => {
     const s = model.state;

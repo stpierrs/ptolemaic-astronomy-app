@@ -94,7 +94,7 @@ export function computeTodayHours(model) {
   const date  = new Date(EPOCH + dt * 86400000);
   const lat   = model.state.ObserverLat  || 0;
   const lon   = model.state.ObserverLong || 0;
-  const src   = model.state.BodySource   || 'epicycle2';
+  const src   = model.state.BodySource   || 'ibnshatir';
 
   let sunrise = null;
   let sunset  = null;

@@ -51,7 +51,7 @@ export function lonToZodiac(lon) {
  * Compare ecliptic longitude change over +1 day. Negative = retrograde.
  * Sun and Moon are never retrograde.
  */
-export function isRetrograde(bodyName, date, source = 'epicycle2') {
+export function isRetrograde(bodyName, date, source = 'ibnshatir') {
   if (bodyName === 'sun' || bodyName === 'moon') return false;
   try {
     const d2 = new Date(date.getTime() + 86400000);
@@ -72,7 +72,7 @@ export function isRetrograde(bodyName, date, source = 'epicycle2') {
  * Scans up to `maxDays` (default 400) in 1-day steps.
  * Returns { start: Date|null, end: Date|null }
  */
-export function nextRetrograde(bodyName, fromDate, source = 'epicycle2', maxDays = 400) {
+export function nextRetrograde(bodyName, fromDate, source = 'ibnshatir', maxDays = 400) {
   if (bodyName === 'sun' || bodyName === 'moon') return { start: null, end: null };
   let wasRetro = isRetrograde(bodyName, fromDate, source);
   let start = wasRetro ? fromDate : null;
@@ -107,7 +107,7 @@ export function computeAscendant(date, latDeg, lonDeg) {
  * Build a full natal chart for a given JS Date and observer lat/lon.
  * Returns { planets, ascendant, mc, ascLon, mcLon }
  */
-export function buildNatalChart(date, latDeg, lonDeg, source = 'epicycle2') {
+export function buildNatalChart(date, latDeg, lonDeg, source = 'ibnshatir') {
   const planets = [];
   for (const name of PLANET_NAMES_ORDERED) {
     try {

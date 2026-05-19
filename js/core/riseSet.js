@@ -16,10 +16,10 @@ const EPOCH_MS = Date.UTC(2017, 0, 1); // 2017-01-01 00:00 UTC
  * @param {number}  obsLat    Observer latitude in degrees
  * @param {number}  obsLon    Observer longitude in degrees
  * @param {number}  dateTime  Days since 2017-01-01 UTC (model state.DateTime)
- * @param {string}  source    Ephemeris source string (default 'epicycle2')
+ * @param {string}  source    Ephemeris source string (default 'ibnshatir')
  * @returns {{ rise: Date|null, set: Date|null }}
  */
-export function computeRiseSet(bodyName, obsLat, obsLon, dateTime, source = 'epicycle2') {
+export function computeRiseSet(bodyName, obsLat, obsLon, dateTime, source = 'ibnshatir') {
   const N = 288; // 5-minute steps over 24 hours
   const dayStart = Math.floor(dateTime);
 
