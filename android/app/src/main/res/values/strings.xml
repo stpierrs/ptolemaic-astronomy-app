@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shane\'s Model 2.0</string>
+    <string name="title_activity_main">Shane\'s Model 2.0</string>
+    <string name="package_name">com.shanesmodel.flatearth</string>
+    <string name="custom_url_scheme">com.shanesmodel.flatearth</string>
+    <!-- Permission rationales surfaced to Play Store reviewers. -->
+    <string name="permission_camera_rationale">Used to overlay stars, planets, and constellations on the live sky behind the camera.</string>
+    <string name="permission_location_rationale">Used to compute the apparent positions of celestial bodies for your exact observing location.</string>
+</resources>
