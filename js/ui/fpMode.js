@@ -2,8 +2,9 @@
 // Shown when InsideVault = true, replacing the full bottom bar.
 // Replaces the old simpleMode.js entirely.
 
-import { dateTimeToDate } from '../core/time.js';
-import { TIME_ORIGIN }    from '../core/constants.js';
+import { dateTimeToDate }   from '../core/time.js';
+import { TIME_ORIGIN }     from '../core/constants.js';
+import { buildStelTimeBar } from './stelTimeBar.js';
 
 const PLANETS = [
   { id: 'sun',     label: 'Sun',     sym: '☉', color: '#ffc844' },
@@ -88,7 +89,7 @@ function buildOverlay(model) {
   const { strip, skyMenu, planetMenu, mapMenu } = buildBottomStrip(model);
 
   overlay.appendChild(buildSidebar(model));
-  overlay.appendChild(buildTimeBar(model));
+  overlay.appendChild(buildStelTimeBar(model));
   overlay.appendChild(buildPlanetLabelsCanvas(model));
   overlay.appendChild(skyMenu);
   overlay.appendChild(planetMenu);
@@ -245,99 +246,6 @@ function buildSidebar(model) {
     sidebar.appendChild(b);
   }
   return sidebar;
-}
-
-// ── top time bar ──────────────────────────────────────────────────────
-function buildTimeBar(model) {
-  const bar = document.createElement('div');
-  bar.className = 'fp-time-bar';
-
-  const stepDays = (n) => model.setState({ DateTime: (model.state.DateTime || 0) + n });
-  const stepMonths = (n) => {
-    const d = dateTimeToDate(model.state.DateTime || 0);
-    d.setUTCMonth(d.getUTCMonth() + n);
-    model.setState({ DateTime: d.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate });
-  };
-  const stepYears = (n) => {
-    const d = dateTimeToDate(model.state.DateTime || 0);
-    d.setUTCFullYear(d.getUTCFullYear() + n);
-    model.setState({ DateTime: d.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate });
-  };
-
-  const btnRew  = mkBtn('fp-btn', '⏪', 'Rewind');
-  const btnPlay = mkBtn('fp-btn fp-play-btn', '▶', 'Play / Pause');
-  const btnFf   = mkBtn('fp-btn', '⏩', 'Fast forward');
-  const btnSlow = mkBtn('fp-btn', '½×', 'Half speed');
-  const btnFast = mkBtn('fp-btn', '2×', 'Double speed');
-
-  const DEFAULT_SPEED = 1 / 24;
-  const MIN_SPEED = DEFAULT_SPEED / 128;
-  const MAX_SPEED = DEFAULT_SPEED * 128;
-
-  btnRew.addEventListener('click', () => {
-    const ap = model._autoplay;
-    if (!ap) return;
-    const s = ap.speed;
-    ap.setSpeed(s > 0 ? -s : s * 2);
-    if (!ap.playing) ap.play();
-  });
-  btnFf.addEventListener('click', () => {
-    const ap = model._autoplay;
-    if (!ap) return;
-    const s = ap.speed;
-    ap.setSpeed(s < 0 ? -s : Math.min(MAX_SPEED, s * 2));
-    if (!ap.playing) ap.play();
-  });
-  btnSlow.addEventListener('click', () => {
-    const ap = model._autoplay;
-    if (!ap) return;
-    const s = ap.speed;
-    ap.setSpeed(Math.sign(s) * Math.max(MIN_SPEED, Math.abs(s) / 2));
-    if (!ap.playing) ap.play();
-  });
-  btnFast.addEventListener('click', () => {
-    const ap = model._autoplay;
-    if (!ap) return;
-    const s = ap.speed;
-    ap.setSpeed(Math.sign(s) * Math.min(MAX_SPEED, Math.abs(s) * 2));
-    if (!ap.playing) ap.play();
-  });
-  btnPlay.addEventListener('click', () => {
-    const ap = model._autoplay;
-    if (!ap) return;
-    if (!ap.playing) ap.setSpeed(DEFAULT_SPEED);
-    ap.toggle();
-    refreshPlay();
-  });
-
-  const refreshPlay = () => {
-    const ap = model._autoplay;
-    if (!ap) return;
-    btnPlay.textContent = ap.playing ? '⏸' : '▶';
-  };
-  // Poll since autoplay doesn't emit model updates
-  setInterval(refreshPlay, 500);
-
-  const dMinus  = mkBtn('fp-btn', '−d',  'Back 1 day');
-  const moMinus = mkBtn('fp-btn', '−mo', 'Back 1 month');
-  const yMinus  = mkBtn('fp-btn', '−y',  'Back 1 year');
-  const dPlus   = mkBtn('fp-btn', '+d',  'Forward 1 day');
-  const moPlus  = mkBtn('fp-btn', '+mo', 'Forward 1 month');
-  const yPlus   = mkBtn('fp-btn', '+y',  'Forward 1 year');
-
-  dMinus.addEventListener('click',  () => stepDays(-1));
-  moMinus.addEventListener('click', () => stepMonths(-1));
-  yMinus.addEventListener('click',  () => stepYears(-1));
-  dPlus.addEventListener('click',   () => stepDays(1));
-  moPlus.addEventListener('click',  () => stepMonths(1));
-  yPlus.addEventListener('click',   () => stepYears(1));
-
-  bar.append(
-    btnRew, btnPlay, btnFf, btnSlow, btnFast,
-    mkSep('fp-time-sep'),
-    dMinus, moMinus, yMinus, dPlus, moPlus, yPlus,
-  );
-  return bar;
 }
 
 // ── bottom strip + submenus ───────────────────────────────────────────

@@ -13,7 +13,7 @@ import { t, onLangChange, isRtl } from './ui/i18n.js';
 import { EpicycleOverlay } from './render/epicycleOverlay.js';
 import { buildInfoPanels }  from './ui/infoPanels.js';
 import { buildShareButton }  from './ui/shareExport.js';
-import { buildTimeScrubber } from './ui/timeScrubber.js';
+import { buildStelTimeBar }  from './ui/stelTimeBar.js';
 import { maybeShowOnboarding, resetOnboarding } from './ui/onboarding.js';
 import { initFpMode } from './ui/fpMode.js';
 import { initFpGround } from './ui/fpGroundScene.js';
@@ -806,10 +806,10 @@ window.demos = demos;
   }
 }
 
-// ── Feature 6: Time Travel Scrubber ─────────────────────────────────────
+// ── Stellarium time bar (god mode) ───────────────────────────────────────
 {
-  const viewForScrubber = document.getElementById('view');
-  if (viewForScrubber) buildTimeScrubber(viewForScrubber, model);
+  const view = document.getElementById('view');
+  if (view) view.appendChild(buildStelTimeBar(model));
 }
 
 // ── Planetary Hours Widget ───────────────────────────────────────────────
