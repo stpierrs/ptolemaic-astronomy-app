@@ -295,7 +295,10 @@ export class EpicycleOverlay {
 
     // ── Wrapper div carries the header + collapsible canvas. ────────
     const wrap = document.createElement('div');
-    wrap.setAttribute('aria-hidden', 'true');
+    // No aria-hidden on the wrapper: it contains an interactive collapse
+    // button. The canvas itself is decorative — aria-hidden lives on it.
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', 'Epicycle diagram');
     wrap.style.position       = 'fixed';
     wrap.style.left           = '12px';
     wrap.style.top            = '180px';
