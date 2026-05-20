@@ -67,11 +67,41 @@ export function buildStelTimeBar(model) {
     return b;
   }
 
+  // ── drag-to-move handle (top of bar) ────────────────────────────────
+  const dragHandle = mk('div', 'stel-drag-handle');
+  dragHandle.title = 'Drag to move time bar';
+  const dragGrip = mk('span', 'stel-drag-grip', '⠿⠿⠿');
+  dragHandle.appendChild(dragGrip);
+
+  let _moveX = 0, _moveY = 0;
+  let _moveDragStartX = 0, _moveDragStartY = 0;
+  let _moveActive = false;
+
+  dragHandle.addEventListener('pointerdown', (e) => {
+    _moveActive = true;
+    _moveDragStartX = e.clientX;
+    _moveDragStartY = e.clientY;
+    dragHandle.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  dragHandle.addEventListener('pointermove', (e) => {
+    if (!_moveActive) return;
+    const zoom = parseFloat(getComputedStyle(bar).zoom) || 1;
+    _moveX += (e.clientX - _moveDragStartX) / zoom;
+    _moveY += (e.clientY - _moveDragStartY) / zoom;
+    _moveDragStartX = e.clientX;
+    _moveDragStartY = e.clientY;
+    bar.style.transform = `translateX(calc(-50% + ${_moveX}px)) translateY(${_moveY}px)`;
+  });
+  dragHandle.addEventListener('pointerup',     () => { _moveActive = false; });
+  dragHandle.addEventListener('pointercancel', () => { _moveActive = false; });
+
   // ── scrub track (drag to move time) ─────────────────────────────────
   const scrubTrack = mk('div', 'stel-scrub-track');
-  const scrubThumb = mk('div', 'stel-scrub-thumb');
-  const scrubLabel = mk('div', 'stel-scrub-label', 'drag to scrub time');
-  scrubTrack.append(scrubThumb, scrubLabel);
+  const scrubArrowL = mk('span', 'stel-scrub-arrow stel-scrub-arrow-l', '◀ Past');
+  const scrubThumb  = mk('div',  'stel-scrub-thumb');
+  const scrubArrowR = mk('span', 'stel-scrub-arrow stel-scrub-arrow-r', 'Future ▶');
+  scrubTrack.append(scrubArrowL, scrubThumb, scrubArrowR);
 
   let _scrubbing = false;
   let _scrubX0 = 0;
@@ -194,7 +224,7 @@ export function buildStelTimeBar(model) {
   });
 
   // Assemble bar
-  bar.append(scrubTrack, mainRow, speedRow);
+  bar.append(dragHandle, scrubTrack, mainRow, speedRow);
 
   // ── event wiring ─────────────────────────────────────────────────────
   bYear.addEventListener('click',  () => stepYears(-1));
