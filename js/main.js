@@ -15,7 +15,8 @@ import { buildInfoPanels }  from './ui/infoPanels.js';
 import { buildShareButton }  from './ui/shareExport.js';
 import { buildTimeScrubber } from './ui/timeScrubber.js';
 import { maybeShowOnboarding, resetOnboarding } from './ui/onboarding.js';
-import { initSimpleMode } from './ui/simpleMode.js';
+import { initFpMode } from './ui/fpMode.js';
+import { initFpGround } from './ui/fpGroundScene.js';
 
 import { buildBodyInfoCard } from './ui/bodyInfoCard.js';
 import { buildPaywall, showPaywall } from './ui/paywall.js';
@@ -43,7 +44,8 @@ setLoadProgress(20); // JS loaded
 const demos = new Demos(model);
 const viewEl_panel = document.getElementById('view');
 buildControlPanel(viewEl_panel, model, demos);
-initSimpleMode(model);
+initFpGround(model);
+initFpMode(model);
 const hudEl = document.getElementById('hud');
 buildHud(hudEl, model);
 const trackerHudEl = document.getElementById('tracker-hud');

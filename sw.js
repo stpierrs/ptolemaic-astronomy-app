@@ -7,9 +7,9 @@
 //
 // Bump CACHE_ASSETS / CACHE_CODE version strings when you ship breaking asset changes.
 
-const CACHE_VERSION = 'ptol-v10';
-const CACHE_ASSETS  = 'ptol-assets-v3';
-const CACHE_CODE    = 'ptol-code-v3';
+const CACHE_VERSION = 'ptol-v25';
+const CACHE_ASSETS  = 'ptol-assets-v15';
+const CACHE_CODE    = 'ptol-code-v18';
 
 // Critical-path files to pre-cache on install.
 const PRECACHE = [
@@ -43,6 +43,22 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
+
+  // Large textures — cache-first but don't pre-cache (too large for install)
+  if (url.pathname.includes('/assets/textures/')) {
+    e.respondWith(
+      caches.match(e.request).then((hit) =>
+        hit || fetch(e.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_ASSETS).then((c) => c.put(e.request, clone));
+          }
+          return res;
+        })
+      )
+    );
+    return;
+  }
 
   // assets/ — cache-first
   if (url.pathname.includes('/assets/')) {

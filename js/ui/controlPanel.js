@@ -2572,6 +2572,10 @@ export function buildControlPanel(host, model, demos) {
     if (activeIdx >= 0) positionPopup(activeIdx);
   });
 
+  // Expose the feature-open function so other modules (fpMode, etc.)
+  // can open specific tab panels without importing the full control panel.
+  model._featureOpen = (tab, group) => featureOpen.fn(tab, group);
+
   const TAB_KEY = {
     View: 'tab_view', Time: 'tab_time', Show: 'tab_show',
     Tracker: 'tab_tracker', Demos: 'tab_demos', Info: 'tab_info',
