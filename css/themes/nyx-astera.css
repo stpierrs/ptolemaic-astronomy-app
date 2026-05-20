@@ -1,0 +1,66 @@
+/* ==========================================================================
+   themes/nyx-astera.css  ·  "Nyx Astera"
+   --------------------------------------------------------------------------
+   The deep-cosmos theme. Near-black ground, cool starlight silver, restrained
+   gold. The quietest of the five and the only one that pushes contrast all
+   the way down — closest in mood to a planetarium console.
+   Mood:  observation deck after midnight.
+   ========================================================================== */
+
+.theme-nyx-astera {
+  /* ---------- COLOR · raw palette ---------- */
+  --void:           #050610;
+  --void-soft:      #0C0E1E;
+  --void-lift:      #14172E;
+  --void-bright:    #1C2240;
+
+  --starlight:      #D9DAE0;
+  --starlight-cool: #B8C6E0;
+  --silver:         #9CA3B8;
+  --dim:            #7A7E8E;
+
+  --gold-muted:     #CFA84A;
+  --gold-warm:      #FFD27A;
+  --gold-deep:      #7A5E20;
+
+  --crimson:        #A04545;
+  --jade:           #4F806A;
+
+  /* ---------- COLOR · semantic ---------- */
+  --color-bg:               var(--void);
+  --color-bg-art:
+    radial-gradient(ellipse at 50% 0%,  rgba(255,210,122,0.06) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 100%, rgba(184,198,224,0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #0A0C18 0%, #050610 100%);
+  --color-surface:          var(--void-soft);
+  --color-surface-raised:   var(--void-lift);
+  --color-fg:               var(--starlight);
+  --color-heading:          var(--gold-warm);
+  --color-dim:              var(--dim);
+  --color-accent:           var(--gold-muted);
+  --color-accent-2:         var(--gold-warm);
+  --color-accent-soft:      var(--gold-deep);
+  --color-accent-glow:      rgba(255, 210, 122, 0.40);
+  --color-ornament:         var(--gold-muted);
+  --color-ornament-soft:    rgba(207, 168, 74, 0.20);
+  --color-divider:          rgba(184, 198, 224, 0.10);
+  --color-danger:           var(--crimson);
+  --color-success:          var(--jade);
+
+  /* the orbital colours used by the epicycle diagram */
+  --color-deferent:         var(--silver);
+  --color-epicycle:         var(--starlight-cool);
+  --color-equant:           var(--crimson);
+  --color-planet:           var(--gold-warm);
+  --color-earth:            var(--starlight);
+  --color-celestial:        var(--gold-muted);
+
+  /* shadows / glows */
+  --shadow-card:    0 2px 24px rgba(0, 0, 0, 0.75),
+                    inset 0 0 0 1px rgba(184,198,224,0.04);
+  --shadow-lift:    0 24px 64px rgba(0, 0, 0, 0.85);
+  --shadow-glow:    0 0 32px rgba(255, 210, 122, 0.30);
+
+  --starfield-opacity: 0.42;
+  --starfield-blend:   screen;
+}

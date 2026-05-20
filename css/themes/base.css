@@ -1,0 +1,201 @@
+/* ==========================================================================
+   base.css — shared structure for the five Ptolemy themes
+   --------------------------------------------------------------------------
+   Loads classical-feel webfonts, sets a reset, and defines TYPE / SPACING /
+   ORNAMENT tokens that every theme inherits. Theme-specific colour tokens
+   live in themes/<name>.css and override the COLOR group only.
+   ========================================================================== */
+
+/* Fonts — all on Google Fonts.
+   Cinzel  : carved-stone display, Roman caps with classical proportions.
+   Cormorant Garamond : a scholarly book-text serif, italic-strong.
+   GFS Didot : a Greek-first text face for the ancient-Greek strings.
+   JetBrains Mono : the technical / mono face for code-feeling numerals. */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=GFS+Didot&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+:root {
+  /* ---------- TYPE ---------- */
+  --font-display: "Cinzel", "Cormorant Garamond", "Trajan Pro", serif;
+  --font-body:    "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-greek:   "GFS Didot", "Cormorant Garamond", serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 17px;
+  --fs-md:   19px;
+  --fs-lg:   23px;
+  --fs-xl:   30px;
+  --fs-2xl:  40px;
+  --fs-3xl:  56px;
+
+  --lh-tight: 1.15;
+  --lh-snug:  1.32;
+  --lh-body:  1.6;
+
+  --tracking-display: 0.18em;   /* uppercase capitals */
+  --tracking-stamp:   0.26em;   /* eyebrows / stamps */
+  --tracking-body:    0.005em;
+
+  /* ---------- SPACING ---------- */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ---------- RADII ---------- */
+  --radius-sm: 2px;       /* sharp, manuscript-like */
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ---------- MOTION ---------- */
+  --ease:        cubic-bezier(.2,.7,.2,1);
+  --ease-snappy: cubic-bezier(.4,0,.2,1);
+  --dur-1: 160ms;
+  --dur-2: 280ms;
+  --dur-3: 500ms;
+}
+
+/* =========================================================================
+   GREEK-KEY BORDER — used as a CSS background pattern.
+   The pattern is an inline SVG data URL coloured with currentColor;
+   put it on an element with `color: var(--ink-frame)` to tint it.
+   Two variants: thin (24px tall) and bold (40px tall).
+   ========================================================================= */
+:root {
+  --greek-key-thin: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 24' preserveAspectRatio='xMidYMid slice'>\
+<g fill='none' stroke='%23ffffff' stroke-width='2'>\
+<rect x='1' y='1' width='94' height='22'/>\
+<path d='M8 5 H20 V12 H14 V9 H17 V19 H8 Z M28 5 H40 V12 H34 V9 H37 V19 H28 Z M48 5 H60 V12 H54 V9 H57 V19 H48 Z M68 5 H80 V12 H74 V9 H77 V19 H68 Z M88 5 H88 V19 H88 Z'/>\
+</g></svg>");
+
+  --greek-key-bold: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 40' preserveAspectRatio='xMidYMid slice'>\
+<g fill='none' stroke='%23ffffff' stroke-width='3'>\
+<rect x='2' y='2' width='76' height='36'/>\
+<path d='M10 8 H30 V20 H22 V14 H26 V32 H10 Z M40 8 H60 V20 H52 V14 H56 V32 H40 Z M70 8 V32'/>\
+</g></svg>");
+
+  /* Star pattern — small twinkling dots for backgrounds */
+  --starfield: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'>\
+<g fill='%23ffffff'>\
+<circle cx='14' cy='42' r='0.8'/><circle cx='78' cy='12' r='0.5'/>\
+<circle cx='148' cy='62' r='1.2'/><circle cx='226' cy='28' r='0.6'/>\
+<circle cx='280' cy='110' r='0.9'/><circle cx='34' cy='130' r='0.7'/>\
+<circle cx='102' cy='168' r='1'/><circle cx='176' cy='192' r='0.5'/>\
+<circle cx='246' cy='220' r='0.8'/><circle cx='298' cy='262' r='1.1'/>\
+<circle cx='60' cy='262' r='0.6'/><circle cx='128' cy='302' r='0.9'/>\
+<circle cx='200' cy='84' r='0.6'/><circle cx='12' cy='208' r='0.5'/>\
+<circle cx='184' cy='258' r='0.8'/><circle cx='84' cy='102' r='0.7'/>\
+</g></svg>");
+}
+
+/* =========================================================================
+   NOTE — the original package's global reset, body/html overrides,
+   h1–h4 uppercase rules, and p / em / strong / b tints have been STRIPPED
+   here (per IMPLEMENTATION_GUIDE_MOBILE_PREVIEW.md §2.2 — the host app
+   already owns those primitives and depends on them: 14px system-ui body
+   font, natural-case headings, controlPanel.js layouts). Only
+   ::selection is kept — harmless + themed correctly.
+   ========================================================================= */
+::selection { background: var(--color-accent); color: var(--color-bg); }
+
+/* ----- shared utility classes ----- */
+.greek      { font-family: var(--font-greek); letter-spacing: 0; }
+.mono       { font-family: var(--font-mono); }
+.eyebrow {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracking-stamp);
+  color: var(--color-accent-2);
+  text-transform: uppercase;
+}
+.stamp {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--color-dim);
+  text-transform: uppercase;
+}
+.cite {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--color-dim);
+  font-size: var(--fs-sm);
+}
+
+/* ----- the page chrome elements ----- */
+/* NOTE: .app-frame removed (per guide §2.2). Its ::before overlay would
+   paint a starfield over the WebGL canvas — strictly off-limits. */
+
+.greek-key-border {
+  /* an ornamental band — paint with theme `--color-ornament` */
+  height: 28px;
+  background-image: var(--greek-key-thin);
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  filter: brightness(0) saturate(100%);   /* override colour via mask */
+}
+.greek-key-bar {
+  position: relative;
+  height: 36px;
+  width: 100%;
+  background: var(--color-ornament);
+  -webkit-mask-image: var(--greek-key-thin);
+          mask-image: var(--greek-key-thin);
+  -webkit-mask-repeat: repeat-x;
+          mask-repeat: repeat-x;
+  -webkit-mask-size: auto 100%;
+          mask-size: auto 100%;
+}
+.greek-key-bar.bold {
+  height: 48px;
+  -webkit-mask-image: var(--greek-key-bold);
+          mask-image: var(--greek-key-bold);
+}
+
+/* ----- the framed cards / panels ----- */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-ornament-soft);
+  border-radius: var(--radius-md);
+  padding: var(--sp-6) var(--sp-6);
+  position: relative;
+  box-shadow: var(--shadow-card);
+}
+.panel.ornate {
+  border-width: 1px;
+  outline: 1px solid var(--color-ornament);
+  outline-offset: 6px;
+}
+.panel-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--color-ornament-soft);
+}
+.panel-title h3 { margin: 0; }
+.panel-title .num {
+  font-family: var(--font-display);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* NOTE: .btn / .slider / .readout removed (per guide §2.2). The host
+   app has its own button + slider + readout styles in styles.css that
+   should not be overridden. The dropdown picker uses var-bridged
+   theme colors from styles.css instead. */

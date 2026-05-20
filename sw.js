@@ -7,16 +7,23 @@
 //
 // Bump CACHE_ASSETS / CACHE_CODE version strings when you ship breaking asset changes.
 
-const CACHE_VERSION = 'ptol-v31';
-const CACHE_ASSETS  = 'ptol-assets-v18';
-const CACHE_CODE    = 'ptol-code-v24';
+const CACHE_VERSION = 'ptol-v32';
+const CACHE_ASSETS  = 'ptol-assets-v19';
+const CACHE_CODE    = 'ptol-code-v25';
 
 // Critical-path files to pre-cache on install.
 const PRECACHE = [
   './',
   './index.html',
   './css/styles.min.css',
+  './css/themes/base.css',
+  './css/themes/codex-vesper.css',
+  './css/themes/parchment-scholastica.css',
+  './css/themes/marble-olympus.css',
+  './css/themes/lapis-auream.css',
+  './css/themes/nyx-astera.css',
   './js/main.js',
+  './js/ui/themes/themes.js',
   './assets/vendor/three.module.min.js',
   './assets/ne_110m_land.geojson',
 ];

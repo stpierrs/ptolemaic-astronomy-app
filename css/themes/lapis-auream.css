@@ -1,0 +1,66 @@
+/* ==========================================================================
+   themes/lapis-auream.css  ·  "Lapis Auream"
+   --------------------------------------------------------------------------
+   Byzantine illuminated-manuscript palette: ultramarine lapis ground, bright
+   leaf-gold ornament, ivory text and a single rubric red. The most jewelled
+   of the five — best for hero / cover surfaces.
+   Mood:  imperial codex, glittering, devotional.
+   ========================================================================== */
+
+.theme-lapis-auream {
+  /* ---------- COLOR · raw palette ---------- */
+  --lapis-deep:    #07154C;
+  --lapis:         #0E1E5C;
+  --lapis-mid:     #1A2D75;
+  --lapis-lift:    #25408F;
+  --lapis-bright:  #3258B4;
+
+  --ivory:         #F8F2D6;
+  --ivory-soft:    #E5DDB6;
+  --ivory-dim:     #BFB28B;
+
+  --gold-leaf:     #FFD24A;
+  --gold-bright:   #FFE680;
+  --gold-deep:     #A87A18;
+
+  --rubrica:       #C8323A;        /* the famous illuminator's red */
+  --evergreen:     #5C8755;
+
+  /* ---------- COLOR · semantic ---------- */
+  --color-bg:               var(--lapis);
+  --color-bg-art:
+    radial-gradient(ellipse at 50% 0%, rgba(255,210,74,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(255,210,74,0.08) 0%, transparent 50%),
+    linear-gradient(180deg, var(--lapis-mid) 0%, var(--lapis) 50%, var(--lapis-deep) 100%);
+  --color-surface:          var(--lapis-mid);
+  --color-surface-raised:   var(--lapis-lift);
+  --color-fg:               var(--ivory);
+  --color-heading:          var(--gold-leaf);
+  --color-dim:              var(--ivory-dim);
+  --color-accent:           var(--gold-leaf);
+  --color-accent-2:         var(--gold-bright);
+  --color-accent-soft:      var(--gold-deep);
+  --color-accent-glow:      rgba(255, 210, 74, 0.55);
+  --color-ornament:         var(--gold-leaf);
+  --color-ornament-soft:    rgba(255, 210, 74, 0.30);
+  --color-divider:          rgba(255, 210, 74, 0.20);
+  --color-danger:           var(--rubrica);
+  --color-success:          var(--evergreen);
+
+  /* the orbital colours used by the epicycle diagram */
+  --color-deferent:         var(--gold-leaf);
+  --color-epicycle:         var(--ivory);
+  --color-equant:           var(--rubrica);
+  --color-planet:           var(--gold-bright);
+  --color-earth:            var(--ivory);
+  --color-celestial:        var(--gold-leaf);
+
+  /* shadows / glows */
+  --shadow-card:    0 4px 20px rgba(7, 21, 76, 0.6),
+                    inset 0 0 0 1px rgba(255, 210, 74, 0.10);
+  --shadow-lift:    0 18px 56px rgba(7, 21, 76, 0.75);
+  --shadow-glow:    0 0 36px rgba(255, 210, 74, 0.55);
+
+  --starfield-opacity: 0.22;
+  --starfield-blend:   screen;
+}

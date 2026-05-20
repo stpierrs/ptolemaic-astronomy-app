@@ -1,0 +1,67 @@
+/* ==========================================================================
+   themes/codex-vesper.css  ·  "Codex Vesper"
+   --------------------------------------------------------------------------
+   Deep manuscript midnight + antique gold + parchment-cream.
+   Mood:  Ptolemy's Almagest on the night reading-table.
+   Use:   the default state. dark, scholarly, gilded.
+   Source palette pulled from the illuminated panel in your reference image.
+   ========================================================================== */
+
+.theme-codex-vesper {
+  /* ---------- COLOR · raw palette ---------- */
+  --indigo-deep:    #0B1530;
+  --indigo:         #142242;
+  --indigo-soft:    #1E2F58;
+  --indigo-lift:    #2A3D70;
+
+  --parchment:      #E8D9A6;
+  --parchment-soft: #C9B580;
+  --parchment-dim:  #A99670;
+
+  --gold:           #D4A845;
+  --gold-bright:    #F5C76B;
+  --gold-deep:      #8E6B23;
+
+  --rubric:         #B85A3A;     /* terracotta — "rubric" red used in margin glosses */
+  --olive:          #6B8E5A;
+  --ink:            #1A1414;
+
+  /* ---------- COLOR · semantic ---------- */
+  --color-bg:               var(--indigo-deep);
+  --color-bg-art:           radial-gradient(ellipse at 50% 0%,
+                              rgba(212,168,69,0.10) 0%,
+                              transparent 55%),
+                            linear-gradient(180deg, #0B1530 0%, #060B1C 100%);
+  --color-surface:          var(--indigo);
+  --color-surface-raised:   var(--indigo-soft);
+  --color-fg:               var(--parchment);
+  --color-heading:          var(--gold-bright);
+  --color-dim:              var(--parchment-dim);
+  --color-accent:           var(--gold);
+  --color-accent-2:         var(--gold-bright);
+  --color-accent-soft:      var(--gold-deep);
+  --color-accent-glow:      rgba(212, 168, 69, 0.45);
+  --color-ornament:         var(--gold);
+  --color-ornament-soft:    rgba(212, 168, 69, 0.22);
+  --color-divider:          rgba(212, 168, 69, 0.15);
+  --color-danger:           var(--rubric);
+  --color-success:          var(--olive);
+
+  /* the orbital colours used by the epicycle diagram */
+  --color-deferent:         var(--gold);
+  --color-epicycle:         #B9D4FF;
+  --color-equant:           var(--rubric);
+  --color-planet:           var(--gold-bright);
+  --color-earth:            var(--parchment);
+  --color-celestial:        var(--gold);
+
+  /* shadows / glows */
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 1px rgba(212,168,69,0.06);
+  --shadow-lift:    0 14px 50px rgba(0, 0, 0, 0.65);
+  --shadow-glow:    0 0 28px rgba(245, 199, 107, 0.35);
+
+  /* starfield knobs (consumed by base.css) */
+  --starfield-opacity: 0.18;
+  --starfield-blend:   screen;
+}

@@ -1,0 +1,67 @@
+/* ==========================================================================
+   themes/parchment-scholastica.css  ·  "Parchment Scholastica"
+   --------------------------------------------------------------------------
+   The aged-page theme. Sepia ink on cream parchment, faded sienna and rust
+   gold. Reads like a 14-th-century manuscript copy of the Almagest, edges
+   foxed and corners thumb-darkened.
+   Mood:  day-light, library, monastic scriptorium.
+   ========================================================================== */
+
+.theme-parchment-scholastica {
+  /* ---------- COLOR · raw palette ---------- */
+  --parchment-bright: #F3E3B5;
+  --parchment:        #E8D7A8;
+  --parchment-mid:    #DFC998;
+  --parchment-deep:   #C9B07A;
+  --parchment-foxed:  #B89765;     /* the darkened-corner tone */
+
+  --ink-deep:         #2F2418;
+  --ink:              #3F3120;
+  --ink-soft:         #5A4636;
+  --ink-faded:        #7A6240;
+
+  --sienna:           #8B5E2A;
+  --sienna-bright:    #B17833;
+  --rubric-red:       #913423;     /* margin glosses, capitulia */
+  --olive:            #4C6B33;
+  --vermilion:        #C7491C;
+
+  /* ---------- COLOR · semantic ---------- */
+  --color-bg:               var(--parchment);
+  --color-bg-art:
+    radial-gradient(circle at 8% 12%,  rgba(184,151,101,0.30) 0%, transparent 35%),
+    radial-gradient(circle at 92% 88%, rgba(184,151,101,0.35) 0%, transparent 38%),
+    radial-gradient(circle at 50% 50%, rgba(232,215,168,1)    0%, var(--parchment-mid) 90%);
+  --color-surface:          var(--parchment-bright);
+  --color-surface-raised:   #FBF0CD;
+  --color-fg:               var(--ink);
+  --color-heading:          var(--ink-deep);
+  --color-dim:              var(--ink-faded);
+  --color-accent:           var(--sienna);
+  --color-accent-2:         var(--sienna-bright);
+  --color-accent-soft:      var(--ink-soft);
+  --color-accent-glow:      rgba(139, 94, 42, 0.30);
+  --color-ornament:         var(--sienna);
+  --color-ornament-soft:    rgba(95, 70, 36, 0.30);
+  --color-divider:          rgba(95, 70, 36, 0.20);
+  --color-danger:           var(--rubric-red);
+  --color-success:          var(--olive);
+
+  /* the orbital colours used by the epicycle diagram */
+  --color-deferent:         var(--ink-deep);
+  --color-epicycle:         var(--rubric-red);
+  --color-equant:           var(--ink-faded);
+  --color-planet:           var(--sienna-bright);
+  --color-earth:            var(--ink-deep);
+  --color-celestial:        var(--sienna);
+
+  /* shadows / glows */
+  --shadow-card:    0 1px 0 rgba(255,255,255,0.4) inset,
+                    0 2px 6px rgba(95, 70, 36, 0.18),
+                    0 12px 32px rgba(95, 70, 36, 0.14);
+  --shadow-lift:    0 18px 40px rgba(60, 36, 12, 0.22);
+  --shadow-glow:    0 0 0 transparent;
+
+  /* no starfield on a parchment page */
+  --starfield-opacity: 0;
+}

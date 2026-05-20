@@ -1,0 +1,67 @@
+/* ==========================================================================
+   themes/marble-olympus.css  ·  "Marble Olympus"
+   --------------------------------------------------------------------------
+   Warm twilight, marble-cream type, sun-gold accents. Pulled directly from
+   the second reference image — the temple-and-eclipse landscape, with its
+   gold border and warm-violet sunset.
+   Mood:  Apollo at golden hour. romantic, ceremonial, monumental.
+   ========================================================================== */
+
+.theme-marble-olympus {
+  /* ---------- COLOR · raw palette ---------- */
+  --twilight:        #1B1530;
+  --twilight-mauve:  #2A2240;
+  --twilight-lift:   #3A2F50;
+  --twilight-deep:   #0E0A1F;
+  --temple-shadow:   #463658;
+
+  --marble:          #F5EBD8;
+  --marble-soft:     #E2D2B0;
+  --marble-dim:      #C9B89A;
+
+  --sun:             #E5B458;
+  --sun-bright:      #FFD993;
+  --sun-deep:        #A47A2B;
+  --moon-glow:       #E8D8B5;
+
+  --terracotta:      #C4724A;
+  --laurel:          #6E8758;
+
+  /* ---------- COLOR · semantic ---------- */
+  --color-bg:               var(--twilight);
+  --color-bg-art:
+    radial-gradient(ellipse at 50% 8%,  rgba(255,217,147,0.18) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 95%, rgba(196,114,74,0.18)  0%, transparent 45%),
+    linear-gradient(180deg, #2A2240 0%, #1B1530 50%, #0E0A1F 100%);
+  --color-surface:          var(--twilight-mauve);
+  --color-surface-raised:   var(--twilight-lift);
+  --color-fg:               var(--marble);
+  --color-heading:          var(--sun-bright);
+  --color-dim:              var(--marble-dim);
+  --color-accent:           var(--sun);
+  --color-accent-2:         var(--sun-bright);
+  --color-accent-soft:      var(--sun-deep);
+  --color-accent-glow:      rgba(229, 180, 88, 0.55);
+  --color-ornament:         var(--sun);
+  --color-ornament-soft:    rgba(229, 180, 88, 0.25);
+  --color-divider:          rgba(229, 180, 88, 0.18);
+  --color-danger:           var(--terracotta);
+  --color-success:          var(--laurel);
+
+  /* the orbital colours used by the epicycle diagram */
+  --color-deferent:         var(--sun);
+  --color-epicycle:         var(--moon-glow);
+  --color-equant:           var(--terracotta);
+  --color-planet:           var(--sun-bright);
+  --color-earth:            var(--marble);
+  --color-celestial:        var(--sun-bright);
+
+  /* shadows / glows */
+  --shadow-card:    0 6px 30px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 1px rgba(229,180,88,0.08);
+  --shadow-lift:    0 22px 56px rgba(0, 0, 0, 0.70);
+  --shadow-glow:    0 0 40px rgba(255,217,147,0.55);
+
+  --starfield-opacity: 0.32;
+  --starfield-blend:   screen;
+}

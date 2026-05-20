@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-codex-vesper" data-theme="codex-vesper">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
@@ -74,6 +74,20 @@
 <link rel="apple-touch-icon" href="assets/ac_logo.png">
 <link rel="preload" href="css/styles.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="css/styles.min.css"></noscript>
+<!-- Theme system — token definitions for all five palettes. base.css must
+     come first; the five palette files scope their tokens under .theme-*
+     classes on <html> so all five can coexist. Default is theme-codex-vesper
+     (the new free default). The dropdown picker in js/main.js swaps the
+     class on <html>; the bridge layer at the top of styles.css maps the
+     design-system --color-* tokens onto the legacy --bg / --panel / --fg /
+     --accent / --border / --row vars hundreds of existing rules already
+     read via var(). -->
+<link rel="stylesheet" href="css/themes/base.css">
+<link rel="stylesheet" href="css/themes/codex-vesper.css">
+<link rel="stylesheet" href="css/themes/parchment-scholastica.css">
+<link rel="stylesheet" href="css/themes/marble-olympus.css">
+<link rel="stylesheet" href="css/themes/lapis-auream.css">
+<link rel="stylesheet" href="css/themes/nyx-astera.css">
 <!-- importmap goes first — Firefox locks the module pipeline the moment
      a modulepreload fires, and after that any bare specifier like
      `import 'three'` just fails to resolve. Keep this above all the
@@ -87,7 +101,7 @@
 </script>
 <link rel="modulepreload" href="assets/vendor/three.module.min.js">
 <link rel="preload" href="assets/ne_110m_land.geojson" as="fetch" type="application/geo+json" crossorigin>
-<link rel="modulepreload" href="js/main.js?v=24">
+<link rel="modulepreload" href="js/main.js?v=25">
 <link rel="modulepreload" href="js/render/index.js">
 <link rel="modulepreload" href="js/render/worldObjects.js">
 <link rel="modulepreload" href="js/core/app.js">
@@ -147,6 +161,6 @@
 </main>
 <!-- Placeholder so old cached main.js can find this element and call EpicycleOverlay -->
 <canvas id="epicycle-canvas" hidden aria-hidden="true"></canvas>
-<script type="module" src="js/main.js?v=24"></script>
+<script type="module" src="js/main.js?v=25"></script>
 </body>
 </html>

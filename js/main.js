@@ -545,48 +545,127 @@ window.model = model;
 window.renderer = renderer;
 window.demos = demos;
 
-// ── Feature 8: Dark / Parchment Theme Toggle ─────────────────────────────
-(function () {
-  const THEME_KEY = 'ptol-theme';
+// ── Feature 8: Theme Dropdown ─────────────────────────────────────────────
+// Replaces the old 🌙 / 📜 toggle with a five-palette dropdown picker:
+// Codex Vesper (free default), Parchment Scholastica, Marble Olympus,
+// Lapis Auream, Nyx Astera (last four premium → showPaywall() on
+// selection when !isUnlocked()).
+//
+// Why a one-time legacy-key migration: returning users carry the old
+// 'ptol-theme' = 'parchment' in localStorage from the dark/parchment-only
+// era. Dropping that lands them on the new free default cleanly without
+// silently flipping them onto the premium Parchment Scholastica palette.
+(async function () {
+  const { THEMES, setTheme, listThemes } = await import('./ui/themes/themes.js');
+
+  const STORAGE_KEY   = 'ptol-theme-v2';
+  const LEGACY_KEY    = 'ptol-theme';
+  const DEFAULT_THEME = 'codex-vesper';
+  const FREE_THEMES   = new Set(['codex-vesper']);
   const themeColorMeta = document.getElementById('theme-color-meta');
 
-  function applyTheme(theme) {
-    if (theme === 'parchment') {
-      document.body.classList.add('theme-parchment');
-      if (themeColorMeta) themeColorMeta.content = '#8b5e3c';
-    } else {
-      document.body.classList.remove('theme-parchment');
-      if (themeColorMeta) themeColorMeta.content = '#0e121a';
-    }
+  if (localStorage.getItem(LEGACY_KEY) !== null) {
+    localStorage.removeItem(LEGACY_KEY);
   }
 
-  // Boot: restore persisted theme
-  const saved = localStorage.getItem(THEME_KEY);
-  if (saved) applyTheme(saved);
+  function applyTheme(name) {
+    if (!THEMES[name]) name = DEFAULT_THEME;
+    setTheme(name);
+    if (themeColorMeta) themeColorMeta.content = THEMES[name].color.bg;
+  }
 
-  // Button
-  const themeBtn = document.createElement('button');
-  themeBtn.className = 'info-btn header-action-btn';
-  themeBtn.type = 'button';
-  themeBtn.title = 'Toggle parchment / dark theme';
-  themeBtn.textContent = document.body.classList.contains('theme-parchment') ? '🌙' : '📜';
-
-  themeBtn.addEventListener('click', () => {
-    // Parchment theme is a premium feature
-    const isParchment = document.body.classList.contains('theme-parchment');
-    if (!isParchment && !isUnlocked()) {
-      showPaywall();
-      return;
-    }
-    const next = isParchment ? 'dark' : 'parchment';
-    applyTheme(next);
-    localStorage.setItem(THEME_KEY, next);
-    themeBtn.textContent = next === 'parchment' ? '🌙' : '📜';
-  });
+  const stored = localStorage.getItem(STORAGE_KEY);
+  applyTheme(stored && THEMES[stored] ? stored : DEFAULT_THEME);
 
   const headerEl = document.querySelector('header');
   const infoBox  = headerEl && headerEl.querySelector('.info-box');
-  if (infoBox) headerEl.insertBefore(themeBtn, infoBox);
+  if (!headerEl || !infoBox) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'theme-picker';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'info-btn header-action-btn theme-picker-btn';
+  btn.title = 'Choose theme';
+  btn.setAttribute('aria-haspopup', 'listbox');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.innerHTML = '🎨';
+
+  const popup = document.createElement('div');
+  popup.className = 'theme-picker-popup';
+  popup.setAttribute('role', 'listbox');
+  popup.hidden = true;
+
+  function renderPopup() {
+    popup.innerHTML = '';
+    const current = document.documentElement.dataset.theme || DEFAULT_THEME;
+    listThemes().forEach((name) => {
+      const t       = THEMES[name];
+      const isFree  = FREE_THEMES.has(name);
+      const locked  = !isFree && !isUnlocked();
+      const active  = name === current;
+
+      const row = document.createElement('button');
+      row.type  = 'button';
+      row.className = 'theme-picker-row' + (active ? ' active' : '');
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', active ? 'true' : 'false');
+      row.dataset.theme = name;
+
+      const sw = document.createElement('span');
+      sw.className = 'theme-picker-swatch';
+      sw.style.background =
+        `linear-gradient(135deg, ${t.color.bg} 0% 33%, ${t.color.surface} 33% 66%, ${t.color.accent} 66% 100%)`;
+      sw.style.border = `1px solid ${t.color.ornament}`;
+
+      const label = document.createElement('span');
+      label.className = 'theme-picker-label';
+      label.textContent = t.label;
+
+      const sub = document.createElement('span');
+      sub.className = 'theme-picker-sub';
+      sub.textContent = t.subtitle;
+
+      const badge = document.createElement('span');
+      badge.className = 'theme-picker-badge';
+      badge.textContent = active ? '✓' : (locked ? '🔒' : '');
+
+      row.append(sw, label, sub, badge);
+      row.addEventListener('click', () => {
+        if (locked) { showPaywall(); return; }
+        applyTheme(name);
+        localStorage.setItem(STORAGE_KEY, name);
+        renderPopup();
+        closePopup();
+      });
+      popup.appendChild(row);
+    });
+  }
+
+  function openPopup()  {
+    renderPopup();
+    popup.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    document.addEventListener('click', onDocClick, true);
+    document.addEventListener('keydown', onKey, true);
+  }
+  function closePopup() {
+    popup.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+    document.removeEventListener('keydown', onKey, true);
+  }
+  function onDocClick(e) { if (!wrap.contains(e.target)) closePopup(); }
+  function onKey(e)      { if (e.key === 'Escape') closePopup(); }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    popup.hidden ? openPopup() : closePopup();
+  });
+
+  wrap.append(btn, popup);
+  headerEl.insertBefore(wrap, infoBox);
 })();
 
 // ── Ptolemaic Epicycle Ephemeris (Ibn al-Shatir) ────────────────────────────
