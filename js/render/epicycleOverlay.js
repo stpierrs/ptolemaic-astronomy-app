@@ -39,8 +39,10 @@ const JMOON_COLORS = {
   ananke: '#c87890', carme: '#c87888', pasiphae: '#b888c8', sinope: '#9898c8',
 };
 
-// Bump this version whenever the saved schema changes (v5: self-injected canvas).
-const STORE_VERSION = 5;
+// Bump this version whenever the saved schema changes
+//   v5: self-injected canvas, bottom-right anchored
+//   v6: wrapper div + collapsible header, top-left anchored
+const STORE_VERSION = 6;
 
 const MIN_SIZE = 160;   // smallest the overlay can be dragged to (CSS px)
 const MAX_SIZE = 520;   // largest
@@ -120,6 +122,13 @@ const MODEL_META = {
       'Two angular rates · one observer · zero globe constants',
     ],
   },
+  shatir: {
+    subtitle: 'Ibn al-Shatir · Double Epicycle (Damascus c. 1350)',
+    lines: [
+      'Pure uniform circular motions — no equant, no eccentric',
+      'λ = epicycleLon3(arm₁, arm₂, arm₃, R₁, R₂, R₃)',
+    ],
+  },
 };
 
 const CSS_SIZE  = 280;   // logical CSS pixels (square)
@@ -130,30 +139,230 @@ const _BORDER_PAD   = 4;   // outer frame offset from canvas edge
 const _FRET_H       = 9;   // fret strip height
 const _INNER_PAD    = _BORDER_PAD + _FRET_H + 4;  // = 17 — safe y for text
 const STORE_KEY = 'epicycle-overlay-pos';
+const COLLAPSE_KEY = 'epicycle-overlay-collapsed';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Ibn al-Shatir double-epicycle engine — copied verbatim from
+//  ibn-alshatir.html (the Damascus 1350 CE model). Drives the overlay's
+//  diagram so the per-body arm chain matches the engine used by the
+//  ⊕ ephemeris, ◉ observation, and ◎ explainer pages.
+// ═══════════════════════════════════════════════════════════════════════
+const SHA_DEG = Math.PI / 180;
+const SHA_TWO_PI = 2 * Math.PI;
+const SHA_EPOCH_JD = 2341972.5;
+
+function shaGregorianToJD(y, m, d) {
+  const A = Math.floor((14 - m) / 12);
+  const Y = y + 4800 - A;
+  const M = m + 12 * A - 3;
+  return d + Math.floor((153 * M + 2) / 5) +
+    365 * Y + Math.floor(Y / 4) - Math.floor(Y / 100) +
+    Math.floor(Y / 400) - 32045 - 0.5;
+}
+function shaDateToJD(date) {
+  const y = date.getUTCFullYear(), m = date.getUTCMonth() + 1, d = date.getUTCDate();
+  const frac = (date.getUTCHours() + date.getUTCMinutes()/60 + date.getUTCSeconds()/3600) / 24;
+  return shaGregorianToJD(y, m, d) + frac;
+}
+function shaNorm(a) { return ((a % 360) + 360) % 360; }
+
+const SHA_RATE = {
+  sun:      0.98564736,  moon_lon: 13.17639648, moon_ano: 13.06499295,
+  mercury:  3.10686,     venus:    0.61652,
+  mars:     0.52403,     mars_ano: 0.46168,
+  jupiter:  0.08309,     jup_ano:  0.90120,
+  saturn:   0.03346,     sat_ano:  0.95196,
+};
+const SHA_APOGEE = {
+  sun_0: 101.6, mars_0: 96.5, jupiter_0: 157.0, saturn_0: 234.8,
+  mercury_0: 190.0, venus_0: 73.2,
+  sun_dpc: 1.719, mars_dpc: 1.800, jup_dpc: 1.520, sat_dpc: 1.420,
+  merc_dpc: 1.940, ven_dpc: 1.620,
+};
+const SHA_EPOCH_LON = {
+  sun: 279.70, moon: 218.10, moon_ano: 358.90,
+  mars: 317.30, mars_ano: 204.50, jupiter: 239.10, jup_ano: 61.50,
+  saturn: 76.50, sat_ano: 114.20, mercury: 279.70, merc_ano: 260.50,
+  venus: 279.70, ven_ano: 54.20,
+};
+const SHA_PARAM = {
+  sun:     { R1: 60, r2: 1.002 },
+  moon:    { R1: 60, R2: 6.583,  R3: 1.417  },
+  mars:    { R1: 60, R2: 11.500, R3: 7+7/60 },
+  jupiter: { R1: 60, R2: 2.75,   R3: 11.5   },
+  saturn:  { R1: 60, R2: 1.717,  R3: 6.5    },
+  mercury: { R1: 60, R2: 22.5,   R3: 3.5    },
+  venus:   { R1: 60, R2: 43.167, R3: 0.833  },
+};
+const SHA_GI = { omega: 360.0/32000.0, phase: 214.0, amp_jup: 0.320, amp_sat: 0.950, phase_sat_offset: 180.0 };
+function shaApogee(b0, dpc, dt) { return shaNorm(b0 + dpc * (dt / 36525.0)); }
+
+function shaComputeRaw(jd) {
+  const dt = jd - SHA_EPOCH_JD;
+  const λ_sun  = shaNorm(SHA_EPOCH_LON.sun     + SHA_RATE.sun      * dt);
+  const λ_moon = shaNorm(SHA_EPOCH_LON.moon    + SHA_RATE.moon_lon * dt);
+  const M_moon = shaNorm(SHA_EPOCH_LON.moon_ano + SHA_RATE.moon_ano * dt);
+  const λ_mars = shaNorm(SHA_EPOCH_LON.mars    + SHA_RATE.mars     * dt);
+  const M_mars = shaNorm(SHA_EPOCH_LON.mars_ano + SHA_RATE.mars_ano * dt);
+  const λ_jup  = shaNorm(SHA_EPOCH_LON.jupiter + SHA_RATE.jupiter  * dt);
+  const M_jup  = shaNorm(SHA_EPOCH_LON.jup_ano + SHA_RATE.jup_ano  * dt);
+  const λ_sat  = shaNorm(SHA_EPOCH_LON.saturn  + SHA_RATE.saturn   * dt);
+  const M_sat  = shaNorm(SHA_EPOCH_LON.sat_ano + SHA_RATE.sat_ano  * dt);
+  const M_merc = shaNorm(SHA_EPOCH_LON.merc_ano + SHA_RATE.mercury  * dt);
+  const M_ven  = shaNorm(SHA_EPOCH_LON.ven_ano  + SHA_RATE.venus    * dt);
+  const sunAp  = shaApogee(SHA_APOGEE.sun_0,     SHA_APOGEE.sun_dpc,  dt);
+  const marsAp = shaApogee(SHA_APOGEE.mars_0,    SHA_APOGEE.mars_dpc, dt);
+  const jupAp  = shaApogee(SHA_APOGEE.jupiter_0, SHA_APOGEE.jup_dpc,  dt);
+  const satAp  = shaApogee(SHA_APOGEE.saturn_0,  SHA_APOGEE.sat_dpc,  dt);
+  const mercAp = shaApogee(SHA_APOGEE.mercury_0, SHA_APOGEE.merc_dpc, dt);
+  const venAp  = shaApogee(SHA_APOGEE.venus_0,   SHA_APOGEE.ven_dpc,  dt);
+  const gi = shaNorm(SHA_GI.phase + SHA_GI.omega * dt);
+  const M_jup_gi = M_jup + SHA_GI.amp_jup * Math.sin(gi * SHA_DEG);
+  const M_sat_gi = M_sat + SHA_GI.amp_sat * Math.sin(shaNorm(gi + SHA_GI.phase_sat_offset) * SHA_DEG);
+  const M_sun = shaNorm(λ_sun - sunAp);
+  const D = shaNorm(λ_moon - λ_sun);
+  return {
+    λ_sun, λ_moon, λ_mars, λ_jup, λ_sat,
+    M_moon, D, M_sun,
+    M_mars_ap: shaNorm(M_mars + (SHA_APOGEE.mars_0 - marsAp)),
+    M_jup_ap:  shaNorm(M_jup_gi + (SHA_APOGEE.jupiter_0 - jupAp)),
+    M_sat_ap:  shaNorm(M_sat_gi + (SHA_APOGEE.saturn_0 - satAp)),
+    M_merc_ap: shaNorm(M_merc + (SHA_APOGEE.mercury_0 - mercAp)),
+    M_ven_ap:  shaNorm(M_ven  + (SHA_APOGEE.venus_0 - venAp)),
+  };
+}
+
+// Returns the arm chain for `body`, each segment in degrees + sexagesimal
+// radius (R1 = 60). Mirrors `getArms()` in ibn-alshatir.html.
+function shaChainFor(body, raw) {
+  switch (body) {
+    case 'sun':     return [
+      { angle: raw.λ_sun, R: 60, label: 'λ☉ · R₁=60' },
+      { angle: raw.M_sun, R: SHA_PARAM.sun.r2 * 12, label: 'M☉ · R₂ (×12)' },
+    ];
+    case 'moon':    return [
+      { angle: raw.λ_moon, R: 60, label: 'λM · R₁' },
+      { angle: raw.M_moon, R: SHA_PARAM.moon.R2, label: 'MM · R₂' },
+      { angle: -2 * raw.D, R: SHA_PARAM.moon.R3, label: '−2D · R₃' },
+    ];
+    case 'mercury': return [
+      { angle: raw.λ_sun, R: 60, label: 'λ☉ · R₁' },
+      { angle: raw.M_merc_ap, R: SHA_PARAM.mercury.R2, label: 'M☿ · R₂' },
+      { angle: -2 * raw.M_merc_ap, R: SHA_PARAM.mercury.R3, label: '−2M☿ · R₃ (Tusi)' },
+    ];
+    case 'venus':   return [
+      { angle: raw.λ_sun, R: 60, label: 'λ☉ · R₁' },
+      { angle: raw.M_ven_ap, R: SHA_PARAM.venus.R2, label: 'M♀ · R₂' },
+      { angle: raw.M_ven_ap + 180, R: SHA_PARAM.venus.R3, label: 'M♀+180 · R₃' },
+    ];
+    case 'mars':    return [
+      { angle: raw.λ_mars, R: 60, label: 'λ♂ · R₁' },
+      { angle: raw.M_mars_ap, R: SHA_PARAM.mars.R2, label: 'M♂ · R₂' },
+      { angle: -raw.M_mars_ap, R: SHA_PARAM.mars.R3, label: '−M♂ · R₃' },
+    ];
+    case 'jupiter': return [
+      { angle: raw.λ_jup, R: 60, label: 'λ♃ · R₁' },
+      { angle: raw.M_jup_ap, R: SHA_PARAM.jupiter.R2, label: 'M♃ · R₂' },
+      { angle: -raw.M_jup_ap, R: SHA_PARAM.jupiter.R3, label: '−M♃ · R₃' },
+    ];
+    case 'saturn':  return [
+      { angle: raw.λ_sat, R: 60, label: 'λ♄ · R₁' },
+      { angle: raw.M_sat_ap, R: SHA_PARAM.saturn.R2, label: 'M♄ · R₂' },
+      { angle: -raw.M_sat_ap, R: SHA_PARAM.saturn.R3, label: '−M♄ · R₃' },
+    ];
+    default: return null;
+  }
+}
+
+const SHA_FORMULA = {
+  sun:     'λ = epicycleLon2(λ☉, M☉, R₁, r₂)',
+  moon:    'λ = epicycleLon3(λM, MM, −2D, R₁, R₂, R₃) + taqwīm',
+  mercury: 'λ = epicycleLon3(λ☉, M☿, −2M☿, R₁, R₂, R₃)   ← Tusi couple',
+  venus:   'λ = epicycleLon3(λ☉, M♀, M♀+180°, R₁, R₂, R₃)',
+  mars:    'λ = epicycleLon3(λ♂, M♂, −M♂, R₁, R₂, R₃)',
+  jupiter: 'λ = epicycleLon3(λ♃, M♃, −M♃, R₁, R₂, R₃) + GI',
+  saturn:  'λ = epicycleLon3(λ♄, M♄, −M♄, R₁, R₂, R₃) + GI',
+};
 
 export class EpicycleOverlay {
   // Accepts both new style: (model)  and old style: (canvasEl, model)
   constructor(modelOrCanvas, maybeModel) {
     const model = (maybeModel != null) ? maybeModel : modelOrCanvas;
-    // Create canvas, inject directly into <body>, all styles inline —
-    // no CSS file, no HTML placement, no stacking-context surprises.
+    // Default top-left anchor (per user request, 2026-05-19): tucked
+    // under the Live Moon Phases / Live Ephemeris Data buttons. A
+    // collapsible header sits above the canvas so the user can hide
+    // the diagram with one click and have only a thin pill remain.
+
+    // ── Wrapper div carries the header + collapsible canvas. ────────
+    const wrap = document.createElement('div');
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.style.position       = 'fixed';
+    wrap.style.left           = '12px';
+    wrap.style.top            = '180px';
+    wrap.style.right          = 'auto';
+    wrap.style.bottom         = 'auto';
+    wrap.style.width          = `${CSS_SIZE}px`;
+    wrap.style.zIndex         = '9500';
+    wrap.style.userSelect     = 'none';
+    wrap.style.touchAction    = 'none';
+    wrap.style.pointerEvents  = 'auto';
+    wrap.style.display        = 'flex';
+    wrap.style.flexDirection  = 'column';
+    wrap.style.boxShadow      = '0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)';
+    wrap.style.borderRadius   = '10px';
+    wrap.style.background     = 'rgba(10,5,1,0.92)';
+    wrap.style.overflow       = 'hidden';
+
+    // ── Header strip — body name + collapse toggle. Drag handle. ────
+    const header = document.createElement('div');
+    header.style.cssText = [
+      'display:flex',
+      'align-items:center',
+      'justify-content:space-between',
+      'padding:6px 12px',
+      'background:linear-gradient(180deg,rgba(40,22,8,0.85),rgba(20,10,4,0.85))',
+      'border-bottom:1px solid rgba(212,160,32,0.30)',
+      'cursor:grab',
+      "font:italic 12px Georgia,'Palatino Linotype',serif",
+      'color:#e8c97e',
+      'letter-spacing:0.06em',
+      'flex:0 0 auto',
+    ].join(';');
+    const headerLabel = document.createElement('span');
+    headerLabel.textContent = 'Epicycle Diagram';
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.style.cssText = [
+      'background:transparent',
+      'border:1px solid rgba(212,160,32,0.40)',
+      'color:#e8c97e',
+      'border-radius:3px',
+      'padding:1px 8px',
+      'cursor:pointer',
+      "font:inherit",
+      'line-height:1',
+    ].join(';');
+    collapseBtn.textContent = '▾';
+    collapseBtn.title = 'Collapse / expand';
+    header.append(headerLabel, collapseBtn);
+    wrap.appendChild(header);
+
+    // ── Canvas — gets all styles for backwards-compat with old code. ─
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.position   = 'fixed';
-    canvas.style.right      = '12px';
-    canvas.style.bottom     = '150px';
-    canvas.style.width      = '280px';
-    canvas.style.height     = '280px';
-    canvas.style.zIndex     = '9500';
-    canvas.style.borderRadius = '10px';
-    canvas.style.cursor     = 'grab';
-    canvas.style.userSelect = 'none';
-    canvas.style.touchAction = 'none';
-    canvas.style.pointerEvents = 'auto';
-    canvas.style.boxShadow  = '0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)';
-    canvas.style.background = 'rgba(10,5,1,0.92)';
-    document.body.appendChild(canvas);
+    canvas.style.width        = `${CSS_SIZE}px`;
+    canvas.style.height       = `${CSS_SIZE}px`;
+    canvas.style.cursor       = 'grab';
+    canvas.style.userSelect   = 'none';
+    canvas.style.touchAction  = 'none';
+    canvas.style.display      = 'block';
+    wrap.appendChild(canvas);
+    document.body.appendChild(wrap);
 
+    this._wrap     = wrap;
+    this._header   = header;
+    this._headerLabel = headerLabel;
+    this._collapseBtn = collapseBtn;
     this._canvas   = canvas;
     this._model    = model;
     this._ctx      = canvas.getContext('2d');
@@ -166,6 +375,17 @@ export class EpicycleOverlay {
     this._resizeStartX  = 0;
     this._resizeStartY  = 0;
     this._resizeStartSz = 0;
+    this._collapsed = (() => {
+      try { return localStorage.getItem(COLLAPSE_KEY) === '1'; }
+      catch (_e) { return false; }
+    })();
+    this._applyCollapsedState();
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._collapsed = !this._collapsed;
+      try { localStorage.setItem(COLLAPSE_KEY, this._collapsed ? '1' : '0'); } catch (_e) {}
+      this._applyCollapsedState();
+    });
 
     this._setSize();
     this._loadPosition();
@@ -191,7 +411,19 @@ export class EpicycleOverlay {
     // right amount of screen real estate after a resize drag.
     this._canvas.style.width  = `${sz}px`;
     this._canvas.style.height = `${sz}px`;
+    if (this._wrap) this._wrap.style.width = `${sz}px`;
     this._dpr = dpr;
+  }
+
+  _applyCollapsedState() {
+    if (!this._canvas) return;
+    if (this._collapsed) {
+      this._canvas.style.display = 'none';
+      this._collapseBtn.textContent = '▸';
+    } else {
+      this._canvas.style.display = 'block';
+      this._collapseBtn.textContent = '▾';
+    }
   }
 
   // Restore saved bottom/right position + size; fall back to CSS defaults.
@@ -200,78 +432,75 @@ export class EpicycleOverlay {
     try {
       const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (saved && saved.v === STORE_VERSION
-          && typeof saved.right === 'number' && typeof saved.bottom === 'number') {
-        // Restore size first so positioning math uses the right value.
+          && typeof saved.left === 'number' && typeof saved.top === 'number') {
         if (typeof saved.size === 'number') {
           this._cssSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, saved.size));
           this._setSize();
         }
-        const sz        = this._cssSize;
-        const minBottom = 136;   // stay above 122px bar + 14px clearance
-        const maxBottom = Math.max(minBottom, window.innerHeight - sz);
-        const bottom    = Math.max(minBottom, Math.min(maxBottom, saved.bottom));
-        const right     = Math.max(0, Math.min(window.innerWidth - sz, saved.right));
-        this._canvas.style.right  = `${right}px`;
-        this._canvas.style.bottom = `${bottom}px`;
-        this._canvas.style.left   = 'auto';
-        this._canvas.style.top    = 'auto';
+        const sz   = this._cssSize;
+        const left = Math.max(0, Math.min(window.innerWidth  - sz, saved.left));
+        const top  = Math.max(0, Math.min(window.innerHeight - sz, saved.top));
+        this._wrap.style.left   = `${left}px`;
+        this._wrap.style.top    = `${top}px`;
+        this._wrap.style.right  = 'auto';
+        this._wrap.style.bottom = 'auto';
       } else if (saved) {
-        // Old version — clear stale data so CSS defaults apply.
+        // Old (v5 bottom-right) schema — clear so the new default applies.
         localStorage.removeItem(STORE_KEY);
       }
     } catch (_e) { /* ignore corrupt storage */ }
   }
 
-  _savePosition(right, bottom) {
+  _savePosition(left, top) {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(
-        { v: STORE_VERSION, right, bottom, size: this._cssSize }
+        { v: STORE_VERSION, left, top, size: this._cssSize }
       ));
     } catch (_e) {}
   }
 
   _attachDrag() {
-    const el = this._canvas;
+    const wrap   = this._wrap;
+    const header = this._header;
+    const el     = this._canvas;  // local alias used by the existing hover handlers below
 
-    // Bottom-left 28×28 CSS-px corner is the resize handle.
-    // The overlay is anchored bottom-right, so dragging that corner
-    // toward the upper-left grows the panel; toward lower-right shrinks it.
+    // Bottom-left 28×28 CSS-px corner of the canvas is the resize grip.
     const inResizeZone = (localX, localY) => {
       const sz = this._cssSize;
       return localX < 28 && localY > sz - 28;
     };
 
     // ── Pointer start ──────────────────────────────────────────────────
-    const onStart = (clientX, clientY, isTouch) => {
-      const rect  = el.getBoundingClientRect();
-      const localX = clientX - rect.left;
-      const localY = clientY - rect.top;
-
-      if (inResizeZone(localX, localY)) {
-        // ── Resize mode ──
+    // `source` selects which gesture: 'header' = drag the wrapper,
+    // 'canvas' = only resize if click landed in the bottom-left grip.
+    const onStart = (clientX, clientY, source) => {
+      const rect = wrap.getBoundingClientRect();
+      if (source === 'canvas') {
+        const cRect  = el.getBoundingClientRect();
+        const localX = clientX - cRect.left;
+        const localY = clientY - cRect.top;
+        if (!inResizeZone(localX, localY)) return;
         this._resizing      = true;
         this._resizeStartX  = clientX;
         this._resizeStartY  = clientY;
         this._resizeStartSz = this._cssSize;
         el.style.cursor     = 'nesw-resize';
-      } else {
-        // ── Drag/move mode ──
-        this._dragging = true;
-        el.style.cursor = 'grabbing';
-        this._dragOffX = clientX - rect.left;
-        this._dragOffY = clientY - rect.top;
-        // Switch to left/top positioning so movement maths is simple.
-        el.style.left   = `${rect.left}px`;
-        el.style.top    = `${rect.top}px`;
-        el.style.right  = 'auto';
-        el.style.bottom = 'auto';
+        return;
       }
+      // Header drag — move the whole wrapper.
+      this._dragging = true;
+      header.style.cursor = 'grabbing';
+      this._dragOffX = clientX - rect.left;
+      this._dragOffY = clientY - rect.top;
+      wrap.style.left   = `${rect.left}px`;
+      wrap.style.top    = `${rect.top}px`;
+      wrap.style.right  = 'auto';
+      wrap.style.bottom = 'auto';
     };
 
     // ── Pointer move ───────────────────────────────────────────────────
     const onMove = (clientX, clientY) => {
       if (this._resizing) {
-        // Diagonal drag: left OR up = bigger; right OR down = smaller.
         const dx    = this._resizeStartX - clientX;
         const dy    = this._resizeStartY - clientY;
         const delta = (dx + dy) / 2;
@@ -284,35 +513,24 @@ export class EpicycleOverlay {
         return;
       }
       if (!this._dragging) return;
-      const vw     = window.innerWidth;
-      const vh     = window.innerHeight;
-      const size   = this._cssSize;
-      let newLeft  = clientX - this._dragOffX;
-      let newTop   = clientY - this._dragOffY;
-      newLeft = Math.max(0, Math.min(vw - size, newLeft));
-      newTop  = Math.max(0, Math.min(vh - size, newTop));
-      el.style.left = `${newLeft}px`;
-      el.style.top  = `${newTop}px`;
+      const vw   = window.innerWidth;
+      const vh   = window.innerHeight;
+      const size = this._cssSize;
+      const nL = Math.max(0, Math.min(vw - size, clientX - this._dragOffX));
+      const nT = Math.max(0, Math.min(vh - size, clientY - this._dragOffY));
+      wrap.style.left = `${nL}px`;
+      wrap.style.top  = `${nT}px`;
     };
 
     // ── Pointer end ────────────────────────────────────────────────────
     const onEnd = () => {
       if (!this._dragging && !this._resizing) return;
-      const wasResizing = this._resizing;
       this._dragging = false;
       this._resizing = false;
+      header.style.cursor = 'grab';
       el.style.cursor = 'grab';
-
-      // Convert back to right/bottom anchoring and save.
-      const rect   = el.getBoundingClientRect();
-      const size   = this._cssSize;
-      const right  = Math.max(0, window.innerWidth  - rect.left - size);
-      const bottom = Math.max(136, Math.min(window.innerHeight - size, window.innerHeight - rect.top - size));
-      el.style.right  = `${right}px`;
-      el.style.bottom = `${bottom}px`;
-      el.style.left   = 'auto';
-      el.style.top    = 'auto';
-      this._savePosition(right, bottom);
+      const rect = wrap.getBoundingClientRect();
+      this._savePosition(rect.left, rect.top);
     };
 
     // ── Cursor hint on hover (desktop) ─────────────────────────────────
@@ -328,20 +546,35 @@ export class EpicycleOverlay {
     });
 
     // ── Mouse events ───────────────────────────────────────────────────
+    // Header pointer-down → drag the wrapper.
+    header.addEventListener('mousedown', (e) => {
+      if (e.target === this._collapseBtn) return; // collapse btn is its own thing
+      e.preventDefault();
+      onStart(e.clientX, e.clientY, 'header');
+    });
+    // Canvas pointer-down → only resize if click landed in the bottom-left grip.
     el.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      onStart(e.clientX, e.clientY, false);
+      onStart(e.clientX, e.clientY, 'canvas');
     });
     window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
     window.addEventListener('mouseup',   () => onEnd());
 
     // ── Touch events (drag OR resize via corner handle) ────────────────
+    header.addEventListener('touchstart', (e) => {
+      if (e.target === this._collapseBtn) return;
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        onStart(t.clientX, t.clientY, 'header');
+      }
+    }, { passive: false });
     el.addEventListener('touchstart', (e) => {
       e.preventDefault();
       if (e.touches.length === 1) {
-        // Single touch: drag or resize (corner handle)
+        // Single touch on canvas: resize via bottom-left grip
         const t = e.touches[0];
-        onStart(t.clientX, t.clientY, true);
+        onStart(t.clientX, t.clientY, 'canvas');
       } else if (e.touches.length === 2) {
         // Two-finger pinch to resize
         this._dragging = false;
@@ -379,16 +612,47 @@ export class EpicycleOverlay {
   }
 
   _draw() {
-    // Hide when the astrology modal is open — the diagram is astronomy-only.
-    const astroApp = document.getElementById('astrology-app');
-    const astrologyOpen = astroApp && !astroApp.hidden;
-    if (astrologyOpen) {
-      this._canvas.style.display = 'none';
-      return;
+    // Visibility gate — overlay only renders when the user is looking at
+    // the main 3D world (first-person OR god-mode). Any fullscreen modal
+    // takes priority and hides it: the Astrology app, the four iframe
+    // overlays (⊕ ephemeris, ⊚ reference, ◉ observation, ◎ explainer),
+    // and the AR sky overlay.
+    const blockers = [
+      ['#astrology-app',  (e) => !e.hidden],
+      ['#ias-overlay',    (e) => e.style.display && e.style.display !== 'none'],
+      ['#iar-overlay',    (e) => e.style.display && e.style.display !== 'none'],
+      ['#obs-overlay',    (e) => e.style.display && e.style.display !== 'none'],
+      ['#obse-overlay',   (e) => e.style.display && e.style.display !== 'none'],
+      ['#ar-overlay',     (e) => e.style.display && e.style.display !== 'none'],
+    ];
+    for (const [sel, vis] of blockers) {
+      const el = document.querySelector(sel);
+      if (el && vis(el)) {
+        if (this._wrap) this._wrap.style.display = 'none';
+        else this._canvas.style.display = 'none';
+        return;
+      }
     }
-    this._canvas.style.display = '';
+    if (this._wrap) this._wrap.style.display = '';
+    else this._canvas.style.display = '';
 
+    // Update header label even when collapsed — so the user always sees
+    // which body the diagram is currently tracking without expanding.
     const s   = this._model.state;
+    const followCheck = s.FollowTarget;
+    const isJupMoonCheck = typeof followCheck === 'string' && followCheck.startsWith('jmoon:');
+    const headerBody = isJupMoonCheck ? followCheck
+      : (typeof followCheck === 'string' && ALL_BODIES.has(followCheck)) ? followCheck : 'mars';
+    if (this._headerLabel) {
+      const niceName = isJupMoonCheck
+        ? (_JMOON_MAP.get(followCheck.slice(6))?.name || 'Jupiter Moon')
+        : (BODY_LABELS[headerBody] || headerBody);
+      this._headerLabel.textContent = `${niceName}  ·  al-Shatir`;
+    }
+
+    // If the user has collapsed the panel, skip the expensive draw.
+    if (this._collapsed) return;
+
     const ctx = this._ctx;
     const dpr = this._dpr;
     const sz  = this._cssSize;    // dynamic — updated by resize drags
@@ -462,10 +726,27 @@ export class EpicycleOverlay {
       col   = JMOON_COLORS[moonId] || '#aabbcc';
       label = moonDef.name;
     } else {
-      geo = epicycleGeometry(body, animDate);
-      if (!geo) return;
-      col   = BODY_COLORS[body] || '#f4a640';
-      label = BODY_LABELS[body] || body;
+      // ── al-Shatir double-epicycle geometry ──────────────────────────
+      // Compute the body's full arm chain (2 arms for Sun, 3 for everyone
+      // else). The chain is identical to the one driving Observation Mode
+      // and the ⊕ ephemeris page — same engine, same numbers.
+      const jdNow = shaDateToJD(animDate);
+      const raw   = shaComputeRaw(jdNow);
+      let chain   = null;
+      // Reroute synthetic "neptune" / unknown bodies → mars (best in-model
+      // analogue). Al-Shatir didn't model anything outside Saturn.
+      const shaBody = (body === 'neptune' || !SHA_PARAM[body] && body !== 'sun') ? 'mars' : body;
+      chain = shaChainFor(shaBody, raw);
+      if (!chain) return;
+      geo = {
+        type:    'shatir',
+        chain,
+        body:    shaBody,
+        jd:      jdNow,
+        formula: SHA_FORMULA[shaBody] || '',
+      };
+      col   = BODY_COLORS[shaBody] || '#f4a640';
+      label = BODY_LABELS[shaBody] || shaBody;
     }
 
     // ── Panel background — warm parchment, semi-transparent ──────────
@@ -493,14 +774,10 @@ export class EpicycleOverlay {
 
     if (geo.type === 'jmoon') {
       _drawJupiterMoon(ctx, cx, cy, maxR, col, label, moonDef, geo.jupAngle, geo.moonAngle, sz);
-    } else if (geo.type === 'eccentric') {
-      _drawEccentric(ctx, cx, cy, maxR, col, label, geo);
-    } else if (body === 'moon') {
-      _drawMoon(ctx, cx, cy, maxR, col, geo);
-    } else if (body === 'mercury' || body === 'venus') {
-      _drawInnerPlanet(ctx, cx, cy, maxR, col, label, geo);
     } else {
-      _drawOuterPlanet(ctx, cx, cy, maxR, col, label, body, geo);
+      // All Almagest bodies (sun + 5 planets + moon) share the same
+      // unified al-Shatir arm-chain renderer now.
+      _drawShatirChain(ctx, cx, cy, maxR, col, label, geo);
     }
 
     // ── Formula strip ─────────────────────────────────────────────────
@@ -701,6 +978,7 @@ function _drawTitle(ctx, sz, col, label, geo) {
   ctx.fillText(label, 18, midY);
 
   const type = geo.type === 'jmoon'     ? 'jmoon'
+             : geo.type === 'shatir'    ? 'shatir'
              : geo.type === 'eccentric' ? 'eccentric'
              : (label === 'Moon') ? 'moon'
              : (label === 'Mercury' || label === 'Venus') ? 'inner' : 'outer';
@@ -720,10 +998,16 @@ function _drawInfoStrip(ctx, sz, geo, body, col) {
   ctx.fillRect(0, y0, sz, INFO_H);
 
   const type = geo.type === 'jmoon'     ? 'jmoon'
+             : geo.type === 'shatir'    ? 'shatir'
              : geo.type === 'eccentric' ? 'eccentric'
              : (body === 'moon' || body?.startsWith('jmoon:')) ? 'moon'
              : (body === 'mercury' || body === 'venus') ? 'inner' : 'outer';
   const meta = MODEL_META[type] || {};
+  // For shatir, override line[0] with the body-specific formula stashed
+  // in geo.formula so each planet shows its own arm-chain expression.
+  if (type === 'shatir' && geo.formula) {
+    meta.lines = [geo.formula, MODEL_META.shatir.lines[0]];
+  }
 
   const SERIF = 'Georgia, "Palatino Linotype", serif';
   ctx.textAlign    = 'left';
@@ -786,6 +1070,141 @@ function _drawInfoStrip(ctx, sz, geo, body, col) {
     ctx.fillStyle = 'rgba(190, 155, 90, 0.38)';
     ctx.fillText('* synthetic — not in Almagest', 14, y0 + L[3]);
   }
+}
+
+// ── Ibn al-Shatir double-epicycle arm chain (unified for all 7 bodies) ──
+//
+// Renders the 2- or 3-arm chain that emerges from the al-Shatir geometry,
+// modelled visually on `drawDiagram` in `ibn-alshatir-reference.html`:
+//   • dashed deferent ring (radius = |arm[0]|)
+//   • epicycle ring at each non-terminal joint (radius = next arm's length)
+//   • arms drawn solid, joints as dots
+//   • planet at chain tip with radial glow + glyph
+//   • subtle apogee tick + body trail buffer
+function _drawShatirChain(ctx, cx, cy, maxR, col, label, geo) {
+  const chain = geo.chain;
+  if (!chain || chain.length === 0) return;
+
+  // Scale so the chain fits the available radius. The fully extended chain
+  // length is the sum of all R's; we map that to ~0.95 × maxR.
+  const sumR = chain.reduce((a, c) => a + c.R, 0);
+  const sc   = (0.95 * maxR) / Math.max(1, sumR);
+
+  // Convert each arm to pixel (dx, dy). Canvas y goes down, so flip sin.
+  const arms = chain.map((a) => ({
+    dx: a.R * sc * Math.cos(a.angle * Math.PI / 180),
+    dy: -a.R * sc * Math.sin(a.angle * Math.PI / 180),
+    R:  a.R * sc,
+    label: a.label,
+  }));
+
+  // Accumulate chain — pts[0] = Earth, pts[N] = planet.
+  const pts = [{ x: cx, y: cy }];
+  arms.forEach((a) => {
+    const prev = pts[pts.length - 1];
+    pts.push({ x: prev.x + a.dx, y: prev.y + a.dy });
+  });
+  const planet = pts[pts.length - 1];
+
+  // ── Faint vignette behind diagram ───────────────────────────────────
+  const vg = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 1.1);
+  vg.addColorStop(0,   'rgba(22, 38, 68, 0.18)');
+  vg.addColorStop(1,   'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = vg;
+  ctx.beginPath();
+  ctx.arc(cx, cy, maxR * 1.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Deferent guide ring (dashed) ────────────────────────────────────
+  const R1px = arms[0].R;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R1px, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(120, 140, 180, 0.50)';
+  ctx.lineWidth = 1.0;
+  ctx.setLineDash([4, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── Epicycle rings at each non-terminal joint ───────────────────────
+  // For joint i (i ≥ 1, not the planet), the circle's radius equals
+  // |arm[i]| — the arm leaving that joint sweeps out this epicycle.
+  for (let i = 1; i < pts.length - 1; i++) {
+    const r = arms[i].R;
+    if (r < 1.2) continue;
+    ctx.beginPath();
+    ctx.arc(pts[i].x, pts[i].y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = col + '70';
+    ctx.lineWidth = 1.1;
+    ctx.setLineDash([3, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Arms (solid lines, color-coded) ─────────────────────────────────
+  const armColors = ['#9bb0c8', col + 'dd', '#f0a030cc', '#c8a060cc'];
+  arms.forEach((a, i) => {
+    const from = pts[i], to = pts[i + 1];
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.strokeStyle = armColors[i] || col + 'dd';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+  });
+
+  // ── Joint dots ──────────────────────────────────────────────────────
+  for (let i = 1; i < pts.length - 1; i++) {
+    ctx.beginPath();
+    ctx.arc(pts[i].x, pts[i].y, 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = armColors[i - 1] || col + 'cc';
+    ctx.fill();
+    ctx.strokeStyle = '#06070c';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // ── Planet (glow + body + glyph) ────────────────────────────────────
+  const dr = 5.5;
+  const glow = ctx.createRadialGradient(planet.x, planet.y, 0, planet.x, planet.y, dr * 3.2);
+  glow.addColorStop(0, col + 'cc');
+  glow.addColorStop(0.4, col + '55');
+  glow.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(planet.x, planet.y, dr * 3.2, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(planet.x, planet.y, dr, 0, Math.PI * 2);
+  ctx.fillStyle = col;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(planet.x - dr * 0.3, planet.y - dr * 0.3, dr * 0.45, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.40)';
+  ctx.fill();
+
+  // ── Body label above the planet ─────────────────────────────────────
+  ctx.font = 'italic 11px Georgia, "Palatino Linotype", serif';
+  ctx.fillStyle = col;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(label, planet.x, planet.y - dr - 4);
+
+  // ── Earth (Z) at chain origin ───────────────────────────────────────
+  const eg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 8);
+  eg.addColorStop(0, '#4a90d0');
+  eg.addColorStop(1, '#0a2040');
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = eg;
+  ctx.fill();
+  ctx.strokeStyle = '#2060a0';
+  ctx.lineWidth = 1.0;
+  ctx.stroke();
+  ctx.font = '8px Cinzel, Georgia, serif';
+  ctx.fillStyle = 'rgba(100, 170, 230, 0.85)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Z (Earth)', cx, cy + 9);
 }
 
 // ── Jupiter moon — compound Ptolemaic epicycle ───────────────────────────────
