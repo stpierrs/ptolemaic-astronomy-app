@@ -70,6 +70,7 @@ export function findAnaretae(chart, apheta) {
         target:      `${p.name} ${aspectName(ang)}`,
         arcDeg:      arc,
         aspectAngle: ang,
+        planet:      p.name,
       });
       if (ang !== 0 && ang !== 180) {
         const arc2 = Math.abs(signedArc(apheta.lon, p.lon + ang));
@@ -77,6 +78,7 @@ export function findAnaretae(chart, apheta) {
           target:      `${p.name} ${aspectName(ang)} (other side)`,
           arcDeg:      arc2,
           aspectAngle: ang,
+          planet:      p.name,
         });
       }
     }
@@ -104,7 +106,7 @@ export function primaryDirections(chart, currentAge, maxYears = 30) {
       const arc = ((targetLon - apheta.lon) % 360 + 360) % 360;
       const atAge = Math.round(arc);
       if (atAge >= currentAge && atAge <= currentAge + maxYears) {
-        events.push({ atAge, planet: p.name, aspect: aspectName(ang) });
+        events.push({ atAge, planet: p.name, aspect: aspectName(ang), arcDeg: arc });
       }
     }
   }
