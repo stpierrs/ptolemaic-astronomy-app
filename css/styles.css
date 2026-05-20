@@ -1424,13 +1424,13 @@ body::after {
 
 /* ── Body & root background ─────────────────────────────────────────── */
 html, body {
-  background: #0c0906;
+  background: var(--bg);
   font-family: Georgia, 'Times New Roman', system-ui, serif;
 }
 
 /* ── Header — stone lintel with gold-ruled border ───────────────────── */
 header {
-  background: linear-gradient(180deg, #2c1e0c 0%, #1e1408 100%);
+  background: linear-gradient(180deg, var(--row) 0%, var(--panel) 100%);
   border-bottom: none;
   position: relative;
 }
@@ -1451,7 +1451,7 @@ header h1 {
   opacity: 0.9;
 }
 header .info-btn {
-  background: linear-gradient(180deg, #3a2810 0%, #2a1c08 100%);
+  background: linear-gradient(180deg, var(--border) 0%, var(--row) 100%);
   border: 1px solid var(--border);
   color: var(--fg);
   font-family: inherit;
@@ -1459,16 +1459,16 @@ header .info-btn {
 header .info-btn:hover {
   border-color: var(--accent);
   color: var(--gold);
-  background: linear-gradient(180deg, #4a3418 0%, #3a2410 100%);
+  background: linear-gradient(180deg, var(--stone-mid) 0%, var(--border) 100%);
 }
 header .info-popup {
-  background: #1e1408;
+  background: var(--panel);
   border: 1px solid var(--border);
   box-shadow: 0 4px 16px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(212,160,32,0.1);
   color: var(--muted);
 }
 header .info-popup.legend-popup {
-  background: #1e1408;
+  background: var(--panel);
   color: var(--fg);
   border: 2px solid var(--accent);
   box-shadow: 0 8px 32px rgba(0,0,0,0.8), inset 0 0 0 1px var(--terracotta);
@@ -1602,7 +1602,7 @@ header .info-popup.legend-popup code {
 /* ── Bottom bar — temple podium ──────────────────────────────────────── */
 /* IMPORTANT: keep position:absolute so bar stays pinned to viewport bottom */
 #bottom-bar {
-  background: linear-gradient(0deg, #0e0804 0%, #1e1408 50%, #2a1c0c 100%);
+  background: linear-gradient(0deg, var(--bg) 0%, var(--panel) 50%, #2a1c0c 100%);
   border-top: 3px solid var(--accent);
   /* position, bottom, left, right, height stay from the base rule */
 }
@@ -1781,7 +1781,7 @@ header .info-popup.legend-popup code {
 
 /* ── Search boxes ────────────────────────────────────────────────────── */
 .body-search-input {
-  background: #1e1408;
+  background: var(--panel);
   color: var(--fg);
   border: 1px solid var(--border);
   font-family: inherit;
@@ -2614,7 +2614,7 @@ body.fp-mode #view > .stel-bar { display: none !important; }
   position: fixed;
   inset: 0;
   z-index: 9500;
-  background: #0e121a;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3128,7 +3128,7 @@ body.fp-mode #god-fabs { display: none; }
 .pw-btn:disabled { opacity: 0.55; cursor: default; }
 .pw-btn-primary {
   background: var(--accent);
-  color: #0c0906;
+  color: var(--bg);
   border-color: var(--accent);
 }
 .pw-btn-primary:hover:not(:disabled) { opacity: 0.88; }
@@ -3246,7 +3246,7 @@ body.fp-mode #god-fabs { display: none; }
   justify-content: space-between;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, #2c1e0c 0%, #1e1408 100%);
+  background: linear-gradient(180deg, var(--row) 0%, var(--panel) 100%);
   border-radius: 10px 10px 0 0;
 }
 .nc-title {
@@ -3632,7 +3632,7 @@ body.fp-mode #god-fabs { display: none; }
 }
 .pa-tab-btn.active,
 .pa-tab-btn:hover {
-  background: var(--accent); color: #1a0e00; border-color: var(--accent);
+  background: var(--accent); color: var(--bg); border-color: var(--accent);
 }
 
 .pa-body {
@@ -3681,10 +3681,10 @@ body.fp-mode #god-fabs { display: none; }
 }
 .pa-btn:hover { border-color: var(--accent); color: var(--accent); }
 .pa-btn-primary {
-  background: var(--accent); color: #1a0e00;
+  background: var(--accent); color: var(--bg);
   border-color: var(--accent); font-weight: 700;
 }
-.pa-btn-primary:hover { background: #e8c040; color: #1a0e00; }
+.pa-btn-primary:hover { background: var(--gold); color: var(--bg); }
 
 /* Ptolemy quote strip */
 .pa-ptolemy-quote {
@@ -3871,7 +3871,7 @@ body.fp-mode #god-fabs { display: none; }
 
 /* ── Scrolls / Cards tab ─────────────────────────────────────────────────── */
 .pa-tab-btn-cards { border-color: rgba(212,160,32,0.5) !important; color: var(--accent) !important; }
-.pa-tab-btn-cards.active { background: var(--accent) !important; color: #1a0e00 !important; }
+.pa-tab-btn-cards.active { background: var(--accent) !important; color: var(--bg) !important; }
 
 /* ── Scrolls / Card Deck ─────────────────────────────────────────────────── */
 .pa-sc-hero {
