@@ -249,3 +249,111 @@ export function moietyOrb(planetA, planetB) {
   const mb = (PLANET_ORBS[planetB] || 8) / 2;
   return ma + mb;
 }
+
+// ── Accidental Dignity (PART 8.2) ────────────────────────────────────────────
+// House position + cardine proximity + solar phase + retrograde + sect.
+// Importing wholeSignHouseOf / houseTier from houses.js for the house tier.
+
+import { wholeSignHouseOf, houseTier } from './houses.js';
+
+const _CAZIMI_DEG     = 17 / 60;
+const _COMBUST_DEG    = 8;
+const _UNDER_RAYS_DEG = 15;
+
+const _DIURNAL_PLANETS   = new Set(['sun', 'jupiter', 'saturn']);
+const _NOCTURNAL_PLANETS = new Set(['moon', 'venus', 'mars']);
+
+/**
+ * Accidental dignity per spec PART 8.2.
+ *
+ * @param {string} planetName
+ * @param {object} chart - { ascLon, mcLon?, isDiurnal, planets:[{name,lon,retrograde?}] }
+ * @returns {{ score: number, breakdown: string[], flags: object }}
+ */
+export function getAccidentalDignity(planetName, chart) {
+  if (!chart || !Array.isArray(chart.planets)) {
+    return { score: 0, breakdown: ['no chart'], flags: {} };
+  }
+  const p = chart.planets.find(pl => pl.name === planetName);
+  if (!p) return { score: 0, breakdown: ['no planet'], flags: {} };
+
+  const flags = {};
+  const breakdown = [];
+  let score = 0;
+
+  // House position (whole-sign)
+  const house = wholeSignHouseOf(p.lon, chart.ascLon);
+  const tier  = houseTier(house);
+  flags.house = house;
+  flags.houseTier = tier;
+  if (tier === 'angular')   { score += 4; breakdown.push(`Angular H${house} +4`); }
+  if (tier === 'succedent') { score += 2; breakdown.push(`Succedent H${house} +2`); }
+  if (tier === 'cadent')    { score -= 2; breakdown.push(`Cadent H${house} −2`); }
+
+  // Cardine proximity (within 5° of ASC, MC, DSC, or IC)
+  const cardines = [
+    chart.ascLon,
+    ((chart.ascLon + 180) % 360),
+    chart.mcLon ?? null,
+    chart.mcLon != null ? ((chart.mcLon + 180) % 360) : null,
+  ];
+  for (const c of cardines) {
+    if (c == null) continue;
+    const raw = Math.abs(p.lon - c);
+    const sep = Math.min(raw, 360 - raw);
+    if (sep <= 5) {
+      flags.atCardine = true;
+      score += 2; breakdown.push('At cardine (≤5°) +2');
+      break;
+    }
+  }
+
+  // Solar phase (skip for Sun itself)
+  if (planetName !== 'sun') {
+    const sun = chart.planets.find(pl => pl.name === 'sun');
+    if (sun) {
+      const raw = Math.abs(p.lon - sun.lon);
+      const sep = Math.min(raw, 360 - raw);
+      if (sep <= _CAZIMI_DEG)        { flags.cazimi  = true; score += 5; breakdown.push('Cazimi +5'); }
+      else if (sep <= _COMBUST_DEG)  { flags.combust = true; score -= 5; breakdown.push('Combust −5'); }
+      else if (sep <= _UNDER_RAYS_DEG){ flags.underRays = true; score -= 2; breakdown.push('Under rays −2'); }
+      else {
+        const signedE = ((p.lon - sun.lon + 540) % 360) - 180;
+        if (signedE < 0) { flags.oriental   = true; score += 1; breakdown.push('Morning star (oriental) +1'); }
+        else             { flags.occidental = true; /* neutral */ }
+      }
+    }
+  }
+
+  // Retrograde
+  if (p.retrograde) {
+    flags.retrograde = true;
+    score -= 1; breakdown.push('Retrograde −1 (intensified but inward)');
+  }
+
+  // Sect
+  const isDay = chart.isDiurnal !== false;
+  if (isDay && _DIURNAL_PLANETS.has(planetName))    { flags.inSect = true; score += 1; breakdown.push('In sect +1'); }
+  if (!isDay && _NOCTURNAL_PLANETS.has(planetName)) { flags.inSect = true; score += 1; breakdown.push('In sect +1'); }
+  // Mercury's sect tracks its solar phase
+  if (planetName === 'mercury' && flags.oriental && isDay)    { flags.inSect = true; score += 1; breakdown.push('Mercury morning-star, in sect +1'); }
+  if (planetName === 'mercury' && flags.occidental && !isDay) { flags.inSect = true; score += 1; breakdown.push('Mercury evening-star, in sect +1'); }
+
+  return { score, breakdown, flags };
+}
+
+/**
+ * Combined essential + accidental dignity for a planet in a chart.
+ */
+export function getFullDignity(planetName, chart) {
+  const planet = chart?.planets?.find(p => p.name === planetName);
+  if (!planet) return null;
+  const essential  = getPlanetDignity(planetName, planet.lon, chart.isDiurnal);
+  const accidental = getAccidentalDignity(planetName, chart);
+  return {
+    planet:     planetName,
+    essential,
+    accidental,
+    composite:  essential.score + accidental.score,
+  };
+}

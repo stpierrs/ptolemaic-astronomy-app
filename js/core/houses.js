@@ -103,3 +103,15 @@ export function wholeSignHouseOf(lon, ascLon) {
   const lonSign = Math.floor((((lon    % 360) + 360) % 360) / 30);
   return ((lonSign - ascSign + 12) % 12) + 1;
 }
+
+/**
+ * Classical house tier: angular (I/IV/VII/X), succedent (II/V/VIII/XI),
+ * cadent (III/VI/IX/XII). PART 8.2 — drives accidental-dignity weighting.
+ * @param {number} houseNum - 1..12
+ * @returns {'angular'|'succedent'|'cadent'}
+ */
+export function houseTier(houseNum) {
+  if (houseNum === 1 || houseNum === 4 || houseNum === 7 || houseNum === 10) return 'angular';
+  if (houseNum === 2 || houseNum === 5 || houseNum === 8 || houseNum === 11) return 'succedent';
+  return 'cadent';
+}
