@@ -823,18 +823,19 @@ window.demos = demos;
 {
   const splash = document.getElementById('splash-screen');
   if (splash) {
-    // Fade out on first model update
-    model.addEventListener('update', () => {
-      if (!splash._fadedOut) {
-        splash._fadedOut = true;
-        // Brief delay so users can see the splash
-        setTimeout(() => {
-          splash.style.transition = 'opacity 0.6s';
-          splash.style.opacity = '0';
-          setTimeout(() => { splash.remove(); }, 700);
-        }, 1100);
-      }
-    }, { once: true });
+    const dismissSplash = () => {
+      if (splash._fadedOut) return;
+      splash._fadedOut = true;
+      setTimeout(() => {
+        splash.style.transition = 'opacity 0.6s';
+        splash.style.opacity = '0';
+        setTimeout(() => { splash.remove(); }, 700);
+      }, 800);
+    };
+    // Dismiss on first model update (e.g. user interaction or autoplay tick)
+    model.addEventListener('update', dismissSplash, { once: true });
+    // Fallback: dismiss after 1.8s even if autoplay is paused
+    setTimeout(dismissSplash, 1800);
   }
 }
 
