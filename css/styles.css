@@ -2207,10 +2207,10 @@ body.theme-parchment #view {
    Stellarium-style Time Bar (replaces Feature 6 scrubber + fp-time-bar)
    ════════════════════════════════════════════════════════════════════════ */
 
-/* God-mode placement: bottom of #view */
+/* God-mode placement: sits above the 96px bottom-bar (same logic as #info-bar) */
 #view .stel-bar {
   position: absolute;
-  bottom: 0;
+  bottom: 96px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -2240,7 +2240,7 @@ body.theme-parchment #view {
   -webkit-backdrop-filter: blur(10px);
   pointer-events: auto;
   white-space: nowrap;
-  min-width: 520px;
+  min-width: min(520px, 96vw);
   zoom: var(--ui-zoom, 1);
   box-shadow: 0 -4px 24px rgba(0,0,0,0.55);
 }

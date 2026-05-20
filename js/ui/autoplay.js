@@ -133,8 +133,8 @@ export class Autoplay {
     const refresh = () => {
       btn.textContent = this.playing ? '⏸  ' + t('btn_pause') : '▶  ' + t('btn_play');
       status.textContent = this.playing ? t('status_running') : t('status_paused');
-      numEl.value = (+this.speed).toFixed(4);
-      rangeEl.value = Math.log10(Math.max(1e-6, this.speed)).toFixed(2);
+      numEl.value = Math.abs(this.speed).toFixed(4);
+      rangeEl.value = Math.log10(Math.max(1e-6, Math.abs(this.speed))).toFixed(2);
       presetBtns.forEach((b) => {
         const active = Math.abs(parseFloat(b.dataset.speed) - this.speed) < 1e-6;
         b.setAttribute('aria-current', active ? 'true' : 'false');
