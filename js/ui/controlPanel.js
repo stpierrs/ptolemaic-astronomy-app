@@ -5,6 +5,10 @@ import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { raDecToAzEl } from '../core/transforms.js';
+// Astrology overlay (Guide 14) — additive only; tracker computation untouched.
+import { applyDignityLayer }   from './ephemerisDignityLayer.js';
+import { upcomingEvents }      from '../core/ephemerisEvents.js';
+import { PLANET_SYMBOLS }      from '../core/astrology.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
 import { BLACK_HOLES } from '../core/blackHoles.js';
@@ -3507,7 +3511,58 @@ export function buildTrackerHud(trackerEl, model) {
       const rec = blockCache.get(info.target);
       if (rec) trackerEl.appendChild(rec.block);
     }
+
+    // ── Guide 14 — astrology overlay (additive) ───────────────────────────
+    // Per-block dignity stripe + score badge for the seven classical bodies.
+    // Wrapped in try/catch so an astrology-layer bug can't break the HUD.
+    try {
+      const sunInfo = infos.find(i => /(^|:)sun$/i.test(i.target || ''));
+      const isDiurnal = sunInfo ? (sunInfo.elevation || 0) > 0 : true;
+      for (const info of infos) {
+        const rec = blockCache.get(info.target);
+        if (!rec) continue;
+        applyDignityLayer(rec.block, {
+          target: info.target,
+          ra:  info.ptolemyReading?.ra,
+          dec: info.ptolemyReading?.dec,
+        }, isDiurnal);
+      }
+    } catch (e) { /* tolerate astrology-layer failures */ }
+
+    // Events feed (throttled by simulated date — recomputes only when the
+    // model's DateTime moves by ≥1 day, or every 30s wall-clock).
+    refreshEventsFeed();
   };
+
+  // ── Events feed (Guide 14) ─────────────────────────────────────────────
+  let eventsEl = null;
+  let _lastEventsDt   = -Infinity;
+  let _lastEventsWall = 0;
+  function refreshEventsFeed() {
+    if (!model.state.ShowLiveEphemeris) return;
+    if (!eventsEl) {
+      eventsEl = document.createElement('div');
+      eventsEl.className = 'tracker-events';
+      trackerEl.appendChild(eventsEl);
+    } else if (eventsEl.parentNode !== trackerEl) {
+      trackerEl.appendChild(eventsEl);
+    }
+    const dt   = model.state.DateTime || 0;
+    const now  = Date.now();
+    if (Math.abs(dt - _lastEventsDt) < 1 && (now - _lastEventsWall) < 30000) return;
+    _lastEventsDt = dt; _lastEventsWall = now;
+    try {
+      const date = dateTimeToDate(dt);
+      const evts = upcomingEvents(date, 14, model.state.BodySource || 'ibnshatir');
+      eventsEl.innerHTML = evts.slice(0, 8).map(e => `
+        <div class="tracker-event">
+          <span class="tracker-event-date">${e.date.toISOString().slice(5,10)}</span>
+          <span class="tracker-event-body">${PLANET_SYMBOLS[e.body] || ''}</span>
+          <span class="tracker-event-detail">${e.detail}</span>
+        </div>
+      `).join('') || '<div class="tracker-event tracker-event-empty">No events in the next 14 days.</div>';
+    } catch (_) { /* leave previous content */ }
+  }
 
   model.addEventListener('update', refresh);
   refresh();

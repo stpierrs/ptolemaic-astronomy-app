@@ -3781,6 +3781,49 @@ body.fp-mode #god-fabs { display: none; }
 .pa-helio-evening-star          { color: #c4aa78; }
 .pa-helio-last-heliacal-setting { color: #ff9944; }
 
+/* Ephemeris dignity overlay (Guide 14) — augments tracker HUD blocks */
+.tracker-block.dig-dom    { box-shadow: inset 3px 0 0 #c8a84b; }
+.tracker-block.dig-exalt  { box-shadow: inset 3px 0 0 #ffd060; }
+.tracker-block.dig-tri    { box-shadow: inset 3px 0 0 #a8d888; }
+.tracker-block.dig-term   { box-shadow: inset 3px 0 0 #88ccaa; }
+.tracker-block.dig-face   { box-shadow: inset 3px 0 0 #888; }
+.tracker-block.dig-per    { box-shadow: inset 3px 0 0 #444; }
+.tracker-block.dig-det    { box-shadow: inset 3px 0 0 #c54040; }
+.tracker-block.dig-fall   { box-shadow: inset 3px 0 0 #7a3030; }
+.dig-badge {
+  font-size: 9px; opacity: 0.85; margin-left: 6px;
+  padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.05);
+}
+.tracker-events {
+  margin-top: 6px; padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 10px;
+}
+.tracker-event       { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; }
+.tracker-event-date  { color: var(--muted); min-width: 36px; }
+.tracker-event-body  { color: #d4a824; }
+.tracker-event-detail{ color: #ccc; }
+.tracker-event-empty { color: var(--muted); font-style: italic; }
+
+/* Ephemeris tab (inside astrology) — dignity-coloured table */
+.pa-ephem-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pa-ephem-table th {
+  color: var(--muted); padding: 4px 6px; text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.pa-ephem-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.pa-ephem-table tr.dig-dom    td:first-child { border-left: 3px solid #c8a84b; }
+.pa-ephem-table tr.dig-exalt  td:first-child { border-left: 3px solid #ffd060; }
+.pa-ephem-table tr.dig-tri    td:first-child { border-left: 3px solid #a8d888; }
+.pa-ephem-table tr.dig-term   td:first-child { border-left: 3px solid #88ccaa; }
+.pa-ephem-table tr.dig-face   td:first-child { border-left: 3px solid #888; }
+.pa-ephem-table tr.dig-det    td:first-child { border-left: 3px solid #c54040; }
+.pa-ephem-table tr.dig-fall   td:first-child { border-left: 3px solid #7a3030; }
+.pa-ephem-table tr.dig-per    td:first-child { border-left: 3px solid #444; }
+
 /* Transit cards + timeline (Guide 10) */
 .pa-transit-card {
   background: rgba(212, 184, 120, 0.04);
