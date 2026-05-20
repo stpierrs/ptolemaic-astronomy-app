@@ -1100,11 +1100,10 @@ function numericRow(model, row) {
   const digits  = Math.max(0, Math.ceil(-Math.log10(row.step)));
   let editing = false;
   function refresh() {
-    const v = model.state[row.key];
+    const v = +model.state[row.key]; // coerce — booleans become 0/1, NaN is caught below
+    if (!Number.isFinite(v)) return;
     rangeEl.value = v;
-    if (!editing) {
-      numEl.value = Number.isFinite(v) ? (+v).toFixed(digits) : v;
-    }
+    if (!editing) numEl.value = v.toFixed(digits);
   }
   // Slider drives setState live; number field commits on Enter or blur so
   // you can type a full value without the slider fighting you mid-edit.

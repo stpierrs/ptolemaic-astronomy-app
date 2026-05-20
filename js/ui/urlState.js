@@ -50,6 +50,27 @@ const STRING_KEYS = new Set([
 // Array values are comma-joined in the URL hash.
 const ARRAY_KEYS = new Set(['TrackerTargets']);
 
+// Keys whose state values are boolean. Only these get the '0'/'1' treatment
+// in paramsToPatch — numeric keys like ObserverElevation can also be 0 or 1
+// and must NOT be parsed as booleans or they corrupt range/number inputs.
+const BOOLEAN_KEYS = new Set([
+  'ShowFeGrid', 'ShowShadow', 'ShowVault', 'ShowVaultGrid', 'ShowSunTrack',
+  'ShowMoonTrack', 'ShowOpticalVault', 'ShowStars', 'ShowOpticalVaultRays',
+  'ShowTruePositions', 'ShowTropicCancer', 'ShowEquator', 'ShowTropicCapricorn',
+  'ShowPolarCircles', 'ShowGroundPoints', 'ShowPlanets', 'ShowConstellations',
+  'ShowConstellationLines', 'ShowLongitudeRing', 'ShowAzimuthRing',
+  'ShowOpticalVaultGrid', 'ShowCelestialPoles', 'DarkBackground',
+  'ShowLiveEphemeris', 'MoonPhaseExpanded', 'ShowSatellites',
+  'ShowCelestialBodies', 'ShowCelNav', 'ShowBlackHoles', 'ShowQuasars',
+  'ShowGalaxies', 'ShowCelTheo', 'ShowGPPath', 'ShowSunAnalemma',
+  'ShowMoonAnalemma', 'DynamicStars', 'ShowEphemerisReadings',
+  'SpecifiedTrackerMode', 'TrackerGPOverride', 'GPOverridePlanets',
+  'GPOverrideCelNav', 'GPOverrideConstellations', 'GPOverrideBlackHoles',
+  'GPOverrideQuasars', 'GPOverrideGalaxies', 'GPOverrideSatellites',
+  'StarApplyPrecession', 'StarApplyNutation', 'StarApplyAberration',
+  'StarTrepidation', 'PermanentNight',
+]);
+
 function stateToParams(state) {
   const p = new URLSearchParams();
   for (const k of PERSISTED_KEYS) {
@@ -59,7 +80,8 @@ function stateToParams(state) {
       if (Array.isArray(v) && v.length) p.set(k, v.join(','));
     }
     else if (typeof v === 'boolean') p.set(k, v ? '1' : '0');
-    else if (typeof v === 'number') p.set(k, +v.toFixed(4));
+    // Always include decimal point so '0.0000' never matches the boolean '0' check on restore
+    else if (typeof v === 'number') p.set(k, v.toFixed(4));
     else p.set(k, String(v));
   }
   return p;
@@ -72,7 +94,8 @@ function paramsToPatch(params) {
     if (s == null) continue;
     if (ARRAY_KEYS.has(k)) patch[k] = s.length ? s.split(',') : [];
     else if (STRING_KEYS.has(k)) patch[k] = s;
-    else if (s === '0' || s === '1') patch[k] = s === '1';
+    // Only treat '0'/'1' as boolean for keys that are actually boolean in the model
+    else if (BOOLEAN_KEYS.has(k) && (s === '0' || s === '1')) patch[k] = s === '1';
     else patch[k] = parseFloat(s);
   }
   return patch;
