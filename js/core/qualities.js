@@ -1,165 +1,194 @@
-// Classical Astrology — Hot / Cold / Moist / Dry primitives.
-// Source: Tetrabiblos Books I (Ch. IV–VII) and III (Ch. XI).
-// Spec reference: PART 3 (qualities), PART 4.2 (sign table),
-// PART 5.2 (planet natures), PART 10.5 (temperament).
+// js/core/qualities.js
+// Hot / Cold / Moist / Dry primitives, Mercury dynamic resolver,
+// temperament computation, quality-interaction matrix.
+//
+// Spec references: PART 3 (qualities), PART 4.2 / 15.2 (sign table),
+// PART 5.2 / 15.3 (planet table), PART 8.3 (Mercury dynamic),
+// PART 10.5 / 11.4 (temperament), PART 13.4 / 15.4 (interactions).
 
+import { SIGN_QUALITY, PLANET_QUALITY } from '../data/astrology/quality_table.js';
 import { DOMICILE } from './dignities.js';
 
-// Sign index 0=Aries … 11=Pisces (matches ZODIAC_NAMES in astrology.js).
+const PRIMARY_OPPOSITES   = { hot: 'cold',  cold: 'hot'   };
+const SECONDARY_OPPOSITES = { moist: 'dry', dry: 'moist'  };
 
-// ── PART 4.2 — Sign qualities ────────────────────────────────────
-export const SIGN_QUALITY = [
-  { element: 'fire',  primary: 'hot',  secondary: 'dry'   }, // Aries
-  { element: 'earth', primary: 'cold', secondary: 'dry'   }, // Taurus
-  { element: 'air',   primary: 'hot',  secondary: 'moist' }, // Gemini
-  { element: 'water', primary: 'hot',  secondary: 'moist' }, // Cancer (PART 4.2 — spec calls Cancer hot/moist)
-  { element: 'fire',  primary: 'hot',  secondary: 'dry'   }, // Leo
-  { element: 'earth', primary: 'cold', secondary: 'dry'   }, // Virgo
-  { element: 'air',   primary: 'cold', secondary: 'moist' }, // Libra
-  { element: 'water', primary: 'cold', secondary: 'moist' }, // Scorpius
-  { element: 'fire',  primary: 'hot',  secondary: 'dry'   }, // Sagittarius
-  { element: 'earth', primary: 'cold', secondary: 'dry'   }, // Capricornus
-  { element: 'air',   primary: 'cold', secondary: 'moist' }, // Aquarius
-  { element: 'water', primary: 'cold', secondary: 'moist' }, // Pisces
-];
-
-// ── PART 5.2 — Planet quality natures ─────────────────────────────
-// Sun and Moon are not pure — see spec PART 5.2 notes.
-export const PLANET_QUALITY_STATIC = {
-  sun:     { primary: 'hot',  secondary: 'dry-moderate' },
-  moon:    { primary: 'cold', secondary: 'moist'        },
-  saturn:  { primary: 'cold', secondary: 'dry'          },
-  jupiter: { primary: 'hot',  secondary: 'moist'        }, // 'warm' ≡ moderate hot
-  mars:    { primary: 'hot',  secondary: 'dry'          },
-  venus:   { primary: 'moist',secondary: 'hot-moderate' },
-  mercury: { primary: null,   secondary: null           }, // dynamic — see planetQuality()
+// The spec table mixes shorthand: "warm" (≡ moderate hot), "hot-moderate",
+// "dry-moderate" etc. Collapse to the four canonical labels so combine /
+// vote logic doesn't need to handle every spelling.
+const QUALITY_LABEL_BASES = {
+  'hot-moderate':   'hot',
+  'cold-moderate':  'cold',
+  'moist-moderate': 'moist',
+  'dry-moderate':   'dry',
+  'warm':           'hot',
 };
+
+function normaliseQualityLabel(q) {
+  if (q == null) return null;
+  if (PRIMARY_OPPOSITES[q] !== undefined)   return q;
+  if (SECONDARY_OPPOSITES[q] !== undefined) return q;
+  return QUALITY_LABEL_BASES[q] || q;
+}
 
 export function signQuality(signIdx) {
   const i = (((signIdx | 0) % 12) + 12) % 12;
-  return { ...SIGN_QUALITY[i] };
+  const e = SIGN_QUALITY[i];
+  return {
+    element:   e.element,
+    primary:   normaliseQualityLabel(e.primary),
+    secondary: normaliseQualityLabel(e.secondary),
+    name:      e.name,
+  };
 }
 
-// PART 5.2 — Mercury has no fixed quality; it takes the nature of whatever
-// planet it is configured with. If aspecting hot planets, it becomes hot.
-// If unaspected, it defaults to cold and dry.
-export function planetQuality(planetName, { chart } = {}) {
-  if (planetName !== 'mercury') {
-    const base = PLANET_QUALITY_STATIC[planetName];
-    if (!base) return { primary: null, secondary: null };
-    return { ...base };
+/**
+ * Planet quality. Mercury is dynamic (PART 8.3) and needs a chart.
+ *
+ * @param {string} name
+ * @param {{ planets, isDiurnal }} [chart] - only required for Mercury
+ */
+export function planetQuality(name, chart = null) {
+  if (name !== 'mercury') {
+    const q = PLANET_QUALITY[name];
+    if (!q) return null;
+    return {
+      primary:   normaliseQualityLabel(q.primary),
+      secondary: normaliseQualityLabel(q.secondary),
+      nature:    q.nature,
+      sect:      q.sect,
+    };
   }
-  if (!chart || !chart.planets) {
-    return { primary: 'cold', secondary: 'dry' };
-  }
+  return mercuryQuality(chart);
+}
+
+function mercuryQuality(chart) {
+  const fallback = { primary: 'cold', secondary: 'dry', nature: 'mixed', sect: 'mixed' };
+  if (!chart || !Array.isArray(chart.planets)) return fallback;
   const merc = chart.planets.find(p => p.name === 'mercury');
-  if (!merc) return { primary: 'cold', secondary: 'dry' };
-  const mercSign = Math.floor(((merc.lon % 360) + 360) % 360 / 30);
+  if (!merc) return fallback;
+
+  // PART 8.3 — cazimi / combust special cases
+  const sun = chart.planets.find(p => p.name === 'sun');
+  if (sun) {
+    const raw = Math.abs(merc.lon - sun.lon);
+    const sep = Math.min(raw, 360 - raw);
+    if (sep <= 17 / 60) return { primary: 'hot',  secondary: 'dry', nature: 'cazimi-solar',    sect: 'day'   };
+    if (sep <= 8)       return { primary: 'cold', secondary: 'dry', nature: 'combust-reduced', sect: 'mixed' };
+  }
+
+  // Whole-sign aspects from other planets
+  const mercSign = Math.floor((((merc.lon % 360) + 360) % 360) / 30);
   const tally = { hot: 0, cold: 0, moist: 0, dry: 0 };
-  let aspected = 0;
+  let aspectCount = 0;
   for (const p of chart.planets) {
     if (p.name === 'mercury') continue;
-    const otherSign = Math.floor(((p.lon % 360) + 360) % 360 / 30);
-    const raw = Math.abs(otherSign - mercSign);
-    const signDiff = Math.min(raw, 12 - raw);
-    // Whole-sign aspects: 0, 2, 3, 4, 6 signs apart (PART 20.4)
-    if (![0, 2, 3, 4, 6].includes(signDiff)) continue;
-    const q = PLANET_QUALITY_STATIC[p.name];
+    const pSign = Math.floor((((p.lon % 360) + 360) % 360) / 30);
+    const raw = Math.abs(pSign - mercSign);
+    const diff = Math.min(raw, 12 - raw);
+    if (![0, 2, 3, 4, 6].includes(diff)) continue;
+    const q = PLANET_QUALITY[p.name];
     if (!q || !q.primary) continue;
-    aspected++;
-    voteFor(q.primary, tally);
-    voteFor(q.secondary, tally);
+    const pri = normaliseQualityLabel(q.primary);
+    const sec = normaliseQualityLabel(q.secondary);
+    if (pri in tally) tally[pri]++;
+    if (sec in tally) tally[sec]++;
+    aspectCount++;
   }
-  if (!aspected) return { primary: 'cold', secondary: 'dry' };
-  const primary  = tally.hot   >= tally.cold ? 'hot'   : 'cold';
+  if (!aspectCount) return fallback;
+  const primary   = tally.hot   >= tally.cold ? 'hot'   : 'cold';
   const secondary = tally.moist >= tally.dry  ? 'moist' : 'dry';
-  return { primary, secondary };
+  return { primary, secondary, nature: 'dynamic-from-aspects', sect: 'mixed' };
 }
 
-function voteFor(label, tally) {
-  if (!label) return;
-  if (label.startsWith('hot'))   tally.hot++;
-  if (label.startsWith('cold'))  tally.cold++;
-  if (label.startsWith('moist')) tally.moist++;
-  if (label.startsWith('dry'))   tally.dry++;
-}
-
-// PART 3.3 — Combine rule
-export function combineQualities(a, b) {
-  const opposites = { hot: 'cold', cold: 'hot', moist: 'dry', dry: 'moist' };
-  const aP = stripModifier(a.primary),   aS = stripModifier(a.secondary);
-  const bP = stripModifier(b.primary),   bS = stripModifier(b.secondary);
-  const reinforced =
-    (aP === bP) || (aS === bS) || (aP === bS) || (aS === bP);
-  const opposed =
-    (opposites[aP] === bP) || (opposites[aS] === bS) ||
-    (opposites[aP] === bS) || (opposites[aS] === bP);
-  if (reinforced && !opposed) return 'reinforced';
-  if (opposed && !reinforced) return 'opposed';
-  return 'mixed';
-}
-
-function stripModifier(label) {
-  if (!label) return null;
-  return label.replace(/-moderate$/, '');
-}
-
-const TEMPERAMENTS = {
+const TEMPERAMENT_BY_PAIR = {
   'hot+moist':  'sanguine',
   'hot+dry':    'choleric',
   'cold+dry':   'melancholic',
   'cold+moist': 'phlegmatic',
 };
 
-export function temperament({ hot, cold, moist, dry }) {
-  const p = hot   >= cold ? 'hot'   : 'cold';
-  const s = moist >= dry  ? 'moist' : 'dry';
-  return TEMPERAMENTS[`${p}+${s}`];
+export function temperament(votes) {
+  const p = votes.hot   >= votes.cold ? 'hot'   : 'cold';
+  const s = votes.moist >= votes.dry  ? 'moist' : 'dry';
+  return TEMPERAMENT_BY_PAIR[`${p}+${s}`];
 }
 
-// PART 10.5 — count hot/cold/moist/dry votes across Asc sign,
-// lord of the Ascendant, Moon sign, and any planet within 5° of the
-// Ascendant degree.
+// PART 11.4 — significators: Asc sign · Asc lord · Moon · planets ≤5° of Asc.
 export function computeTemperament(chart) {
   const tally = { hot: 0, cold: 0, moist: 0, dry: 0 };
   if (!chart || typeof chart.ascLon !== 'number') {
     return { temperament: null, votes: tally };
   }
-  const ascSign = Math.floor(((chart.ascLon % 360) + 360) % 360 / 30);
-  const ascQ = signQuality(ascSign);
-  voteFor(ascQ.primary,   tally);
-  voteFor(ascQ.secondary, tally);
 
-  const lordEntry = Object.entries(DOMICILE)
-    .find(([, signs]) => signs.includes(ascSign));
-  if (lordEntry && Array.isArray(chart.planets)) {
-    const [lordName] = lordEntry;
-    const lordPlanet = chart.planets.find(p => p.name === lordName);
-    if (lordPlanet) {
-      const lordSign = Math.floor(((lordPlanet.lon % 360) + 360) % 360 / 30);
-      const lq = signQuality(lordSign);
-      voteFor(lq.primary,   tally);
-      voteFor(lq.secondary, tally);
-    }
+  const ascSign = Math.floor((((chart.ascLon % 360) + 360) % 360) / 30);
+  vote(signQuality(ascSign), tally);
+
+  const ascRulerEntry = Object.entries(DOMICILE).find(([, signs]) => signs.includes(ascSign));
+  if (ascRulerEntry && Array.isArray(chart.planets)) {
+    const [ascRuler] = ascRulerEntry;
+    const ascRulerP = chart.planets.find(p => p.name === ascRuler);
+    if (ascRulerP) vote(signQuality(Math.floor(((ascRulerP.lon % 360) + 360) % 360 / 30)), tally);
   }
 
   if (Array.isArray(chart.planets)) {
     const moon = chart.planets.find(p => p.name === 'moon');
-    if (moon) {
-      const mq = signQuality(Math.floor(((moon.lon % 360) + 360) % 360 / 30));
-      voteFor(mq.primary,   tally);
-      voteFor(mq.secondary, tally);
-    }
+    if (moon) vote(signQuality(Math.floor(((moon.lon % 360) + 360) % 360 / 30)), tally);
     for (const p of chart.planets) {
       const raw = Math.abs(p.lon - chart.ascLon);
       const d = Math.min(raw, 360 - raw);
-      if (d <= 5) {
-        const pq = planetQuality(p.name, { chart });
-        voteFor(pq.primary,   tally);
-        voteFor(pq.secondary, tally);
-      }
+      if (d <= 5) vote(planetQuality(p.name, chart), tally);
     }
   }
 
   return { temperament: temperament(tally), votes: tally };
 }
+
+function vote(q, tally) {
+  if (!q) return;
+  if (q.primary   && q.primary   in tally) tally[q.primary]++;
+  if (q.secondary && q.secondary in tally) tally[q.secondary]++;
+}
+
+// PART 3.3 / 15.4 — combine two qualities.
+export function combineQualities(a, b) {
+  if (!a || !b) return 'mixed';
+  const reinforced = (a.primary === b.primary) || (a.secondary === b.secondary);
+  const opposed    = (PRIMARY_OPPOSITES[a.primary] === b.primary)
+                  || (SECONDARY_OPPOSITES[a.secondary] === b.secondary);
+  if (reinforced && !opposed) return 'reinforced';
+  if (opposed && !reinforced) return 'opposed';
+  return 'mixed';
+}
+
+/**
+ * Human-readable quality interaction between two planets, for transit /
+ * aspect copy. PART 15.4 in narrative form.
+ */
+export function qualityInteraction(p1Name, p2Name, chart) {
+  const q1 = planetQuality(p1Name, chart);
+  const q2 = planetQuality(p2Name, chart);
+  if (!q1 || !q2) return null;
+  const combined = combineQualities(q1, q2);
+  const verb = pickVerb(q1, q2, combined);
+  return {
+    resonance:   combined,
+    q1, q2,
+    description: `${capitalize(p1Name)} ${shortQ(q1)} ${verb} ` +
+                 `${capitalize(p2Name)} ${shortQ(q2)}`,
+  };
+}
+
+function pickVerb(q1, q2, combined) {
+  if (combined === 'reinforced') return 'reinforces';
+  if (combined === 'opposed') {
+    if (q1.primary === 'cold' && q2.primary === 'hot')    return 'cools';
+    if (q1.primary === 'hot'  && q2.primary === 'cold')   return 'heats';
+    if (q1.secondary === 'dry'   && q2.secondary === 'moist') return 'dries out';
+    if (q1.secondary === 'moist' && q2.secondary === 'dry')   return 'moistens';
+    return 'opposes';
+  }
+  return 'mixes with';
+}
+
+function shortQ(q)      { return `(${q.primary}/${q.secondary})`; }
+function capitalize(s)  { return s.charAt(0).toUpperCase() + s.slice(1); }
