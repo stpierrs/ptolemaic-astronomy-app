@@ -4275,4 +4275,123 @@ body.fp-mode #god-fabs { display: none; }
 }
 .pa-tl-easy    { color: #66dd88; }
 .pa-tl-hard    { color: #ff6644; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Zodiac Wheel Tab
+   ════════════════════════════════════════════════════════════════════════ */
+.zw-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 8px 8px 0;
+  flex-wrap: wrap;
+}
+.zw-wheel-col {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 500px;
+}
+.zw-right-col {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+.zw-hint {
+  font-size: 10px;
+  color: rgba(200,160,60,0.4);
+  text-align: center;
+  margin: 2px 0 6px;
+  letter-spacing: 0.05em;
+}
+
+/* Dossier card */
+.zw-dossier {
+  background: rgba(20,14,4,0.85);
+  border: 1px solid rgba(200,160,60,0.2);
+  border-radius: 10px;
+  padding: 14px 16px 12px;
+  margin-top: 4px;
+}
+.zw-doss-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.zw-doss-glyph {
+  font-size: 40px;
+  line-height: 1;
+}
+.zw-doss-name {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: ui-serif, Georgia, serif;
+  letter-spacing: 0.03em;
+  color: #e8c870;
+}
+.zw-doss-dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin: 0 0 12px;
+}
+.zw-dl-row {
+  display: contents;
+}
+.zw-doss-dl dt {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(200,160,60,0.55);
+}
+.zw-doss-dl dd {
+  font-size: 12px;
+  color: rgba(220,200,140,0.9);
+  margin: 0;
+}
+.zw-doss-desc {
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(200,180,130,0.8);
+  margin: 0 0 12px;
+  font-family: ui-serif, Georgia, serif;
+}
+.zw-doss-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.zw-nav-btn {
+  background: rgba(200,160,60,0.08);
+  border: 1px solid rgba(200,160,60,0.25);
+  border-radius: 6px;
+  color: #c89840;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.zw-nav-btn:hover {
+  background: rgba(200,160,60,0.18);
+  border-color: rgba(200,160,60,0.6);
+  color: #f0d070;
+}
+.zw-doss-pos {
+  font-size: 10px;
+  color: rgba(200,160,60,0.45);
+  letter-spacing: 0.06em;
+}
+
+/* Wedge hover (handled via JS mouseenter, but cursor pointer declared in SVG attr) */
+.zw-wedge { cursor: pointer; }
+
+/* Mobile: stack wheel above dossier */
+@media (max-width: 540px) {
+  .zw-wrap { flex-direction: column; align-items: center; }
+  .zw-wheel-col { max-width: 340px; }
+  .zw-right-col { width: 100%; max-width: 400px; }
+  .zw-doss-dl { grid-template-columns: 1fr 1fr; }
+}
 .pa-tl-neutral { color: #aaaaaa; }
