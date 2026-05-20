@@ -1405,19 +1405,22 @@ body::before {
   position: fixed;
   inset: 0;
   border: 4px solid var(--accent);
+  /* Inner 7px shadow uses var(--bg) so it tracks the active theme
+     (was hardcoded brown rgba(20,10,2,0.85), which made the inner
+     ring read as warm-brown even on Lapis Auream / Nyx Astera). */
   box-shadow:
     inset 0 0 0 1px var(--terracotta),
-    inset 0 0 0 7px rgba(20, 10, 2, 0.85),
+    inset 0 0 0 7px var(--bg),
     0 0 0 1px var(--terracotta);
   pointer-events: none;
   z-index: 10000;
 }
-/* Inner fine-line frame */
+/* Inner fine-line frame — themed via color-mix on --accent. */
 body::after {
   content: '';
   position: fixed;
   inset: 8px;
-  border: 1px solid rgba(212, 160, 32, 0.30);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   pointer-events: none;
   z-index: 9999;
 }
@@ -4576,4 +4579,62 @@ body.fp-mode #god-fabs { display: none; }
   color: var(--accent);
   min-width: 16px;
   text-align: right;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Epicycle overlay wrapper (the corner "Mars · al-Shatir" inset). All
+   chrome here is var()-based so the panel restyles with the active
+   theme. Drag handle lives on .epi-header; resize grip is the
+   bottom-left 28×28 of the canvas itself (set in JS).
+   ════════════════════════════════════════════════════════════════════ */
+.epi-wrap {
+  position: fixed;
+  left: 12px;
+  top: 180px;
+  z-index: 9500;
+  user-select: none;
+  touch-action: none;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 50%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--border) 70%, transparent),
+    0 0 24px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 6px 20px rgba(0, 0, 0, 0.70);
+  overflow: hidden;
+}
+.epi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--row) 90%, var(--accent) 8%),
+    var(--panel)
+  );
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  cursor: grab;
+  font: italic 12px Georgia, 'Palatino Linotype', serif;
+  color: var(--fg);
+  letter-spacing: 0.06em;
+  flex: 0 0 auto;
+}
+.epi-collapse-btn {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--fg);
+  border-radius: 3px;
+  padding: 1px 8px;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.epi-collapse-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }

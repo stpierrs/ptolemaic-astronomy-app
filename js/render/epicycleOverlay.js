@@ -17,6 +17,34 @@
 import { epicycleGeometry } from '../core/ephemerisPtolemy.js';
 import { JUPITER_MOON_DEFS } from '../core/jupiterMoons.js';
 
+// Hex (#rrggbb or #rgb) → rgba(r,g,b,alpha) string. Used to layer the
+// active theme's --accent / --border / --fg colors into the canvas
+// drawing operations with custom alpha. Falls through to the
+// hardcoded gold rgba(212,160,32,...) baseline when the theme var
+// isn't defined or doesn't parse.
+function themeRgba(hex, alpha) {
+  if (typeof hex !== 'string' || !hex.startsWith('#')) {
+    return `rgba(212,160,32,${alpha})`;
+  }
+  let r, g, b;
+  if (hex.length === 7) {
+    r = parseInt(hex.slice(1, 3), 16);
+    g = parseInt(hex.slice(3, 5), 16);
+    b = parseInt(hex.slice(5, 7), 16);
+  } else if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else {
+    return `rgba(212,160,32,${alpha})`;
+  }
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) {
+    return `rgba(212,160,32,${alpha})`;
+  }
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+
 // Build a fast lookup map: moonId → moonDef
 const _JMOON_MAP = new Map(JUPITER_MOON_DEFS.map((m) => [m.id, m]));
 
@@ -294,57 +322,23 @@ export class EpicycleOverlay {
     // the diagram with one click and have only a thin pill remain.
 
     // ── Wrapper div carries the header + collapsible canvas. ────────
+    // Style via CSS classes (in styles.css) so the wrap + header + button
+    // restyle when the user switches themes via the 🎨 picker.
     const wrap = document.createElement('div');
-    // No aria-hidden on the wrapper: it contains an interactive collapse
-    // button. The canvas itself is decorative — aria-hidden lives on it.
     wrap.setAttribute('role', 'group');
     wrap.setAttribute('aria-label', 'Epicycle diagram');
-    wrap.style.position       = 'fixed';
-    wrap.style.left           = '12px';
-    wrap.style.top            = '180px';
-    wrap.style.right          = 'auto';
-    wrap.style.bottom         = 'auto';
-    wrap.style.width          = `${CSS_SIZE}px`;
-    wrap.style.zIndex         = '9500';
-    wrap.style.userSelect     = 'none';
-    wrap.style.touchAction    = 'none';
-    wrap.style.pointerEvents  = 'auto';
-    wrap.style.display        = 'flex';
-    wrap.style.flexDirection  = 'column';
-    wrap.style.boxShadow      = '0 0 0 2px rgba(212,160,32,0.50),0 0 0 3px rgba(80,40,5,0.70),0 0 24px rgba(212,160,32,0.22),0 6px 20px rgba(0,0,0,0.70)';
-    wrap.style.borderRadius   = '10px';
-    wrap.style.background     = 'rgba(10,5,1,0.92)';
-    wrap.style.overflow       = 'hidden';
+    wrap.className = 'epi-wrap';
+    wrap.style.width = `${CSS_SIZE}px`;
 
     // ── Header strip — body name + collapse toggle. Drag handle. ────
     const header = document.createElement('div');
-    header.style.cssText = [
-      'display:flex',
-      'align-items:center',
-      'justify-content:space-between',
-      'padding:6px 12px',
-      'background:linear-gradient(180deg,rgba(40,22,8,0.85),rgba(20,10,4,0.85))',
-      'border-bottom:1px solid rgba(212,160,32,0.30)',
-      'cursor:grab',
-      "font:italic 12px Georgia,'Palatino Linotype',serif",
-      'color:#e8c97e',
-      'letter-spacing:0.06em',
-      'flex:0 0 auto',
-    ].join(';');
+    header.className = 'epi-header';
     const headerLabel = document.createElement('span');
+    headerLabel.className = 'epi-header-label';
     headerLabel.textContent = 'Epicycle Diagram';
     const collapseBtn = document.createElement('button');
     collapseBtn.type = 'button';
-    collapseBtn.style.cssText = [
-      'background:transparent',
-      'border:1px solid rgba(212,160,32,0.40)',
-      'color:#e8c97e',
-      'border-radius:3px',
-      'padding:1px 8px',
-      'cursor:pointer',
-      "font:inherit",
-      'line-height:1',
-    ].join(';');
+    collapseBtn.className = 'epi-collapse-btn';
     collapseBtn.textContent = '▾';
     collapseBtn.title = 'Collapse / expand';
     header.append(headerLabel, collapseBtn);
@@ -752,15 +746,30 @@ export class EpicycleOverlay {
       label = BODY_LABELS[shaBody] || shaBody;
     }
 
-    // ── Panel background — warm parchment, semi-transparent ──────────
-    // Radial gradient so edges darken slightly like aged papyrus.
+    // ── Panel background — read theme color so the overlay tracks the
+    // 🎨 dropdown. Once per frame we look up the live --panel / --bg
+    // values from the root and use them for the radial gradient. The
+    // CSS `color-mix(in srgb, ..., transparent X%)` resolves at use-time
+    // but canvas doesn't accept var() directly — read into a string. ─
+    const _cs = getComputedStyle(document.documentElement);
+    const _themeBg     = _cs.getPropertyValue('--bg').trim()     || '#0c0906';
+    const _themePanel  = _cs.getPropertyValue('--panel').trim()  || '#1e1408';
+    const _themeAccent = _cs.getPropertyValue('--accent').trim() || '#d4a020';
+    const _themeFg     = _cs.getPropertyValue('--fg').trim()     || '#f2e6b8';
+    const _themeBorder = _cs.getPropertyValue('--border').trim() || '#6a3e1c';
+
     const bgGrad = ctx.createRadialGradient(sz/2, sz/2, 0, sz/2, sz/2, sz * 0.72);
-    bgGrad.addColorStop(0,   'rgba(22, 12, 4, 0.76)');
-    bgGrad.addColorStop(0.6, 'rgba(18,  9, 3, 0.82)');
-    bgGrad.addColorStop(1,   'rgba(10,  5, 1, 0.90)');
+    bgGrad.addColorStop(0,   _themePanel);
+    bgGrad.addColorStop(0.6, _themePanel);
+    bgGrad.addColorStop(1,   _themeBg);
     _roundRect(ctx, 0, 0, sz, sz, 10);
     ctx.fillStyle = bgGrad;
     ctx.fill();
+    // Stash the colors for downstream draw helpers via closure-captured
+    // refs on the ctx (cheap, doesn't pollute the global namespace).
+    ctx._themeBg = _themeBg; ctx._themePanel = _themePanel;
+    ctx._themeAccent = _themeAccent; ctx._themeFg = _themeFg;
+    ctx._themeBorder = _themeBorder;
 
     // ── Greek meander border ─────────────────────────────────────────
     _drawGreekBorder(ctx, sz);
@@ -790,7 +799,7 @@ export class EpicycleOverlay {
     // Three diagonal lines pointing toward the upper-left; matches the
     // nesw-resize cursor and the direction of the resize drag.
     ctx.save();
-    ctx.strokeStyle = 'rgba(212, 160, 32, 0.55)';
+    ctx.strokeStyle = themeRgba(ctx._themeAccent||'#d4a020', 0.55);
     ctx.lineWidth   = 1;
     ctx.lineCap     = 'round';
     for (let i = 0; i < 3; i++) {
@@ -838,8 +847,8 @@ function _makeGreekFretTile(color) {
 // Ptolemaic Greek border: outer gold frame + meander strip top & bottom +
 // inner hair-line + filled corner squares.
 function _drawGreekBorder(ctx, sz) {
-  const GOLD   = 'rgba(212, 160, 32, 0.90)';
-  const GOLDFAINT = 'rgba(212, 160, 32, 0.38)';
+  const GOLD   = themeRgba(ctx._themeAccent||'#d4a020', 0.90);
+  const GOLDFAINT = themeRgba(ctx._themeAccent||'#d4a020', 0.38);
   const pad = 4;   // outer frame offset from edge
   const fH  = 9;   // fret strip height (px)
 
@@ -964,10 +973,10 @@ function _circle(ctx, cx, cy, r, style, width, dash) {
 
 function _drawTitle(ctx, sz, col, label, geo) {
   // Warm parchment title band — slightly lighter than body background
-  ctx.fillStyle = 'rgba(212, 160, 32, 0.07)';
+  ctx.fillStyle = themeRgba(ctx._themeAccent||'#d4a020', 0.07);
   ctx.fillRect(0, 0, sz, TITLE_H);
   // Separator: faint gold line at bottom of title band
-  _line(ctx, 14, TITLE_H - 0.5, sz - 14, TITLE_H - 0.5, 'rgba(212, 160, 32, 0.28)', 0.6);
+  _line(ctx, 14, TITLE_H - 0.5, sz - 14, TITLE_H - 0.5, themeRgba(ctx._themeAccent||'#d4a020', 0.28), 0.6);
 
   ctx.textBaseline = 'middle';
   // Center text in the safe zone between inner hairline (_INNER_PAD=17) and
@@ -996,8 +1005,8 @@ function _drawTitle(ctx, sz, col, label, geo) {
 
 function _drawInfoStrip(ctx, sz, geo, body, col) {
   const y0 = sz - INFO_H;
-  _line(ctx, 14, y0 + 0.5, sz - 14, y0 + 0.5, 'rgba(212, 160, 32, 0.28)', 0.6);
-  ctx.fillStyle = 'rgba(212, 160, 32, 0.05)';
+  _line(ctx, 14, y0 + 0.5, sz - 14, y0 + 0.5, themeRgba(ctx._themeAccent||'#d4a020', 0.28), 0.6);
+  ctx.fillStyle = themeRgba(ctx._themeAccent||'#d4a020', 0.05);
   ctx.fillRect(0, y0, sz, INFO_H);
 
   const type = geo.type === 'jmoon'     ? 'jmoon'
@@ -1256,7 +1265,7 @@ function _drawJupiterMoon(ctx, cx, cy, maxR, col, label, moonDef, jupAngle, moon
   _circle(ctx, cx, cy, deferR + moonOrbitR, 'rgba(180, 140, 60, 0.09)', 0.7, [4, 8]);
 
   // ── Jupiter's deferent ring ──────────────────────────────────────
-  _circle(ctx, cx, cy, deferR, 'rgba(212, 160, 32, 0.50)', 1.4, [5, 4]);
+  _circle(ctx, cx, cy, deferR, themeRgba(ctx._themeAccent||'#d4a020', 0.50), 1.4, [5, 4]);
 
   // ── Earth → Jupiter arm (faint reference line) ───────────────────
   _line(ctx, cx, cy, jupX, jupY, 'rgba(200, 170, 80, 0.20)', 0.7);
@@ -1359,7 +1368,7 @@ function _drawJupiterMoon(ctx, cx, cy, maxR, col, label, moonDef, jupAngle, moon
 
   // Group badge (top line)
   ctx.font      = `bold 8px ${SERIF}`;
-  ctx.fillStyle = 'rgba(212, 160, 32, 0.70)';
+  ctx.fillStyle = themeRgba(ctx._themeAccent||'#d4a020', 0.70);
   ctx.fillText(group + (retro ? '  ↺' : ''), 14, badgeY);
 
   // Rate badge
@@ -1419,7 +1428,7 @@ function _drawOuterPlanet(ctx, cx, cy, maxR, col, label, body, geo) {
 
   // ── Apse line ──────────────────────────────────────────────────────
   _line(ctx, apogX - 10, apogY, perigX + 10, perigY,
-        'rgba(212, 160, 32, 0.22)', 0.6);
+        themeRgba(ctx._themeAccent||'#d4a020', 0.22), 0.6);
 
   // ── Deferent circle (centred on D) ────────────────────────────────
   _circle(ctx, Dx, Dy, deferR, 'rgba(180, 145, 65, 0.62)', 1.3);
@@ -1742,7 +1751,7 @@ function _drawEccentric(ctx, cx, cy, maxR, col, label, geo) {
 
   // ── Apse line (through E, apogee, perigee) ──────────────────────
   _line(ctx, perigX, perigY, apogX, apogY,
-        'rgba(212, 160, 32, 0.24)', 0.6);
+        themeRgba(ctx._themeAccent||'#d4a020', 0.24), 0.6);
 
   // ── Earth-to-eccentric-centre reference ─────────────────────────
   _line(ctx, cx, cy, Ex, Ey, 'rgba(210, 175, 100, 0.18)', 0.7, [3, 4]);

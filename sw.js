@@ -7,9 +7,9 @@
 //
 // Bump CACHE_ASSETS / CACHE_CODE version strings when you ship breaking asset changes.
 
-const CACHE_VERSION = 'ptol-v33';
-const CACHE_ASSETS  = 'ptol-assets-v20';
-const CACHE_CODE    = 'ptol-code-v26';
+const CACHE_VERSION = 'ptol-v34';
+const CACHE_ASSETS  = 'ptol-assets-v21';
+const CACHE_CODE    = 'ptol-code-v27';
 
 // Critical-path files to pre-cache on install.
 const PRECACHE = [
