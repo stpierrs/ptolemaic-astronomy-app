@@ -2055,6 +2055,51 @@ header .info-box::before {
 
   /* ── LOOK UP / EXIT SKY button: keep it comfortable ─────────── */
   #find-me-btn { padding: 10px 20px; }
+
+  /* ── Safe-area inset handling for system status bar + home
+     indicator (real device chrome on Capacitor; simulated in the
+     tools/mobile-preview.html harness). Pushes the app's own header
+     and bottom bar OUT of the way of platform UI. ────────────── */
+  header {
+    /* Read the harness-injected variable first; fall back to the
+       real env() in a Capacitor WebView; fall back to 3 px on
+       desktop where nothing is overhead. */
+    padding-top: max(3px, var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) !important;
+  }
+  #bottom-bar {
+    padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) !important;
+    box-sizing: content-box;
+  }
+
+  /* ── Header action buttons: shrink + wrap so 7+ icons all fit at
+     412 px. Hide the title text entirely on phones — the action
+     icons make the app self-identifying. ───────────────────────── */
+  header h1 { display: none; }
+  header .sub, header .sub-note { display: none; }
+  header .info-box {
+    margin-left: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  header .info-box > .info-btn,
+  header .header-action-btn {
+    padding: 4px 6px !important;
+    font-size: 14px;
+    margin: 0 !important;
+    min-width: 30px;
+  }
+  /* Hide the "About" / "Legend" text labels — keep just the ⓘ / 📖 icons */
+  header .info-btn [data-i18n="about_btn"],
+  header .info-btn [data-i18n="legend_btn"] { display: none; }
+
+  /* ── Tab icon row: evenly distribute across viewport so the last
+     icon (INFO) never falls off the right edge at 412 px. ──────── */
+  .tab-icon-row { display: flex !important; justify-content: stretch; }
+  .tab-icon-btn { flex: 1 1 0 !important; min-width: 0 !important; }
+  .tab-icon-btn .btn-label { font-size: 9px !important; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════

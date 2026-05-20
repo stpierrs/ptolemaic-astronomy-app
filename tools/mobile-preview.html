@@ -32,17 +32,15 @@
 
   /* ── Dev bar ──────────────────────────────────────────────────── */
   #bar {
-    position: fixed; inset: 0 0 auto 0; height: 56px;
+    position: fixed; inset: 0 0 auto 0;
     background: linear-gradient(180deg, var(--panel) 0%, var(--ink2) 100%);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 10px;
-    padding: 0 14px;
+    padding: 6px 14px;
     z-index: 100;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
+    min-height: 56px;
   }
-  #bar::-webkit-scrollbar { display: none; }
   #bar label {
     font-size: 10px; letter-spacing: 0.10em; color: var(--muted);
     text-transform: uppercase;
@@ -100,7 +98,8 @@
 
   /* ── Stage (where the phone sits) ─────────────────────────────── */
   #stage {
-    position: fixed; inset: 56px 0 0 0;
+    position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--bar-h, 56px);
     display: flex; align-items: flex-start; justify-content: center;
     padding: 24px 16px;
     overflow: auto;
@@ -793,6 +792,7 @@ function bindControls() {
 
   // Resize fit on window resize
   window.addEventListener('resize', () => {
+    syncBarHeight();
     const phone = document.querySelector('.phone');
     if (!phone) return;
     const dev = currentDevice();
@@ -800,6 +800,19 @@ function bindControls() {
     if (state.orientation === 'landscape') { const t = bw; bw = bh; bh = t; }
     fitPhone(phone, bw, bh);
   });
+}
+
+// Keep --bar-h in sync with the dev bar's actual rendered height —
+// the bar wraps to multiple rows on narrow screens.
+function syncBarHeight() {
+  const bar = $('bar');
+  if (!bar) return;
+  const h = bar.offsetHeight;
+  document.documentElement.style.setProperty('--bar-h', h + 'px');
+}
+if (typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(syncBarHeight);
+  ro.observe($('bar'));
 }
 
 // ── Boot ────────────────────────────────────────────────────────────────
