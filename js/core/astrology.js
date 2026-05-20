@@ -2,10 +2,11 @@
 // ascendant computation, and full natal chart builder.
 
 import { bodyRADec, greenwichSiderealDeg } from './ephemeris.js';
+import { ascendantFromOA } from './risingTimes.js';
 
 const OBLIQUITY = 23.4367 * Math.PI / 180; // radians, J2000
 
-export const ZODIAC_NAMES   = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+export const ZODIAC_NAMES   = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpius','Sagittarius','Capricornus','Aquarius','Pisces'];
 export const ZODIAC_SYMBOLS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 export const PLANET_SYMBOLS = { sun:'☉', moon:'☽', mercury:'☿', venus:'♀', mars:'♂', jupiter:'♃', saturn:'♄' };
 export const PLANET_NAMES_ORDERED = ['sun','moon','mercury','venus','mars','jupiter','saturn'];
@@ -13,9 +14,9 @@ export const PLANET_NAMES_ORDERED = ['sun','moon','mercury','venus','mars','jupi
 // Element groupings for zodiac wheel colours
 export const ZODIAC_ELEMENT = {
   Aries:'fire', Leo:'fire', Sagittarius:'fire',
-  Taurus:'earth', Virgo:'earth', Capricorn:'earth',
+  Taurus:'earth', Virgo:'earth', Capricornus:'earth',
   Gemini:'air', Libra:'air', Aquarius:'air',
-  Cancer:'water', Scorpio:'water', Pisces:'water',
+  Cancer:'water', Scorpius:'water', Pisces:'water',
 };
 export const ELEMENT_COLORS = {
   fire:  '#8b2b2b',
@@ -89,18 +90,20 @@ export function nextRetrograde(bodyName, fromDate, source = 'ibnshatir', maxDays
 
 /**
  * Compute Ascendant ecliptic longitude for a given date and observer lat/lon.
- * Uses RAMC = Local Sidereal Time in degrees.
+ * PART 9.4 — uses Ptolemy's rising-time interpolation between the six
+ * canonical parallels; falls back to the modern formula outside that range
+ * (|φ| > 48.5° or southern hemisphere). Method metadata is side-channelled
+ * onto the function for the UI to read.
  */
 export function computeAscendant(date, latDeg, lonDeg) {
   const gmst = greenwichSiderealDeg(date);
-  const lst  = ((gmst + lonDeg) % 360 + 360) % 360;
-  const ramc = lst * Math.PI / 180;
-  const lat  = latDeg * Math.PI / 180;
-  const eps  = OBLIQUITY;
-  const asc = Math.atan2(Math.cos(ramc), -(Math.sin(ramc) * Math.cos(eps) + Math.tan(lat) * Math.sin(eps)));
-  let ascDeg = ((asc * 180 / Math.PI) % 360 + 360) % 360;
-  if (Math.cos(ramc) < 0) ascDeg = (ascDeg + 180) % 360;
-  return ascDeg;
+  const lst  = ((gmst + lonDeg) % 360 + 360) % 360;       // RAMC
+  const targetOA = (lst + 90) % 360;                      // OA of eastern horizon
+  const r = ascendantFromOA(targetOA, latDeg);
+  computeAscendant._lastMethod    = r.method;
+  computeAscendant._lastParallels = r.parallels;
+  computeAscendant._lastFrac      = r.frac;
+  return r.lon;
 }
 
 /**

@@ -3,12 +3,15 @@
 //   "The distance by diameter … at the triangular distance … at the quadrate
 //    distance … at the hexagonal distance … and the conjunction."
 //
+// PART 8.2 — Aspects are sign-based, not degree-based. A pair of bodies whose
+// signs are 0/2/3/4/6 apart always reports an aspect, regardless of orb.
+// Degree-orb is preserved as a secondary refinement (exact / tight / wide,
+// applying / separating).
+//
 // NOTE: The Quincunx (150°) is NOT a Ptolemaic aspect. Ptolemy calls 150°-distant
 // signs "inconjunct" or "averted" (Ch. XIX) — they share no familiarity.
-// Orb checking uses planet-specific moieties when planet names are supplied;
-// otherwise falls back to the fixed orb in ASPECT_DEFS.
 
-import { moietyOrb, PLANET_ORBS } from './dignities.js';
+import { moietyOrb } from './dignities.js';
 
 export const ASPECT_DEFS = [
   {
@@ -38,31 +41,67 @@ export const ASPECT_DEFS = [
   },
 ];
 
+// PART 20.4 — Whole-sign aspect matrix: sign-difference 0/2/3/4/6 → aspect.
+const SIGN_DIFF_TO_ASPECT = {
+  0: 'Conjunction',
+  2: 'Sextile',
+  3: 'Square',
+  4: 'Trine',
+  6: 'Opposition',
+};
+
 /**
- * Find the aspect between two ecliptic longitudes, using optional per-planet moiety orbs.
+ * Find the whole-sign aspect between two ecliptic longitudes.
+ * Returns null if the signs are not in classical aspect (1 or 5 signs apart =
+ * "inconjunct/averted", PART 8.1).
  *
  * @param {number}  lon1
  * @param {number}  lon2
- * @param {string}  [planet1] — if supplied, moiety-based orb is used
- * @param {string}  [planet2] — if supplied, moiety-based orb is used
- * @returns {{ name, angle, orb, symbol, color, harmony, description, ptolemyName } | null}
+ * @param {string}  [planet1]
+ * @param {string}  [planet2]
+ * @returns {{
+ *   name, angle, symbol, color, harmony, description, ptolemyName,
+ *   wholeSign: true, signDiff, degreeOffExact, exact, tight, applying, orb
+ * } | null}
  */
 export function findAspect(lon1, lon2, planet1, planet2) {
-  const diff = Math.abs(((lon2 - lon1 + 540) % 360) - 180); // 0–180
-  for (const asp of ASPECT_DEFS) {
-    // Use moiety orb if both planet names are known, otherwise fixed orb
-    const allowedOrb = (planet1 && planet2)
-      ? moietyOrb(planet1, planet2)
-      : asp.orb;
-    const actualOrb = Math.abs(diff - asp.angle);
-    if (actualOrb <= allowedOrb) return { ...asp, orb: actualOrb };
-  }
-  return null;
+  const sign1 = Math.floor((((lon1 % 360) + 360) % 360) / 30);
+  const sign2 = Math.floor((((lon2 % 360) + 360) % 360) / 30);
+  const rawDiff = Math.abs(sign1 - sign2);
+  const signDiff = Math.min(rawDiff, 12 - rawDiff);
+
+  const aspectName = SIGN_DIFF_TO_ASPECT[signDiff];
+  if (!aspectName) return null;
+
+  const def = ASPECT_DEFS.find(a => a.name === aspectName);
+  if (!def) return null;
+
+  // Degree refinement — applying vs separating, exactness
+  const angDiff = Math.abs(((lon2 - lon1 + 540) % 360) - 180);
+  const degreeOffExact = Math.abs(angDiff - def.angle);
+  const moiety = (planet1 && planet2) ? moietyOrb(planet1, planet2) : def.orb;
+  const exact = degreeOffExact <= 1;
+  const tight = degreeOffExact <= moiety;
+
+  // Applying ≈ faster planet closing in on slower. Without per-planet speeds
+  // here, fall back to the lon1<lon2 closing test (PART 8.3 — secondary).
+  const closing = ((lon2 - lon1 + 360) % 360) < 180;
+
+  return {
+    ...def,
+    wholeSign:      true,
+    signDiff,
+    degreeOffExact,
+    exact,
+    tight,
+    applying:       closing,
+    // Legacy field preserved so existing callers reading aspect.orb keep working.
+    orb:            degreeOffExact,
+  };
 }
 
 /**
- * Compute all aspects within a list of { name, lon } planets.
- * Uses Ptolemaic moiety-based orbs when planet names are available.
+ * Compute all whole-sign aspects within a list of { name, lon } planets.
  *
  * @param {{ name: string, lon: number, symbol?: string }[]} planets
  * @returns {{ planetA, planetB, aspect }[]}

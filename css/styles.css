@@ -3765,6 +3765,21 @@ body.fp-mode #god-fabs { display: none; }
 .pa-asp-easy    { border-left: 2px solid #66dd88; padding-left: 4px; }
 .pa-asp-hard    { border-left: 2px solid #ff6644; padding-left: 4px; }
 .pa-asp-neutral { border-left: 2px solid #aaaaaa; padding-left: 4px; }
+.pa-asp-tag { font-size: 9px; color: var(--muted); margin-left: 6px; opacity: 0.75; }
+.pa-asp-tag.exact      { color: #ffd060; opacity: 1; }
+.pa-asp-tag.tight      { color: #c4aa78; }
+.pa-asp-tag.wide       { color: #888; }
+.pa-asp-tag.applying   { color: #66dd88; }
+.pa-asp-tag.separating { color: #888; }
+/* Heliacal-phase badges (Guide 09) */
+.pa-helio { font-size: 10px; margin-left: 6px; opacity: 0.85; }
+.pa-helio-cazimi                { color: #ffd060; }
+.pa-helio-combust               { color: #ff6644; }
+.pa-helio-first-heliacal-rising { color: #66dd88; }
+.pa-helio-morning-star          { color: #66ccee; }
+.pa-helio-acronychal-rising     { color: #d4a8c4; }
+.pa-helio-evening-star          { color: #c4aa78; }
+.pa-helio-last-heliacal-setting { color: #ff9944; }
 
 /* Profiles grid */
 .pa-profiles-grid { display: flex; flex-wrap: wrap; gap: 12px; }

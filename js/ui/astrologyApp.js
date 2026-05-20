@@ -8,9 +8,9 @@
 import {
   buildNatalChart,
   ZODIAC_SYMBOLS, PLANET_SYMBOLS,
-  lonToZodiac,
+  lonToZodiac, computeAscendant,
 } from '../core/astrology.js';
-import { computePlacidusHouses, obliquity } from '../core/houses.js';
+import { computePlacidusHouses, computeWholeSignHouses, wholeSignHouseOf, obliquity } from '../core/houses.js';
 import { renderZodiacWheel } from './zodiacWheelTab.js';
 import { computeAspects, computeCrossAspects, ASPECT_DEFS } from '../core/aspects.js';
 import { greenwichSiderealDeg } from '../core/ephemeris.js';
@@ -18,6 +18,20 @@ import {
   getPlanetDignity, PLANET_NATURE, HOUSE_MEANINGS, dignityColor,
   DOMICILE, moietyOrb,
 } from '../core/dignities.js';
+import { accidentalDignity, solarPhase } from '../core/solarPhase.js';
+import { computeLots, lordNameOfLon } from '../core/lots.js';
+import { selectApheta, findAnaretae, primaryDirections } from '../core/lifespan.js';
+import {
+  upcomingEclipses, detectGreatConjunctions, cardinalIngresses,
+  weatherFromChart,
+} from '../core/mundane.js';
+import {
+  FIXED_STARS as STAR_CATALOG,
+  fixedStarsAt, starPlanetConjunctions, starPlanetWholeSignAspects, precessedLon,
+} from '../core/fixedStars.js';
+import { solarReturnDate } from '../core/solarReturn.js';
+import { heliacalPhase, PHASE_LABEL, PHASE_GLYPH } from '../core/heliacal.js';
+import { buildNatalReport } from '../core/natalReport.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -38,9 +52,9 @@ const PTOLEMY_INTERP = {
     leo:         'In Leo, its own domicile, Ptolemy writes that the Sun "approaches nearer than the other signs to the zenith" and "causes warmth and heat." This is your sun at full power — you radiate, you draw people in, and rooms feel different when you enter. The challenge is learning that your light does not diminish anyone else\'s.',
     virgo:       'Mercury\'s precise, earthy sign channels your solar force through devotion to the craft. You don\'t shine by commanding attention — you shine by being irreplaceable, by noticing what others miss and fixing it before anyone asks. Excellence is your highest form of self-expression.',
     libra:       'The Sun falls in Libra, the autumnal equinox where its heating nature begins its annual decline and Saturn is exalted in opposition. You see every side, which is both your gift and your perpetual struggle with decisive action. Your real power lives in your ability to bring people together — claim it rather than defer to it.',
-    scorpio:     'In the nocturnal house of Mars, your solar will moves underground — strategic, patient, and formidable. You rarely show your hand until the moment you choose to, and that moment is always calculated. Your intensity is unmistakable even when you say nothing; the question is what you do with that quiet, extraordinary power.',
+    scorpius:'In the nocturnal house of Mars, your solar will moves underground — strategic, patient, and formidable. You rarely show your hand until the moment you choose to, and that moment is always calculated. Your intensity is unmistakable even when you say nothing; the question is what you do with that quiet, extraordinary power.',
     sagittarius: 'Jupiter\'s fire receives the Sun with great elemental sympathy. You are built for big ideas, long horizons, and the particular joy of learning something that changes how you see everything. Your optimism is genuinely contagious; your frankness occasionally bruises, but it is always honest.',
-    capricorn:   'Saturn\'s cold, contracting earth is not comfortable for solar warmth — this is a Sun that earns its authority the hard way, through discipline and patient achievement. You are not impressed by shortcuts. What you build, you intend to keep; your ambitions are serious, and you take yourself seriously in the best possible sense.',
+    capricornus:'Saturn\'s cold, contracting earth is not comfortable for solar warmth — this is a Sun that earns its authority the hard way, through discipline and patient achievement. You are not impressed by shortcuts. What you build, you intend to keep; your ambitions are serious, and you take yourself seriously in the best possible sense.',
     aquarius:    'The Sun is in its Detriment in Aquarius — Saturn\'s wintry airy house, opposite Leo. You resist the idea of being ordinary with every fibre, and that resistance can make it harder to simply be yourself. Your deepest sense of self often emerges through a cause larger than you, which is both your gift and your way of keeping a certain distance from the centre.',
     pisces:      'Jupiter\'s mutable waters diffuse your solar light through a compassionate, imaginative medium. Your sense of self is porous in the best possible way — you absorb and reflect the world around you with unusual depth and empathy. The practice is distinguishing your own will from the feelings of everyone in the room.',
   },
@@ -52,9 +66,9 @@ const PTOLEMY_INTERP = {
     leo:         'The Moon\'s private, nocturnal nature is pulled into Leo\'s desire to be seen. Your inner world is vivid and expressive, and you need people to notice and appreciate what you feel — not from vanity, but from the genuine need to matter to the people you love. Emotional security comes through recognition, and there\'s nothing wrong with that.',
     virgo:       'Mercury\'s discriminating earth sign channels your emotional life through order and usefulness. You care through doing — through making things right, anticipating needs, and fixing what\'s broken before anyone had to ask. The self-criticism that comes with this Moon is real; try to extend the same devoted care to yourself that you offer so readily to others.',
     libra:       'Venus\'s airy, moist sign creates an emotional life oriented around harmony and mutual beauty. You are a natural diplomat of feeling — you smooth things over, seek fairness, and need balance to feel genuinely safe. Conflict is painful for you; learning to tolerate the discomfort of it briefly is always worth the peace you reach on the other side.',
-    scorpio:     'The Moon falls in Scorpio — opposite her Taurus exaltation. You feel at the deepest register, and nothing is casual, nothing is surface. The intensity of your emotional life is your greatest power and your most demanding companion. You need to go all the way in; half-measures leave you cold in a way that is difficult to explain to people who feel more lightly.',
+    scorpius:'The Moon falls in Scorpius— opposite her Taurus exaltation. You feel at the deepest register, and nothing is casual, nothing is surface. The intensity of your emotional life is your greatest power and your most demanding companion. You need to go all the way in; half-measures leave you cold in a way that is difficult to explain to people who feel more lightly.',
     sagittarius: 'Jupiter\'s fire warms your lunar moisture into an emotional life that loves freedom above comfort. Security means room to expand — to travel, to believe, to keep learning. Your optimism is a form of emotional resilience; you can find the horizon even in dark weather, and people around you draw on that instinctively.',
-    capricorn:   'The Moon is in her Detriment in Capricorn — Saturn\'s contracting cold is opposite Cancer\'s nurturing warmth. You learned early to manage your feelings rather than feel them freely, and you may confuse achievement with emotional security. What you\'ve built is real. So are the feelings you sometimes keep behind the wall.',
+    capricornus:'The Moon is in her Detriment in Capricornus — Saturn\'s contracting cold is opposite Cancer\'s nurturing warmth. You learned early to manage your feelings rather than feel them freely, and you may confuse achievement with emotional security. What you\'ve built is real. So are the feelings you sometimes keep behind the wall.',
     aquarius:    'Saturn\'s airy sign rationalises your emotional life into principle. You connect deeply through ideas and shared values — the right conversation can feel more intimate than physical closeness. Emotional intimacy sometimes arrives from a careful distance; that\'s not coldness, it\'s the particular shape of your warmth.',
     pisces:      'Jupiter\'s mutable waters fully harmonise with the Moon\'s cold, moist nature. Your empathy is extraordinary and your intuition is rarely wrong — you pick up on things people haven\'t said aloud, sometimes things they haven\'t admitted to themselves. The practice is maintaining your own emotional centre in a world you feel so completely.',
   },
@@ -66,9 +80,9 @@ const PTOLEMY_INTERP = {
     leo:         'The Sun\'s fire amplifies your communicative power into something theatrical and confident. You speak with authority and expect to be heard — and you usually are. The mind is drawn to the grand, the creative, and the persuasive; you were born to make a case, and you know how to make people want to believe it.',
     virgo:       'Mercury occupies both its Domicile and Exaltation in Virgo, where Ptolemy writes "autumnal dryness makes its first appearance." This is Mercury at its most exact — your mind notices what others miss, organises what others lose track of, and solves what others give up on. The standard you hold your thinking to is genuinely high, and it shows.',
     libra:       'Venus\'s harmonising air gives your mind a diplomatic, elegantly balanced quality. You weigh before you speak; you argue fairly and make room for the other side. The social grace of this Mercury is real — and so is the paralysis that can arrive from seeing every perspective so clearly that commitment becomes difficult.',
-    scorpio:     'Mars\'s fixed water drives your mind to depth rather than breadth. You research, probe, and don\'t accept the surface explanation when there\'s clearly something underneath it. Your communication is strategic — you reveal what you choose, when you choose. People sense you know more than you\'re saying, and they\'re usually right.',
+    scorpius:'Mars\'s fixed water drives your mind to depth rather than breadth. You research, probe, and don\'t accept the surface explanation when there\'s clearly something underneath it. Your communication is strategic — you reveal what you choose, when you choose. People sense you know more than you\'re saying, and they\'re usually right.',
     sagittarius: 'Jupiter\'s fire gives your mind a philosophical appetite and a fondness for blunt honesty. You think in large patterns, love ideas that explain everything at once, and say exactly what you mean with minimal decoration. The breadth of this Mercury is magnificent; the precision is what to cultivate alongside it.',
-    capricorn:   'Saturn\'s cold, earthy discipline structures Mercury\'s quickness into measured, purposeful thought. You think before you speak, speak with authority, and mean what you say. Your communication is taken seriously because it is serious; the goal is always utility and result, and people learn quickly that you are worth listening to.',
+    capricornus:'Saturn\'s cold, earthy discipline structures Mercury\'s quickness into measured, purposeful thought. You think before you speak, speak with authority, and mean what you say. Your communication is taken seriously because it is serious; the goal is always utility and result, and people learn quickly that you are worth listening to.',
     aquarius:    'Saturn\'s airy sign combines with Mercury\'s variability to produce ideas that don\'t quite look like anyone else\'s. You see systems, patterns, and futures that aren\'t obvious yet. The unconventionality is genuine — and so is the slight difficulty of explaining yourself to people who are still catching up to where your mind already went.',
     pisces:      'Mercury is in its Fall in Pisces — Virgo\'s precision dissolves in the mutable waters opposite. Your mind works through image, intuition, and feeling rather than analysis and argument. The gift is creative and empathic thinking of unusual depth; the practice is holding a line of reasoning when the waters beneath it keep shifting.',
   },
@@ -80,9 +94,9 @@ const PTOLEMY_INTERP = {
     leo:         'The Sun\'s fire amplifies your Venus into generous, theatrical romance. You love with your whole heart and want that love celebrated — grand gestures, warmth given openly, the particular joy of being chosen visibly. Your heart is genuinely open-handed; you deserve someone whose warmth matches yours.',
     virgo:       'Venus is in its Fall in Virgo — opposite her Pisces exaltation. You show love through service rather than sentiment, and you may be more comfortable doing something genuinely helpful than saying something beautiful. The perfectionism can make love feel like something to get right; sometimes it just needs to be felt, not perfected.',
     libra:       'In its second domicile, Ptolemy writes that Venus\'s Libra house is preserved "by the sextile distance." You are naturally gracious, aesthetically gifted, and most fully yourself in partnership. Love is where you find your balance — you flourish alongside someone rather than alone, and you know instinctively how to make a relationship beautiful.',
-    scorpio:     'Mars\'s fixed, watery sign gives your Venus an intensity that nothing half-hearted can satisfy. You love all the way in or not at all; the bonds you form are transformative by nature. The depth is your greatest gift in love, and it is also your greatest vulnerability — which is precisely what makes it worth it.',
+    scorpius:'Mars\'s fixed, watery sign gives your Venus an intensity that nothing half-hearted can satisfy. You love all the way in or not at all; the bonds you form are transformative by nature. The depth is your greatest gift in love, and it is also your greatest vulnerability — which is precisely what makes it worth it.',
     sagittarius: 'Jupiter\'s expansive fire gives your Venus a generous, freedom-loving quality. You love with open hands, philosophical warmth, and a genuine desire for your partner to grow alongside you. The relationship needs to be a horizon, not a cage; you bring the same expansiveness you need, which is the perfect place to start.',
-    capricorn:   'Saturn\'s cold, dry domicile restrains your Venus into love that is loyal, long-term, and deliberately offered. You don\'t fall easily, but when you do, you stay. Love is shown through reliability and investment rather than performance; it ripens slowly here and lasts longer than most.',
+    capricornus:'Saturn\'s cold, dry domicile restrains your Venus into love that is loyal, long-term, and deliberately offered. You don\'t fall easily, but when you do, you stay. Love is shown through reliability and investment rather than performance; it ripens slowly here and lasts longer than most.',
     aquarius:    'Saturn\'s airy detachment gives your Venus a warmly unconventional quality — you form bonds through ideas and shared ideals, and you may need a certain intellectual distance to feel genuinely safe. Your love is real even when it feels unusual; you care most in the largest possible way.',
     pisces:      'Venus is Exalted in Pisces. Ptolemy writes that she "derives an augmentation of her own proper influence" when here — a moist, compassionate nature meeting its deepest resonance. You love with boundless, self-sacrificing empathy; the capacity for beauty and feeling in this Venus is extraordinary. The practice is learning to receive as openly as you give.',
   },
@@ -90,12 +104,12 @@ const PTOLEMY_INTERP = {
     aries:       'In its own domicile, Ptolemy writes that Mars "chiefly causes dryness, and is also strongly heating, by means of his own fiery nature." You are initiative itself — the first to move, the last to back down. The sheer force of this Mars is formidable; directed, it achieves anything; unchecked, it can consume the very thing it was built to protect.',
     taurus:      'Taurus slows your Mars from a sprint into a siege — you don\'t strike fast, but you don\'t stop. Once you\'ve committed your energy to something, the patience becomes its own form of force. Anger here is rare and slow to surface, but when it finally breaks through, it has been building for a very long time.',
     gemini:      'Mercury\'s airy sign disperses your martian heat through the mind and the mouth. You fight with words, ideas, and the speed of your argument; your energy is mental and rarely at rest. The challenge is focus — so many fronts at once means some never receive the sustained effort they actually deserve.',
-    cancer:      'Mars is in its Fall in Cancer, opposite Capricorn\'s exaltation. Your energy turns inward and defensive rather than outward and conquering — you act from feeling, protect fiercely, and anger arrives as a response to hurt rather than pure aggression. The strength here is emotional courage; the work is not turning that force against yourself.',
+    cancer:      'Mars is in its Fall in Cancer, opposite Capricornus\'s exaltation. Your energy turns inward and defensive rather than outward and conquering — you act from feeling, protect fiercely, and anger arrives as a response to hurt rather than pure aggression. The strength here is emotional courage; the work is not turning that force against yourself.',
     leo:         'The Sun\'s fire and Mars\'s fire together produce a spectacular, courageous force. You act with pride and expect results commensurate with the effort, which is entirely reasonable given what you bring. The will to prevail is real and warranted; just watch whether pride is motivating the drive, or quietly complicating it.',
     virgo:       'Mercury\'s critical earth channels your Mars into precision and methodical mastery. You work with exceptional care; the energy is applied to getting things exactly right, not merely done. This Mars wins through competence rather than force — which is often far more durable in the long run.',
     libra:       'Mars is in its Detriment in Libra, opposite Aries. The desire for balance and the need for direct action pull against each other — you often hesitate where you should commit, or smooth over conflict that actually needs to be had. Your full power returns when you trust your instincts over your diplomatic impulse, and act before the moment passes.',
-    scorpio:     'In its second domicile, your Mars operates through strategic, inexhaustible depth. You don\'t show your hand — you plan, wait, and move when the moment is precisely right. Ptolemy\'s "hot, dry" force is here made patient and penetrating; nothing about your will is casual, and nothing about your commitment is ever truly finished.',
-    capricorn:   'Mars is Exalted in Capricorn. Ptolemy writes that "Mars possesses a fiery nature, which receives its greatest intensity in Capricorn." Saturn\'s structure gives your drive a direction and a timeline — this is ambition that builds rather than burns, that endures rather than erupts. The most powerful Mars in the zodiac, and the most formidable.',
+    scorpius:'In its second domicile, your Mars operates through strategic, inexhaustible depth. You don\'t show your hand — you plan, wait, and move when the moment is precisely right. Ptolemy\'s "hot, dry" force is here made patient and penetrating; nothing about your will is casual, and nothing about your commitment is ever truly finished.',
+    capricornus:'Mars is Exalted in Capricornus. Ptolemy writes that "Mars possesses a fiery nature, which receives its greatest intensity in Capricornus." Saturn\'s structure gives your drive a direction and a timeline — this is ambition that builds rather than burns, that endures rather than erupts. The most powerful Mars in the zodiac, and the most formidable.',
     aquarius:    'Saturn\'s airy house gives your energy a collective, unconventional direction. You act through ideas, reform, and the dismantling of constraints that no longer serve. The cause matters more to you than the credit; you bring formidable Mars energy to whatever in the world actually needs changing.',
     pisces:      'Jupiter\'s mutable waters diffuse your Mars through compassionate, imaginative channels. You act from empathy and spiritual motivation rather than pure will, and the strength here is subtle and the direction can shift like the tide. The depth of care that drives you is absolutely real — the practice is finding the clean, committed edge of it.',
   },
@@ -107,9 +121,9 @@ const PTOLEMY_INTERP = {
     leo:         'The Sun\'s fire gives Jupiter\'s warm moisture a magnificent, generous quality — you do things grandly and you mean it completely. Your gifts arrive with celebration; your optimism is theatrical and infectious. At your best you are genuinely magnanimous, and you have the solar confidence to make it look entirely effortless.',
     virgo:       'Jupiter is in its Detriment in Virgo, opposite Pisces. The philosophical scope narrows to practicality; you help best through useful service rather than grand vision. The wisdom is hard-won and detailed; you are most generous when you can see exactly where the help will land and what it will actually build.',
     libra:       'Venus\'s airy sign gives your Jupiter an elegant, just, and socially gifted quality. You expand through beauty, diplomacy, and the relationships you carefully cultivate. The blessing of this Jupiter is the genuine ease you bring to social exchange — and the fairness you instinctively apply to every situation you touch.',
-    scorpio:     'Mars\'s fixed, watery depth transforms Jupiter\'s warm beneficence into penetrating wisdom. You understand things about people that they haven\'t told you, sometimes things they haven\'t admitted to themselves. The generosity here arrives through insight — you help by going all the way to the root of things.',
+    scorpius:'Mars\'s fixed, watery depth transforms Jupiter\'s warm beneficence into penetrating wisdom. You understand things about people that they haven\'t told you, sometimes things they haven\'t admitted to themselves. The generosity here arrives through insight — you help by going all the way to the root of things.',
     sagittarius: 'In its own domicile, Ptolemy notes that Sagittarius is "airy and fruitful," perfectly suited to Jupiter\'s nature. You carry the broadest possible vision — philosophical, adventurous, and instinctively searching for what\'s sacred in the ordinary. This is Jupiter at full power, and you feel the freedom of that in everything you do.',
-    capricorn:   'Jupiter is in its Fall in Capricorn, opposite Cancer. Saturn\'s contraction limits the expansion; growth is slow, cautious, and genuinely hard-won. The wisdom is practical and durable; the faith is tested and therefore real. What you believe, you\'ve earned the right to believe through endurance rather than assumption.',
+    capricornus:'Jupiter is in its Fall in Capricornus, opposite Cancer. Saturn\'s contraction limits the expansion; growth is slow, cautious, and genuinely hard-won. The wisdom is practical and durable; the faith is tested and therefore real. What you believe, you\'ve earned the right to believe through endurance rather than assumption.',
     aquarius:    'Saturn\'s airy sign gives your generosity a progressive, idealistic dimension. You expand through vision, collective action, and the advancement of ideas that could benefit everyone. The gift is the ability to care at scale — to see what could be and work toward it with sustained, committed conviction.',
     pisces:      'In its second domicile, Ptolemy notes Pisces is "airy and fruitful." Your Jupiter dissolves into compassionate spiritual wisdom — you sense the sacred everywhere, care without judgment, and expand through surrender as much as through achievement. This is a Jupiter that knows, with rare grace, when to let go.',
   },
@@ -117,13 +131,13 @@ const PTOLEMY_INTERP = {
     aries:       'Saturn is in its Fall in Aries — opposite its Libra exaltation. The cold, contracting saturnine nature and Aries\'s hot, impulsive fire are at genuine odds — discipline tends to break when urgency strikes. The gift comes when you find patience within the impulse, and build something from that tension rather than losing both.',
     taurus:      'Taurus\'s earthy cold is sympathetic to Saturn\'s nature — steady, patient, and accumulative in the most productive sense. You build carefully and keep what you build; the saturnine discipline expressed here is productive rather than punishing. You find genuine meaning in the slow work and the lasting result.',
     gemini:      'Mercury\'s airy variability introduces intellectual seriousness into your Saturn. You are a careful, structured thinker who masters language rather than playing with it. The saturnine quality here is a disciplined mind — ideas are built, not browsed; understanding is earned, not assumed, and that shows in everything you say.',
-    cancer:      'Saturn is in its Detriment in Cancer, opposite Capricorn. Saturn\'s cold, contracting nature is most uncomfortable in the Moon\'s nurturing, moist sign. You may have learned early to manage vulnerability rather than express it; the walls you build are both your protection and your isolation. The work is allowing the softness that Saturn here is suppressing.',
+    cancer:      'Saturn is in its Detriment in Cancer, opposite Capricornus. Saturn\'s cold, contracting nature is most uncomfortable in the Moon\'s nurturing, moist sign. You may have learned early to manage vulnerability rather than express it; the walls you build are both your protection and your isolation. The work is allowing the softness that Saturn here is suppressing.',
     leo:         'Saturn is in its Detriment in Leo, opposite Aquarius. The Sun\'s warm pride and Saturn\'s cold austerity are in constant negotiation — you feel the pull between humility and the need to shine, and often the former wins too completely and too early. The real task is accepting that you deserve recognition, not as an exception, but as a given.',
     virgo:       'Mercury\'s cold, analytical earth is highly congenial to Saturn\'s nature. You express the saturnine principle through impeccable attention to detail, critical self-mastery, and devotion to doing things exactly right. This is Saturn as productive perfectionism — exacting, useful, and quietly formidable in a way most people underestimate until they see the work.',
     libra:       'Saturn is Exalted in Libra. Ptolemy writes that Libra tempers Saturn\'s cold through its airy, harmonising quality — "the increase of heat must be attended by a diminution of cold." You are judicious, measured, and capable of real authority in matters of fairness and law. You take the long view of what is right, and that patience is its own form of power.',
-    scorpio:     'Mars\'s fixed, watery intensity combined with Saturn\'s cold endurance produces an unyielding, concentrated force. You absorb hardship without breaking; the determination runs deep and quiet. The saturnine melancholy is genuinely present here, and so is the extraordinary depth of what you are capable of building from it.',
+    scorpius:'Mars\'s fixed, watery intensity combined with Saturn\'s cold endurance produces an unyielding, concentrated force. You absorb hardship without breaking; the determination runs deep and quiet. The saturnine melancholy is genuinely present here, and so is the extraordinary depth of what you are capable of building from it.',
     sagittarius: 'Jupiter\'s expansive fire gives Saturn\'s discipline a philosophical direction. Your worldview is seriously constructed and genuinely tested; what you believe, you believe because you\'ve examined it, doubted it, and returned to it anyway. What you understand about life, you\'ve understood the long way, and that makes it real.',
-    capricorn:   'In its own house, Saturn\'s cold, dry nature finds its fullest expression. Ptolemy assigns Capricorn to Saturn "in consideration of their cold and wintry nature." You achieve through relentless discipline, patient ambition, and the willing acceptance of limitation as the necessary price of mastery. The summit is real, and so is every step of the climb that got you there.',
+    capricornus:'In its own house, Saturn\'s cold, dry nature finds its fullest expression. Ptolemy assigns Capricornus to Saturn "in consideration of their cold and wintry nature." You achieve through relentless discipline, patient ambition, and the willing acceptance of limitation as the necessary price of mastery. The summit is real, and so is every step of the climb that got you there.',
     aquarius:    'In its second house, Saturn\'s intelligence operates through fixed air — innovation disciplined by structure, vision grounded by patience. You are a systematic thinker of ideas that reach beyond the individual; the reform you build is designed to last because you know that real change requires real architecture beneath it.',
     pisces:      'Jupiter\'s mutable, compassionate waters soften Saturn\'s cold, dry discipline through spiritual acceptance. You apply your discipline to the inner life — to practice, solitude, and the art of releasing what cannot be held. The surrender is not weakness; it is the particular and considerable strength that this placement of Saturn asks of you.',
   },
@@ -169,15 +183,33 @@ function computeFullChart(date, lat, lon, source = 'ibnshatir') {
   const eps    = obliquity(date);
   const gmst   = greenwichSiderealDeg(date);
   const ramc   = ((gmst + lon) % 360 + 360) % 360;
-  const houses = computePlacidusHouses(ramc, lat, eps);
-  const planetList = base.planets.map((p) => ({ name: p.name, lon: p.lon, symbol: p.symbol }));
+  // Placidus retained as illustrative overlay; whole-sign is canonical.
+  // PART 9.1 — whole-sign houses are the classical system. Use the Ptolemaic
+  // tabular Ascendant from buildNatalChart (PART 9.4) as the chart's canonical
+  // ASC; Placidus computes its own internal ASC from RAMC via the modern
+  // formula, and at extreme latitudes the two differ by a fraction of a
+  // degree — that's acceptable since Placidus is illustrative here.
+  const placidus  = computePlacidusHouses(ramc, lat, eps);
+  const ascLon    = base.ascLon ?? placidus[0];
+  const wholeSign = computeWholeSignHouses(ascLon);
+  const planetList = base.planets.map((p) => ({
+    name: p.name, lon: p.lon, symbol: p.symbol,
+    retrograde: p.retrograde,
+    house: wholeSignHouseOf(p.lon, ascLon),
+  }));
   const aspects = computeAspects(planetList);
-  // ascLon: ecliptic longitude of the Ascendant (house cusp 0)
-  const ascLon = houses[0];
   const sunLon = base.planets.find((p) => p.name === 'sun')?.lon ?? 0;
   const sunRelToAsc = ((sunLon - ascLon) % 360 + 360) % 360;
   const isDiurnal = sunRelToAsc >= 180; // Sun above horizon = houses 7-12
-  return { ...base, houses, aspects, ascLon, isDiurnal, date, lat, lon, source };
+  return {
+    ...base,
+    houses:        wholeSign,    // canonical (PART 9.1)
+    placidusHouses: placidus,    // illustrative — kept for diagnostic overlay
+    houseSystem:   'whole-sign',
+    aspects, ascLon, isDiurnal,
+    date, lat, lon, source,
+    planets:       planetList,   // includes house field
+  };
 }
 
 // ─── Canvas chart wheel renderer ─────────────────────────────────────────────
@@ -578,6 +610,7 @@ function toTimeInput(d) {
 // ─── HTML builders ────────────────────────────────────────────────────────────
 
 function buildPlanetRows(planets) {
+  const sunLon = planets?.find(p => p.name === 'sun')?.lon;
   return planets.map((p) => {
     const zod   = lonToZodiac(p.lon);
     const sym   = p.symbol || PLANET_SYMBOLS[p.name] || '?';
@@ -588,12 +621,23 @@ function buildPlanetRows(planets) {
     const digCol = dignityColor(dig);
     const natureTag = nat ? `<span class="pa-nature-tag pa-nature-${nat.nature}">${nat.nature}</span>` : '';
     const digTag    = `<span class="pa-dig-tag" style="color:${digCol}" title="${dig.breakdown.join(', ') || 'no dignity'}">${dig.label}${dig.score !== 0 ? ` (${dig.score > 0 ? '+' : ''}${dig.score})` : ''}</span>`;
+    // Guide 09 — heliacal phase badge for the five non-luminary planets.
+    let helioTag = '';
+    if (sunLon !== undefined && p.name !== 'sun' && p.name !== 'moon') {
+      const elong = ((p.lon - sunLon + 540) % 360) - 180;
+      const ph = heliacalPhase(p.name, elong, !!p.retrograde);
+      if (ph.phase) {
+        const g = PHASE_GLYPH[ph.phase] || '·';
+        helioTag = `<span class="pa-helio pa-helio-${ph.phase}" title="${PHASE_LABEL[ph.phase] || ph.phase}">${g}</span>`;
+      }
+    }
     return `
       <div class="pa-planet-row">
         <span class="pa-planet-sym" style="color:${color}">${sym}</span>
         <span class="pa-planet-name">${p.name.charAt(0).toUpperCase()+p.name.slice(1)}</span>
         <span class="pa-planet-sign">${fmtZodiac(zod)}</span>
         ${retro ? '<span class="pa-planet-retro">℞</span>' : ''}
+        ${helioTag}
         ${digTag}
         ${natureTag}
       </div>`;
@@ -636,16 +680,30 @@ function buildInterpPanel(planets) {
 }
 
 function buildAspectRows(aspects) {
-  return aspects.map(({ planetA, planetB, aspect }) => {
+  // Sort: exact desc, tight desc, signDiff asc — whole-sign produces more
+  // rows than the old orb-gated engine, so foreground the strongest first.
+  const sorted = [...aspects].sort((a, b) => {
+    const A = a.aspect, B = b.aspect;
+    if (!!B.exact - !!A.exact) return !!B.exact - !!A.exact;
+    if (!!B.tight - !!A.tight) return !!B.tight - !!A.tight;
+    return (A.signDiff ?? 0) - (B.signDiff ?? 0);
+  });
+  return sorted.map(({ planetA, planetB, aspect }) => {
     const cls = `pa-asp-${aspect.harmony}`;
     const ptName = aspect.ptolemyName || aspect.name;
+    const tightnessTag = aspect.exact ? 'exact'
+                       : aspect.tight ? 'tight'
+                       : 'wide';
+    const moveTag = aspect.applying ? 'applying' : 'separating';
     return `
       <div class="pa-aspect-row ${cls}">
         <span style="color:${PLANET_COLORS[planetA.name]||'inherit'}">${planetA.symbol||'?'}</span>
         <span style="color:${aspect.color};font-size:14px">${aspect.symbol}</span>
         <span style="color:${PLANET_COLORS[planetB.name]||'inherit'}">${planetB.symbol||'?'}</span>
         <span style="color:var(--muted);font-size:10px;flex:1">${planetA.name} · ${ptName} · ${planetB.name}</span>
-        <span style="color:var(--muted);font-size:10px">orb ${aspect.orb.toFixed(1)}°</span>
+        <span class="pa-asp-tag ${tightnessTag}" title="${(aspect.degreeOffExact ?? aspect.orb ?? 0).toFixed(2)}° from exact">${tightnessTag}</span>
+        <span class="pa-asp-tag ${moveTag}">${moveTag}</span>
+        <span style="color:var(--muted);font-size:10px">${(aspect.degreeOffExact ?? aspect.orb ?? 0).toFixed(1)}°</span>
         <span style="font-size:9px;padding:1px 4px;border-radius:2px;background:var(--row);color:${aspect.harmony==='easy'?'#66dd88':aspect.harmony==='hard'?'#ff6644':'#aaaaaa'}">${aspect.harmony}</span>
       </div>`;
   }).join('');
@@ -663,115 +721,30 @@ export function buildAstrologyApp(model) {
       <button class="pa-back pa-btn" type="button">&#8592; Astronomy</button>
       <h1 class="pa-title">Ptolemaic Astrology</h1>
       <nav class="pa-nav">
-        <button class="pa-tab-btn active" data-tab="chart" type="button">Chart</button>
-        <button class="pa-tab-btn" data-tab="zodiacwheel" type="button">♈ Zodiac Wheel</button>
-        <button class="pa-tab-btn" data-tab="profiles" type="button">Profiles</button>
-        <button class="pa-tab-btn" data-tab="transits" type="button">Transits</button>
+        <!-- Rework 2026-05-20: removed Chart, Profiles, Transits, Sect,
+             Dignities, Profect, Lots, Almuten, Condition. The 6 below
+             are kept as standalone info; new tabs will be added here as
+             the rework progresses. Safety tag: pre-astrology-rework-v1. -->
+        <button class="pa-tab-btn active" data-tab="zodiacwheel" type="button">♈ Zodiac Wheel</button>
         <button class="pa-tab-btn" data-tab="synastry" type="button">Synastry</button>
         <button class="pa-tab-btn" data-tab="houses" type="button">⌂ Houses</button>
         <button class="pa-tab-btn" data-tab="stars" type="button">★ Stars</button>
         <button class="pa-tab-btn" data-tab="modernity" type="button">⚖ Old/New Astrology</button>
+        <button class="pa-tab-btn" data-tab="lifespan" type="button">◉ Lifespan</button>
+        <button class="pa-tab-btn" data-tab="mundane" type="button">⊕ Mundane</button>
+        <button class="pa-tab-btn" data-tab="returns" type="button">☀ Returns</button>
+        <button class="pa-tab-btn" data-tab="report" type="button">📜 Report</button>
         <button class="pa-tab-btn pa-tab-btn-cards" data-tab="cards" type="button">📜 Scrolls</button>
-        <button class="pa-tab-btn" data-tab="sect" type="button">☀ Sect</button>
-        <button class="pa-tab-btn" data-tab="dignities" type="button">★ Dignities</button>
-        <button class="pa-tab-btn" data-tab="profections" type="button">⊕ Profect</button>
-        <button class="pa-tab-btn" data-tab="lots" type="button">⊗ Lots</button>
-        <button class="pa-tab-btn" data-tab="almuten" type="button">♆ Almuten</button>
-        <button class="pa-tab-btn" data-tab="bonification" type="button">⚖ Condition</button>
       </nav>
     </div>
     <div class="pa-body">
-      <div class="pa-tab" id="pa-tab-zodiacwheel" style="display:none">
+      <div class="pa-tab" id="pa-tab-zodiacwheel">
         <div id="pa-zodiacwheel-content"></div>
       </div>
-      <div class="pa-tab" id="pa-tab-chart">
-        <div class="pa-chart-layout">
-          <div class="pa-chart-canvas-wrap">
-            <canvas id="pa-chart-wheel" width="520" height="520"></canvas>
-          </div>
-          <div class="pa-chart-sidebar">
-            <div class="pa-inputs-row">
-              <input class="pa-input" id="pa-name"  type="text"  placeholder="Name" style="flex:1;min-width:80px">
-              <input class="pa-input" id="pa-date"  type="date"  style="flex:1">
-              <input class="pa-input" id="pa-time"  type="time"  style="width:90px">
-            </div>
-            <div class="pa-inputs-row">
-              <input class="pa-input" id="pa-lat"   type="number" placeholder="Lat" step="0.0001" style="width:90px">
-              <input class="pa-input" id="pa-lon"   type="number" placeholder="Lon" step="0.0001" style="width:90px">
-              <input class="pa-input" id="pa-place" type="text"   placeholder="Place (optional)" style="flex:1">
-            </div>
-            <div class="pa-inputs-row">
-              <button class="pa-btn" id="pa-use-now" type="button">Use Current</button>
-              <button class="pa-btn pa-btn-primary" id="pa-draw" type="button">Draw Chart</button>
-              <button class="pa-btn" id="pa-save" type="button">Save Profile</button>
-            </div>
-            <div id="pa-chart-output" style="display:none">
-              <div class="pa-ptolemy-quote" id="pa-ptolemy-quote"></div>
-              <div class="pa-planet-list" id="pa-planet-list"></div>
-              <div style="height:8px"></div>
-              <div class="pa-angle-row pa-asc" id="pa-asc-row"></div>
-              <div class="pa-angle-row pa-mc"  id="pa-mc-row"></div>
-              <div style="height:10px"></div>
-              <details open>
-                <summary style="cursor:pointer;color:var(--accent);font-size:12px;margin-bottom:6px">Aspects · Ptolemaic Configurations</summary>
-                <div class="pa-aspects-list" id="pa-aspect-list"></div>
-              </details>
-              <div style="height:10px"></div>
-              <details open>
-                <summary style="cursor:pointer;color:var(--accent);font-size:12px;margin-bottom:6px">Ptolemaic Interpretations</summary>
-                <div id="pa-interp-list"></div>
-              </details>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pa-tab" id="pa-tab-profiles" style="display:none">
-        <div style="margin-bottom:10px;color:var(--muted);font-size:12px">
-          Saved birth charts are stored in your browser.
-        </div>
-        <div class="pa-profiles-grid" id="pa-profiles-grid"></div>
-        <div id="pa-profiles-empty" style="display:none;color:var(--muted);font-size:13px;padding:20px 0">
-          No saved profiles yet. Create a chart and save it.
-        </div>
-      </div>
-
-      <div class="pa-tab" id="pa-tab-transits" style="display:none">
-        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
-          <div class="pa-chart-canvas-wrap">
-            <canvas id="pa-transit-wheel" width="520" height="520"></canvas>
-          </div>
-          <div style="flex:1;min-width:260px">
-            <!-- Notification opt-in banner -->
-            <div id="pa-notif-banner" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(200,150,10,0.12);border:1px solid rgba(200,150,10,0.3);border-radius:8px;font-size:11px;color:#d4a824;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <span>🔔 Get notified when an exact transit perfects — never miss a key moment.</span>
-              <button class="pa-btn" id="pa-notif-yes" type="button" style="font-size:10px;padding:2px 8px">Enable</button>
-              <button class="pa-btn" id="pa-notif-no"  type="button" style="font-size:10px;padding:2px 8px;opacity:0.5">No thanks</button>
-            </div>
-            <div id="pa-notif-status" style="display:none;margin-bottom:8px;font-size:10px;color:var(--muted)"></div>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-              <span style="color:var(--accent);font-weight:700">Transits for today</span>
-              <span id="pa-transit-date" style="color:var(--muted);font-size:12px"></span>
-              <button class="pa-btn" id="pa-transit-refresh" type="button" style="margin-left:auto">Refresh</button>
-            </div>
-            <!-- Weekly digest -->
-            <div id="pa-weekly-digest" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07)">
-              <div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:0.5px;margin-bottom:8px">7-DAY TRANSIT FORECAST</div>
-              <div id="pa-digest-list"></div>
-            </div>
-            <div id="pa-transit-no-chart" style="color:var(--muted);font-size:13px">
-              Draw a natal chart first (Chart tab), then view transits here.
-            </div>
-            <div id="pa-transit-content" style="display:none">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-                <span style="color:#88ccee">&#9679;</span> Transiting planets &nbsp;&nbsp;
-                <span style="color:#f2e6b8">&#9679;</span> Natal planets
-              </div>
-              <div class="pa-transit-list" id="pa-transit-list"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Rework 2026-05-20: removed pa-tab-chart, pa-tab-profiles, pa-tab-transits.
+           Their JS render functions remain in this file (renderChart etc.) so
+           the kept tabs that share helpers (Synastry / Houses) continue to work,
+           but the DOM nodes they wrote into are gone. -->
 
       <div class="pa-tab" id="pa-tab-synastry" style="display:none">
         <div class="pa-synastry-selectors" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -843,24 +816,24 @@ export function buildAstrologyApp(model) {
       <div class="pa-tab" id="pa-tab-cards" style="display:none">
         <div id="pa-cards-content"></div>
       </div>
-      <div class="pa-tab" id="pa-tab-sect" style="display:none">
-        <div id="pa-sect-content"></div>
+
+      <!-- Tabs added by the Tetrabiblos overhaul (Guides 06, 07, 09, 10). -->
+      <div class="pa-tab" id="pa-tab-lifespan" style="display:none">
+        <div id="pa-lifespan-content"></div>
       </div>
-      <div class="pa-tab" id="pa-tab-dignities" style="display:none">
-        <div id="pa-dignities-content"></div>
+      <div class="pa-tab" id="pa-tab-mundane" style="display:none">
+        <div id="pa-mundane-content"></div>
       </div>
-      <div class="pa-tab" id="pa-tab-profections" style="display:none">
-        <div id="pa-profections-content"></div>
+      <div class="pa-tab" id="pa-tab-returns" style="display:none">
+        <div id="pa-returns-content"></div>
       </div>
-      <div class="pa-tab" id="pa-tab-lots" style="display:none">
-        <div id="pa-lots-content"></div>
+      <div class="pa-tab" id="pa-tab-report" style="display:none">
+        <div id="pa-report-content"></div>
       </div>
-      <div class="pa-tab" id="pa-tab-almuten" style="display:none">
-        <div id="pa-almuten-content"></div>
-      </div>
-      <div class="pa-tab" id="pa-tab-bonification" style="display:none">
-        <div id="pa-bonification-content"></div>
-      </div>
+      <!-- Rework 2026-05-20: removed pa-tab-sect, dignities, profections, lots,
+           almuten, bonification. Helper functions (renderSect, renderDignities,
+           etc.) are still defined in this file, but with no DOM target they're
+           never called and could be deleted later in a follow-up cleanup. -->
     </div>
   `;
   document.body.appendChild(app);
@@ -869,44 +842,43 @@ export function buildAstrologyApp(model) {
   let currentChart = null;
 
   // ── Tab switching ──────────────────────────────────────────────────────────
+  // Post-rework (2026-05-20) only 6 tabs are wired: Zodiac Wheel (default),
+  // Synastry, Houses, Stars, Old/New Astrology, Scrolls. The render fns for
+  // the removed tabs (renderProfiles, renderTransits, renderSect etc.) still
+  // exist further down so the kept tabs that share helpers keep working;
+  // they're just never called from the dispatcher below. .querySelector
+  // returns null for the removed pa-tab-* IDs, which is fine because the
+  // for-each below skips falsy entries.
   const tabBtns = app.querySelectorAll('.pa-tab-btn');
   const tabs = {
-    chart:       app.querySelector('#pa-tab-chart'),
     zodiacwheel: app.querySelector('#pa-tab-zodiacwheel'),
-    profiles:    app.querySelector('#pa-tab-profiles'),
-    transits: app.querySelector('#pa-tab-transits'),
-    synastry: app.querySelector('#pa-tab-synastry'),
-    houses:       app.querySelector('#pa-tab-houses'),
-    stars:        app.querySelector('#pa-tab-stars'),
-    modernity:    app.querySelector('#pa-tab-modernity'),
-    cards:        app.querySelector('#pa-tab-cards'),
-    sect:         app.querySelector('#pa-tab-sect'),
-    dignities:    app.querySelector('#pa-tab-dignities'),
-    profections:  app.querySelector('#pa-tab-profections'),
-    lots:         app.querySelector('#pa-tab-lots'),
-    almuten:      app.querySelector('#pa-tab-almuten'),
-    bonification: app.querySelector('#pa-tab-bonification'),
+    synastry:    app.querySelector('#pa-tab-synastry'),
+    houses:      app.querySelector('#pa-tab-houses'),
+    stars:       app.querySelector('#pa-tab-stars'),
+    modernity:   app.querySelector('#pa-tab-modernity'),
+    cards:       app.querySelector('#pa-tab-cards'),
+    lifespan:    app.querySelector('#pa-tab-lifespan'),
+    mundane:     app.querySelector('#pa-tab-mundane'),
+    returns:     app.querySelector('#pa-tab-returns'),
+    report:      app.querySelector('#pa-tab-report'),
   };
 
   function switchTab(name) {
     tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     Object.entries(tabs).forEach(([k, el]) => {
+      if (!el) return;
       el.style.display = k === name ? '' : 'none';
     });
     if (name === 'zodiacwheel') renderZodiacWheel(app.querySelector('#pa-zodiacwheel-content'));
-    if (name === 'profiles') renderProfiles();
-    if (name === 'transits') renderTransits();
-    if (name === 'synastry') renderSynastry();
-    if (name === 'houses')   renderHouses();
-    if (name === 'stars')        renderStars();
-    if (name === 'modernity')    renderModernity();
-    if (name === 'cards')        renderCards();
-    if (name === 'sect')         renderSect();
-    if (name === 'dignities')    renderDignities();
-    if (name === 'profections')  renderProfections();
-    if (name === 'lots')         renderLots();
-    if (name === 'almuten')      renderAlmuten();
-    if (name === 'bonification') renderBonification();
+    if (name === 'synastry')    renderSynastry();
+    if (name === 'houses')      renderHouses();
+    if (name === 'stars')       renderStars();
+    if (name === 'modernity')   renderModernity();
+    if (name === 'cards')       renderCards();
+    if (name === 'lifespan')    renderLifespan();
+    if (name === 'mundane')     renderMundane();
+    if (name === 'returns')     renderReturns();
+    if (name === 'report')      renderReport();
   }
 
   tabBtns.forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -932,9 +904,9 @@ export function buildAstrologyApp(model) {
     lonEl.value  = (model.state?.ObserverLong ?? -74.0).toFixed(4);
   }
 
-  app.querySelector('#pa-use-now').addEventListener('click', fillFromModel);
+  app.querySelector('#pa-use-now')?.addEventListener('click', fillFromModel);
 
-  app.querySelector('#pa-draw').addEventListener('click', () => {
+  app.querySelector('#pa-draw')?.addEventListener('click', () => {
     const dateStr = dateEl.value || toDateInput(new Date());
     const timeStr = timeEl.value || '12:00';
     const lat  = parseFloat(latEl.value)  || 40.7;
@@ -954,7 +926,7 @@ export function buildAstrologyApp(model) {
     }
   });
 
-  app.querySelector('#pa-save').addEventListener('click', () => {
+  app.querySelector('#pa-save')?.addEventListener('click', () => {
     if (!currentChart) { alert('Draw a chart first.'); return; }
     const dateStr = dateEl.value;
     const timeStr = timeEl.value || '12:00';
@@ -977,8 +949,10 @@ export function buildAstrologyApp(model) {
     const planetListEl = app.querySelector('#pa-planet-list');
     planetListEl.innerHTML = buildPlanetRows(chart.planets);
 
-    const ascZod = lonToZodiac(chart.houses?.[0] ?? chart.ascLon ?? 0);
-    const mcZod  = lonToZodiac(chart.houses?.[9] ?? 0);
+    // chart.houses is now whole-sign (sign-boundary cusps); use ascLon/mcLon
+    // for the actual angle longitudes (PART 9.1).
+    const ascZod = lonToZodiac(chart.ascLon ?? 0);
+    const mcZod  = lonToZodiac(chart.mcLon  ?? 0);
 
     // Planetary natures summary bar
     const natsHtml = chart.planets.map((p) => {
@@ -989,8 +963,18 @@ export function buildAstrologyApp(model) {
       return `<span class="${cls}" title="${p.name}: ${n.quality}">${sym}</span>`;
     }).join('');
 
-    app.querySelector('#pa-asc-row').innerHTML =
-      `<span>&#8593; ASC (Rising): <strong>${fmtZodiac(ascZod)}</strong></span>`;
+    {
+      const m = computeAscendant._lastMethod;
+      const ps = computeAscendant._lastParallels || [];
+      let methodNote = '';
+      if (m === 'tabular' && ps.length === 2) {
+        methodNote = `<div style="font-size:10px;color:var(--muted);margin-top:2px">Almagest II.8 interpolation: ${ps.join(' ↔ ')}</div>`;
+      } else if (m === 'modern-fallback') {
+        methodNote = `<div style="font-size:10px;color:var(--muted);margin-top:2px">Latitude outside Ptolemy's range — modern formula</div>`;
+      }
+      app.querySelector('#pa-asc-row').innerHTML =
+        `<span>&#8593; ASC (Rising): <strong>${fmtZodiac(ascZod)}</strong></span>${methodNote}`;
+    }
     app.querySelector('#pa-mc-row').innerHTML =
       `<span>&#8853; MC (Midheaven): <strong>${fmtZodiac(mcZod)}</strong></span>`;
 
@@ -1039,8 +1023,8 @@ export function buildAstrologyApp(model) {
       const isActive  = p.id === activeId;
       try {
         const c      = chartFromProfile(p, source);
-        const isDawn = (c.sunLon !== undefined)
-          ? (c.sunLon > c.houses?.[0] && c.sunLon < (c.houses?.[0] + 180))
+        const isDawn = (c.sunLon !== undefined && c.ascLon !== undefined)
+          ? (c.sunLon > c.ascLon && c.sunLon < (c.ascLon + 180))
           : true;
         // Planet grid: all 7 bodies
         planetCells = PLANET_ORDER.map(name => {
@@ -1060,10 +1044,10 @@ export function buildAstrologyApp(model) {
             ${badge ? `<span style="font-size:8px;color:${badgeCol}">${badge}</span>` : '<span style="font-size:8px"> </span>'}
           </div>`;
         }).join('');
-        // ASC line
-        if (c.houses?.[0] !== undefined) {
-          const az  = lonToZodiac(c.houses[0]);
-          const asi = Math.floor(c.houses[0] / 30) % 12;
+        // ASC line (uses actual Ascendant longitude, not whole-sign cusp)
+        if (c.ascLon !== undefined) {
+          const az  = lonToZodiac(c.ascLon);
+          const asi = Math.floor(((c.ascLon % 360) + 360) % 360 / 30) % 12;
           ascLine = `<div style="font-size:10px;color:var(--muted);margin-top:6px">&#8593; ASC <span style="color:${SIGN_COLORS[asi]}">${az.symbol} ${az.sign} ${az.deg}°</span></div>`;
         }
       } catch (_) {}
@@ -1546,25 +1530,12 @@ export function buildAstrologyApp(model) {
     });
   }
 
-  app.querySelector('#pa-transit-refresh').addEventListener('click', renderTransits);
+  app.querySelector('#pa-transit-refresh')?.addEventListener('click', renderTransits);
 
   // ── Fixed Stars tab ───────────────────────────────────────────────────────
-  const FIXED_STARS = [
-    { name:'Algol',      starId: null,          lon: 56.3, mag:2.1, nature:'Saturn/Jupiter', nickname:'Caput Algol — Head of Medusa',
-      lore:'The most malefic of the fixed stars. "When it reaches the Midheaven or Ascendant it destroys life." — Ptolemy. Conjunctions to natal planets bring danger of violence, sudden reversal, and beheading (literal or figurative). The 26th degree of Taurus is one of the most feared points in traditional astrology.' },
-    { name:'Aldebaran',  starId: 'aldebaran',   lon: 69.7, mag:0.9, nature:'Mars',           nickname:'The Eye of the Bull — Watcher of the East',
-      lore:'One of the four Royal Stars, guardian of the eastern quarter of heaven. Angular or ascending, it gives great honour, wealth, and military distinction, with Jupiter-like generosity. Ptolemy assigns it a Mars nature — it can bring as sudden a downfall as a rise when afflicted.' },
-    { name:'Regulus',    starId: 'regulus',      lon:149.8, mag:1.4, nature:'Mars/Jupiter',   nickname:'The Heart of the Lion — Rex',
-      lore:'The Royal Star of the north, associated with kings and generals. Angular placement or conjunction to Sun, Moon, or ASC confers immense renown, high office, and military honour. The price, per Ptolemy: eminence is followed by sudden disgrace unless morally tempered.' },
-    { name:'Spica',      starId: 'spica',        lon:203.3, mag:1.0, nature:'Venus/Mars',     nickname:'The Spike of Virgo — Arista',
-      lore:'The most benefic of all the fixed stars. "It produces brilliant, distinguished and eminent persons." — Ptolemy. Conjunctions bring gifts of art, science, justice, and grace. Spica on the Ascendant or Midheaven is the classic mark of a gifted and celebrated life.' },
-    { name:'Arcturus',   starId: 'arcturus',     lon:203.9, mag:-0.1,nature:'Mars/Jupiter',   nickname:'The Guardian of the Bear',
-      lore:'Of the nature of Mars and Jupiter, Arcturus confers wealth, distinction, and success in government and commerce. It is a great protector star — those with natal planets here tend to be guided through crises that would undo others.' },
-    { name:'Antares',    starId: 'antares',      lon:249.7, mag:1.1, nature:'Mars/Jupiter',   nickname:'The Heart of the Scorpion — Rival of Ares',
-      lore:'One of the four Royal Stars, guardian of the western quarter. Like Algol it cuts both ways — a star of brilliant success through martial courage and also of ruin through excess. Conjunctions to Mars, Saturn, or the Lights demand caution; to Jupiter or Venus they promise exceptional achievement.' },
-    { name:'Fomalhaut',  starId: 'fomalhaut',    lon:333.9, mag:1.2, nature:'Venus/Mercury',  nickname:'The Mouth of the Southern Fish — Watcher of the South',
-      lore:'The southernmost of the four Royal Stars. "It produces an immortal name, though sometimes notorious." — Ptolemy. Associated with eminence through idealism, mysticism, and artistic genius. Fomalhaut on the angles or conjunct the Lights is a mark of either inspired greatness or inspired self-destruction.' },
-  ];
+  // FIXED_STARS catalogue is provided by js/core/fixedStars.js (Guide 08).
+  // Inline list removed — precession is now applied per chart date via
+  // fixedStarsAt(date). Use STAR_CATALOG for the raw J2000 entries.
 
   function locateFixedStar(starId) {
     const c = model.computed;
@@ -1589,11 +1560,13 @@ export function buildAstrologyApp(model) {
 
   function renderStars() {
     const el = app.querySelector('#pa-stars-content');
-    if (el.dataset.rendered) return;
-    el.dataset.rendered = '1';
+    // Re-render each call: precessed positions depend on currentChart.date.
+    delete el.dataset.rendered;
 
     const hasChart = !!(currentChart?.planets);
-    const ORB = 1.5; // conjunction orb in degrees
+    const refDate  = currentChart?.date || new Date();
+    const stars    = fixedStarsAt(refDate);   // precessed to chart date (PART 16.1)
+    const ORB = 1.5; // conjunction orb in degrees (display)
 
     function conjunctions(starLon) {
       if (!hasChart) return [];
@@ -1607,9 +1580,29 @@ export function buildAstrologyApp(model) {
       });
     }
 
+    // PART 16.1 — direct contact only for stars within ±8° belt
+    const tightConj = hasChart ? starPlanetConjunctions(currentChart.planets, refDate, 1) : [];
+    const wsAspects = hasChart ? starPlanetWholeSignAspects(currentChart.planets, refDate) : [];
+
     const quoteBar = `<div class="pa-ptolemy-quote" style="margin-bottom:14px">"The power of each star is found in the nature of the planets whose character it resembles." — Tetrabiblos I.9</div>`;
 
-    const cards = FIXED_STARS.map(star => {
+    const summaryPanel = hasChart
+      ? `<div style="margin-bottom:14px;padding:10px 12px;background:rgba(212,184,120,0.06);border:1px solid rgba(212,184,120,0.18);border-radius:4px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Current conjunctions (≤1°, ±8° belt) · whole-sign aspects (PART 16.3)</div>
+          <div style="font-size:11px;color:#bbb">
+            ${tightConj.length
+              ? tightConj.map(c => `<span style="color:#ffd060">${c.planet} ⚹ ${c.star}</span> <span style="color:var(--muted)">(${c.sepDeg.toFixed(2)}°)</span>`).join(' · ')
+              : '<span style="color:var(--muted)">No direct contacts within 1°.</span>'}
+          </div>
+          <div style="font-size:11px;color:#bbb;margin-top:4px">
+            ${wsAspects.length
+              ? wsAspects.slice(0, 14).map(a => `<span>${a.planet} · ${a.star} <span style="color:var(--muted)">(${a.signDiff} signs)</span></span>`).join(' · ')
+              : ''}
+          </div>
+        </div>`
+      : '';
+
+    const cards = stars.map(star => {
       const conj = conjunctions(star.lon);
       const zod  = lonToZodiac(star.lon);
       const conjHtml = conj.length === 0
@@ -1626,14 +1619,20 @@ export function buildAstrologyApp(model) {
       const locateBtn = star.starId
         ? `<button class="pa-btn" data-locate-star="${star.starId}" style="margin-top:10px;font-size:11px;padding:4px 12px;background:rgba(30,90,160,0.25);border:1px solid rgba(80,160,255,0.4);color:#88bbff;border-radius:5px;cursor:pointer">🔭 Locate in Sky</button>`
         : '';
+      const natureText = Array.isArray(star.nature) ? star.nature.join(' / ') : (star.nature || '');
+      const beltTag = star.inZodiacalBelt
+        ? '<span style="font-size:9px;color:#a8d888;margin-left:6px;padding:1px 5px;border:1px solid rgba(168,216,136,0.35);border-radius:3px">±8° belt</span>'
+        : '<span style="font-size:9px;color:#888;margin-left:6px;padding:1px 5px;border:1px solid rgba(120,120,120,0.35);border-radius:3px">aspectual only</span>';
+      const driftNote = `<span style="font-size:9px;color:#666;margin-left:6px">J2000: ${star.lon2000.toFixed(2)}°</span>`;
       return `<div style="margin-bottom:16px;padding:14px 16px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08)">
         <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap">
           <span style="font-size:16px;font-weight:700;color:#f0d060;font-family:var(--font-greek)">${star.name}</span>
-          <span style="font-size:11px;color:var(--muted)">${star.nickname}</span>
-          <span style="margin-left:auto;font-size:10px;color:#888">${zod.sign} ${zod.deg}°${zod.min.toString().padStart(2,'0')}' · mag ${star.mag > 0 ? '+' : ''}${star.mag}</span>
+          <span style="font-size:11px;color:var(--muted)">${star.nick || ''}</span>
+          ${beltTag}
+          <span style="margin-left:auto;font-size:10px;color:#888">${zod.sign} ${zod.deg}°${zod.min.toString().padStart(2,'0')}' · mag ${star.mag > 0 ? '+' : ''}${star.mag}${driftNote}</span>
         </div>
-        <div style="font-size:10px;color:#c8960a;margin-bottom:6px;letter-spacing:0.4px">Nature: ${star.nature}</div>
-        <div style="font-size:11px;color:var(--muted);line-height:1.65">${star.lore}</div>
+        <div style="font-size:10px;color:#c8960a;margin-bottom:6px;letter-spacing:0.4px">Nature: ${natureText}</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.65">${star.lore || star.note || ''}</div>
         ${conjHtml}
         ${locateBtn}
       </div>`;
@@ -1642,9 +1641,9 @@ export function buildAstrologyApp(model) {
     el.innerHTML = quoteBar +
       `<div style="font-size:11px;color:var(--muted);margin-bottom:12px">` +
         (hasChart
-          ? `Showing natal conjunctions within ${ORB}° for <b style="color:var(--fg)">${currentChart._name||'your chart'}</b>.`
-          : `Draw a natal chart (Chart tab) to see your fixed star conjunctions.`) +
-      `</div>` + cards;
+          ? `Showing natal conjunctions within ${ORB}° for <b style="color:var(--fg)">${currentChart._name||'your chart'}</b>. Longitudes precessed at 1.396°/century (PART 16.1).`
+          : `Draw a natal chart to see your fixed star conjunctions. Longitudes precessed to ${refDate.getUTCFullYear()}.`) +
+      `</div>` + summaryPanel + cards;
 
     el.querySelectorAll('[data-locate-star]').forEach(btn => {
       btn.addEventListener('click', () => locateFixedStar(btn.dataset.locateStar));
@@ -1916,12 +1915,12 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
       modText:"The archetype of the Other and the search for harmony. Libra is the sign of the Descendant — where the self meets its mirror. Modern astrology emphasises relationship, aesthetic intelligence, and the existential challenge of making decisions in a world of competing goods.",
       constellNow:'Virgo',
       constellNote:'The autumnal equinox point, which Ptolemy called "0° Libra," now stands deep inside the Virgo constellation. The equinox has slid ~24° since Ptolemy named it.' },
-    { idx:7, sym:'♏', name:'Scorpio',     greek:'Σκορπίος',   dates:'Oct 23 – Nov 21',
+    { idx:7, sym:'♏', name:'Scorpius',     greek:'Σκορπίος',   dates:'Oct 23 – Nov 21',
       ptolRuler:'Mars ♂',    modRuler:'Pluto ♇',        rulerChanged:true,
       modRulerNote:'Traditional: Mars ♂',
       element:'water', mode:'fixed', accent:'#cc6655',
       ptolText:"Cold, dry, feminine, fixed water. The Scorpion rules the deepening autumn — the season of death and fermentation. Rules the genitals; produces an intense, secretive, penetrating, and sometimes destructive temperament. Governs Syria, Judea, and Commagene.",
-      modText:"The archetype of depth, transformation, and power. Modern astrology assigns Scorpio the domain of death-and-rebirth, occult investigation, shared resources, and the ruthless honesty required to face what lies beneath the surface. Pluto replaced Mars as ruler in the 20th century.",
+      modText:"The archetype of depth, transformation, and power. Modern astrology assigns Scorpius the domain of death-and-rebirth, occult investigation, shared resources, and the ruthless honesty required to face what lies beneath the surface. Pluto replaced Mars as ruler in the 20th century.",
       constellNow:'Libra',
       constellNote:"The sun spends only about 7 days in the actual Scorpius constellation (≈Nov 22-29). The sun then crosses Ophiuchus — the 'serpent-bearer' constellation completely absent from the traditional zodiac — for 18 days before entering Sagittarius." },
     { idx:8, sym:'♐', name:'Sagittarius', greek:'Τοξότης',    dates:'Nov 22 – Dec 21',
@@ -1931,13 +1930,13 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
       modText:"The archetype of the quest for meaning. Sagittarius is the chart's philosopher and wanderer — the sign of higher education, long travel, cross-cultural encounter, and the restless drive to understand existence at the largest possible scale. The arrow always points outward.",
       constellNow:'Ophiuchus / Scorpius',
       constellNote:"The sun passes through Ophiuchus (Nov 29 – Dec 18) during 'Sagittarius season' — the Serpent-Bearer is the 13th sun-sign constellation, entirely absent from the classical zodiac. Ptolemy's zodiac was a geometric system of 12 equal 30° arcs, not a star map." },
-    { idx:9, sym:'♑', name:'Capricorn',   greek:'Αἰγόκερως',  dates:'Dec 22 – Jan 19',
+    { idx:9, sym:'♑', name:'Capricornus',   greek:'Αἰγόκερως',  dates:'Dec 22 – Jan 19',
       ptolRuler:'Saturn ♄',  modRuler:'Saturn ♄',       rulerChanged:false,
       element:'earth', mode:'cardinal', accent:'#9090a0',
       ptolText:"Cold, dry, feminine, cardinal earth. The Sea-Goat marks the winter solstice — the nadir of the solar year and the beginning of its return. Rules the knees; produces an ambitious, disciplined, cautious, and authority-seeking temperament. Governs India and Ariana.",
-      modText:"The archetype of ambition, structure, and the long game. Capricorn is the chart's executive — the sign of worldly achievement earned through patience and discipline. Modern astrology links it to the relationship with the authoritative parent and the internalised judge.",
+      modText:"The archetype of ambition, structure, and the long game. Capricornus is the chart's executive — the sign of worldly achievement earned through patience and discipline. Modern astrology links it to the relationship with the authoritative parent and the internalised judge.",
       constellNow:'Sagittarius',
-      constellNote:'The winter solstice point, which Ptolemy called "0° Capricorn," now falls in Sagittarius constellation. The sun is in Sagittarius during the December solstice — the opposite of Ptolemy\'s era.' },
+      constellNote:'The winter solstice point, which Ptolemy called "0° Capricornus," now falls in Sagittarius constellation. The sun is in Sagittarius during the December solstice — the opposite of Ptolemy\'s era.' },
     { idx:10, sym:'♒', name:'Aquarius',   greek:'Ὑδροχόος',   dates:'Jan 20 – Feb 18',
       ptolRuler:'Saturn ♄',  modRuler:'Uranus ⛢',       rulerChanged:true,
       modRulerNote:'Traditional: Saturn ♄',
@@ -2055,14 +2054,14 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
         ['☽ Moon','♋ Cancer','—'],
         ['☿ Mercury','♊ Gemini','♍ Virgo'],
         ['♀ Venus','♎ Libra','♉ Taurus'],
-        ['♂ Mars','♈ Aries','♏ Scorpio'],
+        ['♂ Mars','♈ Aries','♏ Scorpius'],
         ['♃ Jupiter','♐ Sagittarius','♓ Pisces'],
-        ['♄ Saturn','♒ Aquarius','♑ Capricorn'],
+        ['♄ Saturn','♒ Aquarius','♑ Capricornus'],
       ],['Planet','Day Domicile','Night Domicile'])}
       <br><strong>Exaltation</strong> (second tier): Sun in ♈, Moon in ♉, Mercury in ♍, Venus in ♓, Mars in ♑, Jupiter in ♋, Saturn in ♎.<br>
       <strong>Triplicity, Term (Bound), Face (Decan)</strong> are progressively weaker dignities distributing planetary authority across all 360°. Detriment and Fall are the opposites — positions of weakness.`,
     `The dignity system survives largely intact in modern practice, but three new rulers have been inserted:
-      Uranus displaces Saturn from Aquarius, Neptune displaces Jupiter from Pisces, and Pluto displaces Mars from Scorpio.
+      Uranus displaces Saturn from Aquarius, Neptune displaces Jupiter from Pisces, and Pluto displaces Mars from Scorpius.
       Many modern practitioners use both traditional and modern rulers, but the <em>physical rationale</em> for the original assignments — based on elemental quality matching — has been completely abandoned in favour of thematic keyword matching.`);
 
     // ── Aspects (Schēmata) ─────────────────────────────────────────────────
@@ -2101,7 +2100,7 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
         ['11th','—','Friends, benefactors, hopes'],
         ['12th','—','Enemies, imprisonment, affliction'],
       ],['Place','Angle','Ptolemaic Domain'])}
-      <br>Preferred system: <strong>Whole-sign houses</strong> — the rising sign constitutes the entire 1st house, the next sign the 2nd, and so on. The <strong>Lot of Fortune</strong> (☽ + ASC − ☉) represents bodily fortune.`,
+      <br>Preferred system: <strong>Whole-sign houses</strong> — the rising sign constitutes the entire 1st house, the next sign the 2nd, and so on. The <strong>Lot of Fortune</strong> (☽ + ASC − ☉) signifies bodily fortune.`,
     `The term "houses" has completely replaced <em>topoi</em>. Psychological domains have been heavily elaborated: the 8th becomes shared resources and transformation; the 12th becomes the unconscious and hidden self.<br><br>
       Quadrant house systems dominate modern practice — primarily <strong>Placidus</strong>, followed by Koch, Regiomontanus, and Porphyry.
       Whole-sign houses have seen a significant revival among historically-minded practitioners in the last two decades.<br><br>
@@ -2329,7 +2328,7 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
         kw:"Legacies · Others' resources · Death · Crises · Hidden debts",
         sig:'A succedent place in aversion to the Ascendant — inauspicious and hidden. Governs the mode and timing of death, what the native inherits or owes, and crises that arise from hidden causes. Malefics here operate with particular force.',
         quote:'"The anaretic degree and its lord, and the nature of the sign containing it, indicate the manner of death." — Tet. IV.VIII',
-        ruler:'Scorpio · Mars', col:'#7a7878' },
+        ruler:'Scorpius· Mars', col:'#7a7878' },
       { n:9,  r:'IX',   name:'God',                 greek:'Θεός',
         also:'Long Journeys · Religion · Philosophy', str:'cadent',
         kw:'Long travel · Philosophy · Religion · Foreign lands · Oracles · Learning',
@@ -2341,7 +2340,7 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
         kw:'Occupation · Rank · Reputation · Public life · Authority · The culminating angle',
         sig:'The culminating angle — the highest point of the chart and the most visible. Second in power only to the Ascendant. Governs the profession, public reputation, and the heights to which the native rises. The rulers of the Midheaven sign jointly govern the occupation.',
         quote:'"The Midheaven, or tenth place, governs the rank and occupation of the native more powerfully than any other position save the Horoscope itself." — Tet. IV.II–III',
-        ruler:'Capricorn · Saturn', col:'#c8960a' },
+        ruler:'Capricornus · Saturn', col:'#c8960a' },
       { n:11, r:'XI',   name:'Good Daemon',         greek:'Ἀγαθὸς δαίμων',
         also:'Friends · Patrons · Hopes',          str:'succedent',
         kw:'Friends · Benefactors · Patrons · Hopes · Gifts · Alliance',
@@ -3032,9 +3031,9 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
       zCard('pa-sc-fire','♌','Leo','♌','hot · dry · fixed · masculine','authority · honour<br>heat · the heart','V','☉ Sol · no exaltation · ♄ fall', SVG.leo) +
       zCard('pa-sc-earth','♍','Virgo','♍','cold · dry · mutable · feminine','precision · harvest<br>dryness · craft','VI','☿ Mercury · ☿ exalt 15° · ♀ fall', SVG.virgo) +
       zCard('pa-sc-air','♎','Libra','♎','warm · moist · cardinal · masculine','balance · justice<br>judgement · accord','VII','♀ Venus · ♄ exalt 21° · ☉ fall', SVG.libra) +
-      zCard('pa-sc-water','♏','Scorpio','♏','cold · moist · fixed · feminine','depth · fixity<br>compulsion · hidden','VIII','♂ Mars · no exaltation · ☽ fall', SVG.scorpio) +
+      zCard('pa-sc-water','♏','Scorpius','♏','cold · moist · fixed · feminine','depth · fixity<br>compulsion · hidden','VIII','♂ Mars · no exaltation · ☽ fall', SVG.scorpio) +
       zCard('pa-sc-fire','♐','Sagittarius','♐','hot · dry · mutable · masculine','philosophy · law<br>expansion · far travel','IX','♃ Jupiter · no exaltation', SVG.sagittarius) +
-      zCard('pa-sc-earth','♑','Capricorn','♑','cold · dry · cardinal · feminine','ambition · restraint<br>coldness · endurance','X','♄ Saturn · ♂ exalt 28° · ♃ fall', SVG.capricorn) +
+      zCard('pa-sc-earth','♑','Capricornus','♑','cold · dry · cardinal · feminine','ambition · restraint<br>coldness · endurance','X','♄ Saturn · ♂ exalt 28° · ♃ fall', SVG.capricorn) +
       zCard('pa-sc-air','♒','Aquarius','♒','cold · moist · fixed · masculine','intellect · principle<br>cold air · detachment','XI','♄ Saturn · no exaltation', SVG.aquarius) +
       zCard('pa-sc-water','♓','Pisces','♓','cold · moist · mutable · feminine','dissolution · vision<br>moisture · yielding','XII','♃ Jupiter · ♀ exalt 27° · ☿ fall', SVG.pisces);
 
@@ -3129,7 +3128,7 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
   }
 
   // Sign names for display
-  const SIGN_NAMES = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const SIGN_NAMES = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpius','Sagittarius','Capricornus','Aquarius','Pisces'];
   const SIGN_SYMS  = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 
   /** Check for mutual domicile reception between two charts.
@@ -3603,6 +3602,9 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
       const sym      = pData.symbol || PLANET_SYMBOLS[p] || '?';
       const col      = PLANET_COLORS[p] || '#aaa';
       const scoreCol = dig.score > 0 ? '#a8d888' : dig.score < 0 ? '#ff7055' : '#888';
+      const acc      = accidentalDignity(p, ch);
+      const accCol   = acc.score > 0 ? '#a8d888' : acc.score < 0 ? '#ff7055' : '#888';
+      const accTip   = (acc.breakdown || []).join(' · ');
       return `<tr>
         <td style="${tdSty};color:${col}">${sym} ${p.charAt(0).toUpperCase() + p.slice(1)}</td>
         <td style="${tdSty};color:#bbb">${zod.sign} ${zod.symbol}</td>
@@ -3612,6 +3614,7 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
         <td style="${tdSty}">${check(dig.term)}</td>
         <td style="${tdSty}">${check(dig.face)}</td>
         <td style="${tdSty};color:${scoreCol};font-weight:700">${dig.score > 0 ? '+' : ''}${dig.score}</td>
+        <td style="${tdSty};color:${accCol};font-weight:600" title="${accTip}">${acc.score > 0 ? '+' : ''}${acc.score}</td>
       </tr>`;
     }).join('');
 
@@ -3632,12 +3635,16 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
             <th style="${thSty}">Term</th>
             <th style="${thSty}">Face</th>
             <th style="${thSty}">Score</th>
+            <th style="${thSty}" title="Accidental dignity — house position, solar phase, retrograde, sect">Acc</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
       <div style="margin-top:10px;font-size:10px;color:var(--muted)">
         Domicile +5 · Exaltation +4 · Triplicity +3 · Term +2 · Face +1 · Detriment −5 · Fall −4
+      </div>
+      <div style="margin-top:4px;font-size:10px;color:var(--muted)">
+        Accidental: Angular +4 · Succedent +2 · Cadent −2 · Cazimi +5 · Combust −5 · Under rays −2 · Oriental +1 · Retrograde −1 · In sect +1
       </div>
       <div class="pa-ptolemy-quote" style="margin-top:12px">
         "The planets which are in their proper houses or in their exaltations … strengthen their own constitutions." — Tetrabiblos I.XX
@@ -3663,7 +3670,7 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
     const lordSym     = PLANET_SYMBOLS[lordName] || '?';
     const lordCol     = PLANET_COLORS[lordName] || '#aaa';
 
-    const SIGN_NAMES = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+    const SIGN_NAMES = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpius','Sagittarius','Capricornus','Aquarius','Pisces'];
     const SIGN_SYMS  = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 
     const timelineRows = [];
@@ -3720,45 +3727,31 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
     }
     const ch        = currentChart;
     const isDiurnal = ch.isDiurnal ?? true;
-    const asc       = ch.ascLon ?? 0;
-    const sunL      = ch.planets.find((p) => p.name === 'sun')?.lon  ?? 0;
-    const monL      = ch.planets.find((p) => p.name === 'moon')?.lon ?? 0;
+    const lots      = computeLots(ch);
 
-    const fortuneLon = isDiurnal
-      ? ((asc + monL - sunL) % 360 + 360) % 360
-      : ((asc + sunL - monL) % 360 + 360) % 360;
-    const spiritLon = isDiurnal
-      ? ((asc + sunL - monL) % 360 + 360) % 360
-      : ((asc + monL - sunL) % 360 + 360) % 360;
-
-    const fortuneZod     = lonToZodiac(fortuneLon);
-    const spiritZod      = lonToZodiac(spiritLon);
-    const fortuneSignIdx = Math.floor(fortuneLon / 30);
-    const spiritSignIdx  = Math.floor(spiritLon  / 30);
-    const fortuneLord    = Object.entries(DOMICILE).find(([, s]) => s.includes(fortuneSignIdx));
-    const spiritLord     = Object.entries(DOMICILE).find(([, s]) => s.includes(spiritSignIdx));
-    const fLordName      = fortuneLord ? fortuneLord[0] : 'unknown';
-    const sLordName      = spiritLord  ? spiritLord[0]  : 'unknown';
-
-    const lotCard = (name, icon, lon, zod, lordName) => {
+    const lotCard = (name, icon, lot, formula) => {
+      const lordName = lot.lord || 'unknown';
       const col  = PLANET_COLORS[lordName] || '#aaa';
       const sym  = PLANET_SYMBOLS[lordName] || '?';
-      const fmla = name === 'Fortune'
-        ? (isDiurnal ? 'ASC + ☽ − ☀' : 'ASC + ☀ − ☽')
-        : (isDiurnal ? 'ASC + ☀ − ☽' : 'ASC + ☽ − ☀');
+      const zod  = lonToZodiac(lot.lon);
       return `
         <div style="padding:14px;background:rgba(212,184,120,0.06);border:1px solid rgba(212,184,120,0.2);border-radius:4px;margin-bottom:12px">
           <div style="font-size:20px;margin-bottom:6px">${icon} Lot of ${name}</div>
-          <div style="font-size:15px;color:#bbb;margin-bottom:8px">${zod.sign} ${zod.symbol} · ${lon.toFixed(1)}°</div>
+          <div style="font-size:15px;color:#bbb;margin-bottom:8px">${zod.sign} ${zod.symbol} · ${lot.lon.toFixed(1)}°</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Lord of the Lot</div>
           <div style="font-size:15px;color:${col}">${sym} ${lordName.charAt(0).toUpperCase() + lordName.slice(1)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px">Formula (${isDiurnal ? 'day' : 'night'}): ${fmla}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">Formula (${isDiurnal ? 'day' : 'night'}): ${formula}</div>
         </div>`;
     };
 
+    const fortuneFmla = isDiurnal ? 'ASC + ☽ − ☀' : 'ASC + ☀ − ☽';
+    const spiritFmla  = isDiurnal ? 'ASC + ☀ − ☽' : 'ASC + ☽ − ☀';
+    const erosFmla    = isDiurnal ? 'ASC + lord(⊕F) − lord(⊗S)' : 'ASC + lord(⊗S) − lord(⊕F)';
+
     el.innerHTML = `
-      ${lotCard('Fortune', '⊕', fortuneLon, fortuneZod, fLordName)}
-      ${lotCard('Spirit',  '⊗', spiritLon,  spiritZod,  sLordName)}
+      ${lotCard('Fortune', '⊕', lots.fortune, fortuneFmla)}
+      ${lotCard('Spirit',  '⊗', lots.spirit,  spiritFmla)}
+      ${lotCard('Eros',    '♥', lots.eros,    erosFmla)}
       <div class="pa-ptolemy-quote" style="margin-top:4px">
         "The Lot of Fortune … is taken from the Sun to the Moon … and the space from the Ascendant … the Lot of the Daemon in the opposite way." — Tetrabiblos IV.I
       </div>`;
@@ -3952,19 +3945,434 @@ Generated by Ptolemaic Astrology (Tetrabiblos method)
     }
   }
 
+  // ── Lifespan tab (Guide 06 — Apheta / Anareta / Primary Directions) ────────
+  function renderLifespan() {
+    const el = app.querySelector('#pa-lifespan-content');
+    if (!el) return;
+    if (!currentChart) {
+      el.innerHTML = '<div style="padding:20px;color:var(--muted)">Draw a chart first (Synastry tab loads profiles).</div>';
+      return;
+    }
+    const ch = currentChart;
+    const apheta = selectApheta(ch);
+    const anaretae = findAnaretae(ch, apheta).slice(0, 8);
+    const now = new Date();
+    const age = Math.max(0, Math.floor((now - ch.date) / (365.25 * 24 * 3600 * 1000)));
+    const events = primaryDirections(ch, Math.max(0, age - 5), 40);
+    const lots   = computeLots(ch);
+
+    const apSym = apheta.name === 'asc' ? '↑' : (PLANET_SYMBOLS[apheta.name] || '?');
+    const apCol = PLANET_COLORS[apheta.name] || '#ffd060';
+    const apZod = lonToZodiac(apheta.lon);
+
+    const anaretaRows = anaretae.map(t => `
+      <div class="pa-aspect-row">
+        <span style="font-size:12px;color:#ccc;flex:1">${t.target}</span>
+        <span style="font-size:12px;color:#ffd060">${t.arcDeg.toFixed(1)}°</span>
+        <span style="font-size:10px;color:var(--muted)">≈ ${Math.round(t.arcDeg)} yr</span>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:11px;padding:6px">No anaretic candidates within range.</div>';
+
+    const eventRows = events.map(e => {
+      const sym = PLANET_SYMBOLS[e.planet] || '?';
+      const col = PLANET_COLORS[e.planet]  || '#aaa';
+      const isCurrent = e.atAge === age;
+      return `
+        <div class="pa-aspect-row" style="${isCurrent ? 'background:rgba(212,184,120,0.12);border-radius:4px' : ''}">
+          <span style="color:var(--muted);font-size:11px;min-width:46px">Age ${e.atAge}</span>
+          <span style="color:${col};font-size:14px">${sym}</span>
+          <span style="color:#ccc;font-size:12px;flex:1">${e.planet} · ${e.aspect}</span>
+          ${isCurrent ? '<span style="font-size:10px;color:#ffd060">← NOW</span>' : ''}
+        </div>`;
+    }).join('') || '<div style="color:var(--muted);font-size:11px;padding:6px">No directions in window.</div>';
+
+    el.innerHTML = `
+      <div style="margin-bottom:14px;padding:14px;background:rgba(212,184,120,0.08);border:1px solid rgba(212,184,120,0.2);border-radius:4px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Apheta — Significator of Life</div>
+        <div style="font-size:22px;color:${apCol}">${apSym} ${apheta.name.charAt(0).toUpperCase() + apheta.name.slice(1)}</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px">${apZod.sign} ${apZod.symbol} · ${apheta.lon.toFixed(1)}° · House ${apheta.house}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">${apheta.source}</div>
+      </div>
+
+      <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Anareta Candidates (closest first)</div>
+      <div style="margin-bottom:14px">${anaretaRows}</div>
+
+      <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Primary Directions Timeline · current age ${age}</div>
+      <div style="margin-bottom:14px">${eventRows}</div>
+
+      <div style="font-size:10px;color:var(--muted);font-style:italic;margin-bottom:8px">
+        Rate: 1° of right ascension = 1 year (PART 14.2). Arcs computed from ecliptic
+        longitude — a close approximation for points near the ecliptic.
+      </div>
+
+      <div class="pa-ptolemy-quote">
+        "The places which are productive of life are five only: that part of the
+         zodiac which extends from the fifth degree above the ascendant down to the
+         twenty-fifth below it … the midheaven … the eleventh, the seventh, and the
+         ninth." — Tetrabiblos III.X
+      </div>`;
+  }
+
+  // ── Mundane tab (Guide 07 — Eclipses, Conjunctions, Ingresses, Weather) ───
+  function renderMundane() {
+    const el = app.querySelector('#pa-mundane-content');
+    if (!el) return;
+    const refDate = currentChart?.date || new Date();
+    const refYear = refDate.getUTCFullYear();
+    const source  = currentChart?.source || (model.state?.BodySource || 'ibnshatir');
+
+    let eclipses = [];
+    try { eclipses = upcomingEclipses(refDate, 6, source); } catch (e) { console.warn('[mundane] eclipses', e); }
+
+    let conjunctions = [];
+    try { conjunctions = detectGreatConjunctions(currentChart?.planets || []); } catch (_) {}
+
+    let ingresses = [];
+    try { ingresses = cardinalIngresses(refYear, source); } catch (_) {}
+
+    let weather = null;
+    try { weather = currentChart ? weatherFromChart(currentChart) : null; } catch (_) {}
+
+    const SIGN_SYMS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+
+    const eclipseRows = eclipses.map(e => {
+      const lordSym = e.eclipseLord ? (PLANET_SYMBOLS[e.eclipseLord] || '?') : '?';
+      const lordCol = e.eclipseLord ? (PLANET_COLORS[e.eclipseLord] || '#aaa') : '#aaa';
+      const kindLabel = e.kind === 'solar' ? '☉ Solar' : '☽ Lunar';
+      return `
+        <div class="pa-aspect-row" style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span style="font-size:11px;color:var(--muted);min-width:90px">${e.dateLabel}</span>
+          <span style="font-size:12px;color:#ccc;min-width:84px">${kindLabel} ${e.type || ''}</span>
+          <span style="font-size:14px;color:#ffd060;min-width:80px">${e.signSym} ${e.sign}</span>
+          <span style="font-size:11px;color:var(--muted);min-width:42px">${e.element} · ${e.direction}</span>
+          <span style="font-size:11px;color:#bbb;flex:1">${e.region}</span>
+          <span style="font-size:12px;color:${lordCol}" title="Eclipse lord">${lordSym}</span>
+        </div>`;
+    }).join('') || '<div style="color:var(--muted);font-size:11px;padding:8px">No eclipses in upcoming window.</div>';
+
+    const conjunctionRows = conjunctions.map(c => `
+      <div class="pa-aspect-row">
+        <span style="font-size:12px;color:#ffd060;flex:1">${c.pair.replace('-', ' & ')}</span>
+        <span style="font-size:12px;color:#ccc">${SIGN_SYMS[c.sign]}</span>
+        <span style="font-size:11px;color:var(--muted)">${c.element}</span>
+        <span style="font-size:11px;color:var(--muted)">${c.elongationDeg.toFixed(1)}° apart</span>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:11px;padding:6px">No same-sign superior-planet conjunctions in the current chart.</div>';
+
+    const ingressRows = ingresses.map(ig => `
+      <div class="pa-aspect-row">
+        <span style="font-size:12px;color:#ccc;flex:1">${ig.sign} ingress</span>
+        <span style="font-size:11px;color:var(--muted)">${ig.date.toISOString().replace('T',' ').slice(0,16)} UTC</span>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:11px;padding:6px">Could not compute ingresses.</div>';
+
+    const weatherRow = weather
+      ? `<div style="font-size:13px;color:#ccc">${weather.label}</div>
+         <div style="font-size:10px;color:var(--muted);margin-top:4px">Moon in sign ${weather.moonSign + 1} · ${weather.primary} · ${weather.secondary}</div>`
+      : '<div style="color:var(--muted);font-size:11px">Draw a chart to see the weather verdict.</div>';
+
+    el.innerHTML = `
+      <div style="margin-bottom:14px;padding:12px;background:rgba(212,184,120,0.08);border:1px solid rgba(212,184,120,0.2);border-radius:4px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Mundane Astrology — Tetrabiblos Books I–II</div>
+        <div style="font-size:11px;color:var(--muted);font-style:italic">"It is the primary form of astrology for Ptolemy; natal astrology is secondary." — PART 15</div>
+      </div>
+
+      <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Upcoming Eclipses · region by triplicity</div>
+      <div style="margin-bottom:14px">${eclipseRows}</div>
+
+      <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Great Conjunctions (Saturn / Jupiter / Mars · same sign)</div>
+      <div style="margin-bottom:14px">${conjunctionRows}</div>
+
+      <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Cardinal Ingresses · ${refYear}</div>
+      <div style="margin-bottom:14px">${ingressRows}</div>
+
+      <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Today's Weather Verdict</div>
+      <div style="margin-bottom:14px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:4px">${weatherRow}</div>
+
+      <div class="pa-ptolemy-quote">
+        "The greater and more important events are produced by the conjunctions of
+         the heavenly bodies … and the eclipses of the luminaries." — Tetrabiblos II.IV
+      </div>`;
+  }
+
+  // ── Solar Returns tab (Guide 09) ───────────────────────────────────────────
+  function renderReturns() {
+    const el = app.querySelector('#pa-returns-content');
+    if (!el) return;
+    if (!currentChart) {
+      el.innerHTML = '<div style="padding:20px;color:var(--muted)">Draw a natal chart first.</div>';
+      return;
+    }
+    const natal = currentChart;
+    const natalSun = natal.planets.find(p => p.name === 'sun');
+    if (!natalSun) {
+      el.innerHTML = '<div style="padding:20px;color:#ff7055">Natal Sun not available.</div>';
+      return;
+    }
+    const natalSunLon = natalSun.lon;
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    const years = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+    const returns = years.map(y => {
+      let retDate, retChart;
+      try {
+        retDate = solarReturnDate(natalSunLon, natal.date, y, natal.source);
+        retChart = computeFullChart(retDate, natal.lat, natal.lon, natal.source);
+      } catch (e) { console.warn('[returns] year', y, e); }
+      return { year: y, date: retDate, chart: retChart };
+    });
+
+    const canvasId = 'pa-returns-wheel';
+    const SIGN_SYMS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+
+    const tabBtns = returns.map((r, idx) => `
+      <button class="pa-btn" data-return-idx="${idx}" style="padding:4px 10px;font-size:11px;${idx===1?'background:rgba(212,184,120,0.18);border-color:#c8960a;color:#ffd060':''}">${r.year}</button>
+    `).join('');
+
+    const renderReturnSummary = (r) => {
+      if (!r?.chart) return '<div style="color:#ff7055;padding:10px">Return chart unavailable.</div>';
+      const sunZod = lonToZodiac(r.chart.planets.find(p => p.name === 'sun').lon);
+      return `<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div><div style="font-size:11px;color:var(--muted)">Solar Return</div>
+          <div style="font-size:14px;color:#ffd060">${r.date ? r.date.toISOString().replace('T',' ').slice(0,16) + ' UTC' : '—'}</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">Sun</div>
+          <div style="font-size:14px;color:#ccc">${sunZod.sign} ${sunZod.symbol} ${sunZod.deg}°${sunZod.min.toString().padStart(2,'0')}'</div></div>
+      </div>`;
+    };
+
+    el.innerHTML = `
+      <div style="margin-bottom:12px;padding:12px;background:rgba(212,184,120,0.08);border:1px solid rgba(212,184,120,0.2);border-radius:4px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Solar Return — Tetrabiblos IV (PART 14.3)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${tabBtns}</div>
+        <div id="pa-returns-summary" style="margin-top:10px">${renderReturnSummary(returns[1])}</div>
+      </div>
+      <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+        <div><canvas id="${canvasId}" width="520" height="520"></canvas></div>
+        <div style="flex:1;min-width:260px">
+          <div style="color:var(--accent);font-size:12px;font-family:${GK_FONT};margin-bottom:6px">Return → Natal Aspects</div>
+          <div id="pa-returns-aspects" style="font-size:11px"></div>
+        </div>
+      </div>
+      <div class="pa-ptolemy-quote" style="margin-top:14px">
+        "Every revolution of the year brings the Sun back to its proper place; from
+         this place is to be observed the quality of the time approaching." — Tetrabiblos IV.X
+      </div>`;
+
+    const drawReturnAt = (idx) => {
+      const r = returns[idx];
+      app.querySelector('#pa-returns-summary').innerHTML = renderReturnSummary(r);
+      const cnv = app.querySelector('#' + canvasId);
+      if (r?.chart && cnv) {
+        try {
+          drawChartWheel(cnv, natal, { outerChart: r.chart, outerColor: '#ffd060', label: 'Return' });
+        } catch (e) { console.warn('[returns] draw', e); }
+      }
+      const aspList = app.querySelector('#pa-returns-aspects');
+      if (r?.chart && aspList) {
+        const xa = computeCrossAspects(
+          natal.planets.map(p => ({ name: p.name, lon: p.lon, symbol: p.symbol })),
+          r.chart.planets.map(p => ({ name: p.name, lon: p.lon, symbol: p.symbol })),
+        );
+        aspList.innerHTML = xa.slice(0, 30).map(({ natal: n, transiting: t, aspect }) => `
+          <div class="pa-aspect-row">
+            <span style="color:${PLANET_COLORS[n.name]||'inherit'}">${n.symbol||n.name}</span>
+            <span style="color:${aspect.color};font-size:14px">${aspect.symbol}</span>
+            <span style="color:${PLANET_COLORS[t.name]||'inherit'}">${t.symbol||t.name}</span>
+            <span style="color:var(--muted);font-size:10px;flex:1">natal ${n.name} · ${aspect.name} · return ${t.name}</span>
+            <span style="color:var(--muted);font-size:10px">${(aspect.degreeOffExact ?? aspect.orb ?? 0).toFixed(1)}°</span>
+          </div>`).join('') || '<div style="color:var(--muted)">No cross-aspects.</div>';
+      }
+    };
+    drawReturnAt(1);
+
+    el.querySelectorAll('[data-return-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('[data-return-idx]').forEach(b => {
+          b.style.background = '';
+          b.style.borderColor = '';
+          b.style.color = '';
+        });
+        btn.style.background = 'rgba(212,184,120,0.18)';
+        btn.style.borderColor = '#c8960a';
+        btn.style.color = '#ffd060';
+        drawReturnAt(parseInt(btn.dataset.returnIdx, 10));
+      });
+    });
+  }
+
+  // ── Natal Report tab (Guide 10 — Tetrabiblos III–IV ordering) ─────────────
+  function renderReport() {
+    const el = app.querySelector('#pa-report-content');
+    if (!el) return;
+    if (!currentChart) {
+      el.innerHTML = '<div style="padding:20px;color:var(--muted)">Draw a natal chart first.</div>';
+      return;
+    }
+    const SIGN_SYMS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+    const SIGN_NAMES = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpius','Sagittarius','Capricornus','Aquarius','Pisces'];
+
+    const ch = currentChart;
+    const report = buildNatalReport(ch, { gender: 'm' });
+
+    const planetSpan = (name) => {
+      if (!name) return '—';
+      const col = PLANET_COLORS[name] || '#aaa';
+      const sym = PLANET_SYMBOLS[name] || '?';
+      return `<span style="color:${col}">${sym} ${name.charAt(0).toUpperCase() + name.slice(1)}</span>`;
+    };
+    const signSpan = (idx) => idx == null ? '—' : `${SIGN_NAMES[idx]} ${SIGN_SYMS[idx]}`;
+
+    const houseTopicCard = (topic, headerTitle) => {
+      if (!topic) return '';
+      const lc = topic.lordCondition;
+      const occHtml = topic.occupants.length
+        ? topic.occupants.map(o => planetSpan(o.name)).join(' · ')
+        : '<span style="color:var(--muted)">empty</span>';
+      const lordTxt = lc
+        ? `lord ${planetSpan(topic.lord)} in H${lc.house}; essential ${lc.dignity.score >= 0 ? '+' : ''}${lc.dignity.score} (${lc.dignity.label}); accidental ${lc.accidental.score >= 0 ? '+' : ''}${lc.accidental.score}`
+        : `lord ${planetSpan(topic.lord)} not in chart`;
+      return `
+        <details ${headerTitle === 'Foundation' ? 'open' : ''}>
+          <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">${headerTitle}</summary>
+          <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+            <div><b>House ${topic.house}</b> · ${topic.name} — ${signSpan(topic.sign)}</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:2px">${topic.meaning || ''}</div>
+            <div style="margin-top:4px">${lordTxt}</div>
+            <div style="margin-top:4px">Occupants: ${occHtml}</div>
+          </div>
+        </details>`;
+    };
+
+    const f = report.foundation;
+    const foundationHtml = `
+      <details open>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Foundation</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>Sect: <b>${f.sect}</b>. Sect light: ${planetSpan(f.sectLight)}.</div>
+          <div>Ascendant: ${signSpan(f.ascendant.sign)} ruled by ${planetSpan(f.ascendant.ruler)}.</div>
+          <div>Chart lord: ${planetSpan(f.chartLord?.name)} <span style="color:var(--muted)">(${f.chartLord?.source || '—'})</span></div>
+          <div>Temperament: <b style="color:#ffd060">${f.temperament || '—'}</b>
+            <span style="color:var(--muted);font-size:10px">(hot:${f.qualityVotes.hot} cold:${f.qualityVotes.cold} moist:${f.qualityVotes.moist} dry:${f.qualityVotes.dry})</span></div>
+        </div>
+      </details>`;
+
+    const s = report.soul;
+    const soulHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Soul — Mercury (rational) · Moon (irrational)</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>${planetSpan('mercury')} at ${signSpan(s.mercury.lon != null ? Math.floor(s.mercury.lon/30) : null)} · ${s.mercury.dignity ? s.mercury.dignity.label : '—'}</div>
+          <div>${planetSpan('moon')} at ${signSpan(s.moon.lon != null ? Math.floor(s.moon.lon/30) : null)} · ${s.moon.dignity ? s.moon.dignity.label : '—'}</div>
+        </div>
+      </details>`;
+
+    const ft = report.fortune;
+    const fortuneSignIdx = Math.floor(((ft.lot.lon % 360) + 360) % 360 / 30);
+    const fortuneHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Fortune — Material circumstances</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>Lot of Fortune: ${signSpan(fortuneSignIdx)} · ${ft.lot.lon.toFixed(1)}°</div>
+          <div>Lord of the Lot: ${planetSpan(ft.lordOfLot)} · ${ft.lordCondition ? ft.lordCondition.label : '—'}</div>
+        </div>
+      </details>`;
+
+    const dg = report.dignity;
+    const dignityHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Dignity — Rank, authority, career</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>MC sign: ${signSpan(dg.mcSign)} ruled by ${planetSpan(dg.mcRuler)}</div>
+          ${houseTopicCard(dg.houseX, 'House X (Occupation · Reputation)')}
+        </div>
+      </details>`;
+
+    const par = report.parents;
+    const parentsHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Parents</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>Father: significators ${par.father.significators.map(planetSpan).join(' · ')}</div>
+          ${houseTopicCard(par.father.house, 'House IV')}
+          <div style="margin-top:8px">Mother: significators ${par.mother.significators.map(planetSpan).join(' · ')}</div>
+          ${houseTopicCard(par.mother.house, 'House X')}
+        </div>
+      </details>`;
+
+    const mar = report.marriage;
+    const marriageHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Marriage</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>Significator: ${planetSpan(mar.significator)}</div>
+          ${houseTopicCard(mar.house, 'House VII')}
+        </div>
+      </details>`;
+
+    const lv = report.livelihood;
+    const livelihoodHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Livelihood</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          ${houseTopicCard(lv.house2, 'House II (Substance)')}
+          <div>House X lord: ${planetSpan(lv.house10Lord)}</div>
+        </div>
+      </details>`;
+
+    const dt = report.death;
+    const deathHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Death — Apheta / Anareta</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>Apheta: ${planetSpan(dt.apheta.name === 'asc' ? null : dt.apheta.name) || 'Ascendant'} at ${dt.apheta.lon.toFixed(1)}° (House ${dt.apheta.house}) · ${dt.apheta.source}</div>
+          <div style="margin-top:4px">Closest anareta candidates:</div>
+          ${dt.anaretae.map(a => `<div style="margin-left:10px;color:#bbb">· ${a.target} — ${a.arcDeg.toFixed(1)}° (≈ ${Math.round(a.arcDeg)} yr)</div>`).join('') || '<div style="color:var(--muted);margin-left:10px">none</div>'}
+          ${houseTopicCard(dt.house8, 'House VIII')}
+        </div>
+      </details>`;
+
+    const pr = report.predictive;
+    const dirsHtml = pr.directions.map(d => `<div style="margin-left:10px;color:#bbb">· Age ${d.atAge} — ${d.planet} · ${d.aspect}</div>`).join('') || '<div style="color:var(--muted);margin-left:10px">no directions in window</div>';
+    const predictiveHtml = `
+      <details>
+        <summary style="font-family:${GK_FONT};color:var(--accent);font-size:13px;cursor:pointer;padding:6px 0">Predictive — Profections · Primary Directions</summary>
+        <div style="padding:6px 0 10px 12px;font-size:12px;color:#ccc;line-height:1.6">
+          <div>Current age: <b>${pr.age}</b></div>
+          <div>Annual profection: House ${pr.profection.house} · ${signSpan(pr.profection.sign)}</div>
+          <div style="margin-top:6px">Primary directions (next 10 yr):</div>
+          ${dirsHtml}
+        </div>
+      </details>`;
+
+    el.innerHTML = `
+      <div style="margin-bottom:14px;padding:14px;background:rgba(212,184,120,0.08);border:1px solid rgba(212,184,120,0.2);border-radius:4px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Tetrabiblos III–IV · Natal Report</div>
+        <div style="font-size:13px;color:#ccc">${ch._name || 'Current chart'}${ch._place ? ' · ' + ch._place : ''}</div>
+      </div>
+      ${foundationHtml}
+      ${soulHtml}
+      ${fortuneHtml}
+      ${dignityHtml}
+      ${parentsHtml}
+      ${houseTopicCard(report.siblings, 'Siblings — House III')}
+      ${houseTopicCard(report.children, 'Children — House V')}
+      ${marriageHtml}
+      ${livelihoodHtml}
+      ${houseTopicCard(report.travel, 'Travel — House IX')}
+      ${deathHtml}
+      ${predictiveHtml}
+      <div class="pa-ptolemy-quote" style="margin-top:14px">
+        "We must now proceed to particulars … and treat first of the disposition of the
+         soul … then of the body … and then of the actions, the fortune, the marriage,
+         the children, and the manner of death." — Tetrabiblos III.I
+      </div>`;
+  }
+
   // ── Show / Hide ────────────────────────────────────────────────────────────
   function show() {
     app.hidden = false;
-    // Always default to TODAY's actual date so the chart opens on the
-    // current date. Lat/lon fill from the model's observer position.
-    const today = new Date();
-    dateEl.value = toDateInput(today);
-    timeEl.value = toTimeInput(today);
-    latEl.value  = (model.state?.ObserverLat  ?? 40.7).toFixed(4);
-    lonEl.value  = (model.state?.ObserverLong ?? -74.0).toFixed(4);
-    switchTab('chart');
-    // Render the chart immediately so the wheel is never blank on open
-    _autoDraw();
+    // Default to the Zodiac Wheel tab (the new default after the
+    // 2026-05-20 rework). The previous chart-input filling logic was
+    // removed with the Chart tab — dateEl, timeEl, latEl, lonEl are
+    // null now since their #pa-* nodes no longer exist in the DOM.
+    switchTab('zodiacwheel');
   }
 
   function hide() {

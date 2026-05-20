@@ -161,7 +161,7 @@
   <h4>Geocentric longitudes</h4>
   <div id="lon-rows"></div>
 </div>
-<div id="hint">space play · ← → ±1d · shift+← → ±30d · + / − speed · 1–7 focus · 0 wide · T longitudes · O armatures · Esc close</div>
+<div id="hint">space play · ← → ±1d · shift+← → ±30d · + / − speed · 1–7 focus · 0 wide · T longitudes · O armatures · P paths · Esc close</div>
 <div id="scrubber-bar">
   <button id="play-btn" title="Play / Pause (Space)">▶</button>
   <input id="date-range" type="range" min="0" max="146097" value="29220" step="1">
@@ -1110,23 +1110,55 @@ function buildArmAssembly(body) {
 ORDER.forEach(b => { ARMS[b] = buildArmAssembly(b); });
 
 // ═══════════════════════════════════════════════════════════════
-//  TRAIL system — Line per body, BufferGeometry circular buffer
+//  TRAIL system — short fading tail behind each body. Per-vertex
+//  colours fade from the body's hue (newest, at the planet) → black
+//  (oldest), giving an additive-blend opacity fade without leaving
+//  long-term clutter behind. Older paths are not preserved.
 // ═══════════════════════════════════════════════════════════════
-const TRAIL_LEN = 240;
+const TRAIL_LEN = 60;   // ~60 samples × 0.5 sim-days = ~30 sim-day tail
 const TRAILS = {};
 ORDER.forEach(b => {
   const positions = new Float32Array(TRAIL_LEN * 3);
+  const colors    = new Float32Array(TRAIL_LEN * 3);
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geom.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
   geom.setDrawRange(0, 0);
   const mat = new THREE.LineBasicMaterial({
-    color: PARAM[b].color, transparent: true, opacity: 0.6,
+    vertexColors: true,
+    transparent: true, opacity: 0.95,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
   const line = new THREE.Line(geom, mat);
+  // Cache the body's hue as a normalised RGB triple for the fade gradient.
+  const col = new THREE.Color(PARAM[b].color);
   scene.add(line);
-  TRAILS[b] = { line, geom, positions, count: 0, head: 0, lastJD: state.jd, lastBuiltJD: null };
+  TRAILS[b] = {
+    line, geom, positions, colors,
+    headRGB: [col.r, col.g, col.b],
+    count: 0, lastBuiltJD: null,
+  };
 });
+
+// Repaint per-vertex colours so the segment closest to the body (the
+// most-recently appended point) is full hue and the oldest segment is
+// black — additive blending then renders the old end as transparent.
+function paintTrailFade(T) {
+  const n = T.count;
+  if (n < 1) return;
+  const [hr, hg, hb] = T.headRGB;
+  for (let i = 0; i < n; i++) {
+    // Linear fade: i=0 is the oldest (tail), i=n-1 is the newest (head).
+    const t = (i + 1) / n;            // 1/n .. 1
+    // Ease-in so the tip stays bright and the tail dies quickly.
+    const a = t * t;
+    T.colors[i*3    ] = hr * a;
+    T.colors[i*3 + 1] = hg * a;
+    T.colors[i*3 + 2] = hb * a;
+  }
+  T.geom.attributes.color.needsUpdate = true;
+}
+
 function pushTrail(body, vec, jd) {
   const T = TRAILS[body];
   if (T.lastBuiltJD !== null && Math.abs(jd - T.lastBuiltJD) < 0.5) return;
@@ -1144,11 +1176,16 @@ function pushTrail(body, vec, jd) {
     T.positions[i*3+1] = vec.y;
     T.positions[i*3+2] = vec.z;
   }
+  paintTrailFade(T);
   T.geom.attributes.position.needsUpdate = true;
   T.geom.setDrawRange(0, T.count);
 }
 function clearTrails() {
-  ORDER.forEach(b => { TRAILS[b].count = 0; TRAILS[b].lastBuiltJD = null; TRAILS[b].geom.setDrawRange(0,0); });
+  ORDER.forEach(b => {
+    TRAILS[b].count = 0;
+    TRAILS[b].lastBuiltJD = null;
+    TRAILS[b].geom.setDrawRange(0,0);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1262,6 +1299,10 @@ function orientArm(armMesh, fromVec, toVec, length) {
 //  RUNTIME LOOP — update positions every frame
 // ═══════════════════════════════════════════════════════════════
 let armaturesVisible = true;
+// Full epitrochoid path tubes (Mars rose, Venus pentagram, etc.). Hidden by
+// default — the brass arms + epicycle hoops carry the "spheres of aether"
+// reading without flooding the view. Toggle with P.
+let deferentPathsVisible = false;
 const _planetTmp = new THREE.Vector3();
 const _prevTmp = new THREE.Vector3();
 const _nextTmp = new THREE.Vector3();
@@ -1349,9 +1390,10 @@ function placeArmAssembly(body, chain, planetGroup) {
   }
   planetGroup.position.copy(prev);
 
-  // Visibility toggle
+  // Visibility toggle. Armatures (arms + hoops) and the full epitrochoid
+  // deferent tube are controlled by separate keys now — see keydown.
   A.grp.visible = armaturesVisible;
-  A.deferent.visible = armaturesVisible;
+  A.deferent.visible = deferentPathsVisible;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1405,6 +1447,9 @@ dateRange.addEventListener('input', () => {
   const d = parseFloat(dateRange.value);
   state.jd = SCRUB_BASE + d;
   clampJD();
+  // Discard any stale trail — the new JD may be hours or years away,
+  // so the existing tail no longer belongs to the planet's new path.
+  clearTrails();
   publishTime();
 });
 playBtn.addEventListener('click', () => togglePlay());
@@ -1421,6 +1466,9 @@ function nudgeDays(d) {
   state.jd += d;
   clampJD();
   syncScrubberFromState();
+  // A keyboard nudge can be ±30d / ±365d — same logic as the scrubber:
+  // the existing tail no longer represents the planet's recent positions.
+  if (Math.abs(d) >= 7) clearTrails();
   publishTime();
 }
 function multSpeed(k) {
@@ -1440,6 +1488,7 @@ window.addEventListener('keydown', (e) => {
     case '-': case '_':  multSpeed(0.5); break;
     case 't': case 'T':  lonPane.classList.toggle('on'); break;
     case 'o': case 'O':  armaturesVisible = !armaturesVisible; break;
+    case 'p': case 'P':  deferentPathsVisible = !deferentPathsVisible; break;
     case '0': focusOnWide(); break;
     case '1': focusOnBody('moon'); break;
     case '2': focusOnBody('mercury'); break;

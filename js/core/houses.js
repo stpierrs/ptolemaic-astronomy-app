@@ -76,3 +76,30 @@ export function obliquity(date) {
   const T = (date.getTime() / 86400000 - 10957.5) / 36525; // Julian centuries from J2000
   return 23.4392911 - 0.013004167 * T - 0.0000001639 * T * T + 0.0000005036 * T * T * T;
 }
+
+/**
+ * Whole-sign houses (PART 9.1): the sign containing the Ascendant degree
+ * is the entire 1st house. Each subsequent sign is the next house.
+ * Returns 12 cusps in degrees 0–360 at the 0° boundary of each sign.
+ *
+ * @param {number} ascLon - Ascendant ecliptic longitude (degrees)
+ * @returns {number[]} 12-element array: [H1..H12]
+ */
+export function computeWholeSignHouses(ascLon) {
+  const ascSignStart = Math.floor((((ascLon % 360) + 360) % 360) / 30) * 30;
+  const cusps = [];
+  for (let i = 0; i < 12; i++) cusps.push((ascSignStart + i * 30) % 360);
+  return cusps;
+}
+
+/**
+ * Whole-sign house number (1–12) of an ecliptic longitude given an Ascendant.
+ * @param {number} lon
+ * @param {number} ascLon
+ * @returns {number} 1..12
+ */
+export function wholeSignHouseOf(lon, ascLon) {
+  const ascSign = Math.floor((((ascLon % 360) + 360) % 360) / 30);
+  const lonSign = Math.floor((((lon    % 360) + 360) % 360) / 30);
+  return ((lonSign - ascSign + 12) % 12) + 1;
+}
