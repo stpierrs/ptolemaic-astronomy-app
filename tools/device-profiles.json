@@ -1,0 +1,396 @@
+{
+  "$schema": "device-profiles.schema (see tools/README.md §2.2)",
+  "platforms": {
+    "android": {
+      "label": "Google Play (Android)",
+      "tintHex": "#34a853",
+      "defaultDeviceId": "pixel-8",
+      "devices": [
+        {
+          "id": "pixel-8", "name": "Pixel 8", "platform": "android", "category": "phone",
+          "viewport": { "w": 412, "h": 915 }, "dpr": 2.625,
+          "safeArea": { "top": 28, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 28, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 24,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": { "x": 206, "y": 14, "r": 6 },
+          "body": {
+            "w": 432, "h": 951, "r": 36,
+            "bezelTop": 10, "bezelBottom": 12, "bezelSides": 10,
+            "buttons": { "power": { "y": 220 }, "volume": { "y": 280, "h": 92 } }
+          },
+          "colorways": [
+            { "id": "obsidian", "name": "Obsidian", "bezelColor": "#1b1b1d", "frameColor": "#2a2a2c", "sideButtonColor": "#3a3a3c" },
+            { "id": "hazel",    "name": "Hazel",    "bezelColor": "#3f4338", "frameColor": "#525547", "sideButtonColor": "#5a5d51" },
+            { "id": "rose",     "name": "Rose",     "bezelColor": "#e7c8c0", "frameColor": "#cea99e", "sideButtonColor": "#a5837a" },
+            { "id": "mint",     "name": "Mint",     "bezelColor": "#c6e1c4", "frameColor": "#a7c5a5", "sideButtonColor": "#82a081" }
+          ],
+          "cameraFovH": 67,
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "pixel-8-pro", "name": "Pixel 8 Pro", "platform": "android", "category": "phone",
+          "viewport": { "w": 448, "h": 992 }, "dpr": 2.625,
+          "safeArea": { "top": 30, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 30, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 28,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": { "x": 224, "y": 16, "r": 7 },
+          "body": {
+            "w": 470, "h": 1030, "r": 38,
+            "bezelTop": 11, "bezelBottom": 13, "bezelSides": 11,
+            "buttons": { "power": { "y": 240 }, "volume": { "y": 304, "h": 100 } }
+          },
+          "colorways": [
+            { "id": "obsidian", "name": "Obsidian", "bezelColor": "#1b1b1d", "frameColor": "#2a2a2c", "sideButtonColor": "#3a3a3c" },
+            { "id": "bay",      "name": "Bay",      "bezelColor": "#c6d3e6", "frameColor": "#a8b6cc", "sideButtonColor": "#7e8b9f" },
+            { "id": "porcelain","name": "Porcelain","bezelColor": "#ece6da", "frameColor": "#d8d1c2", "sideButtonColor": "#a5a08f" }
+          ],
+          "cameraFovH": 65,
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "pixel-7a", "name": "Pixel 7a", "platform": "android", "category": "phone-mid",
+          "viewport": { "w": 412, "h": 892 }, "dpr": 2.625,
+          "safeArea": { "top": 28, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 28, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 22,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": { "x": 206, "y": 14, "r": 6 },
+          "body": {
+            "w": 432, "h": 928, "r": 34,
+            "bezelTop": 10, "bezelBottom": 12, "bezelSides": 10,
+            "buttons": { "power": { "y": 212 }, "volume": { "y": 272, "h": 90 } }
+          },
+          "colorways": [
+            { "id": "charcoal", "name": "Charcoal", "bezelColor": "#1d1d1f", "frameColor": "#2b2b2d", "sideButtonColor": "#3a3a3c" },
+            { "id": "sea",      "name": "Sea",      "bezelColor": "#9fb5b6", "frameColor": "#83999a", "sideButtonColor": "#5e7374" },
+            { "id": "coral",    "name": "Coral",    "bezelColor": "#dca599", "frameColor": "#c08379", "sideButtonColor": "#8d5d54" }
+          ],
+          "cameraFovH": 67,
+          "userAgent": "Mozilla/5.0 (Linux; Android 13; Pixel 7a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "pixel-fold", "name": "Pixel Fold (unfolded)", "platform": "android", "category": "phone-foldable",
+          "viewport": { "w": 673, "h": 841 }, "dpr": 2.625,
+          "safeArea": { "top": 30, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 30, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 12,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": null,
+          "body": {
+            "w": 695, "h": 879, "r": 18,
+            "bezelTop": 11, "bezelBottom": 13, "bezelSides": 11,
+            "buttons": { "power": { "y": 200 }, "volume": { "y": 260, "h": 96 } }
+          },
+          "colorways": [
+            { "id": "obsidian", "name": "Obsidian", "bezelColor": "#1b1b1d", "frameColor": "#2a2a2c", "sideButtonColor": "#3a3a3c" },
+            { "id": "porcelain","name": "Porcelain","bezelColor": "#ece6da", "frameColor": "#d8d1c2", "sideButtonColor": "#a5a08f" }
+          ],
+          "cameraFovH": 68,
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel Fold) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "galaxy-s24", "name": "Galaxy S24", "platform": "android", "category": "phone",
+          "viewport": { "w": 360, "h": 800 }, "dpr": 3.0,
+          "safeArea": { "top": 28, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 28, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 26,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": { "x": 180, "y": 14, "r": 6 },
+          "body": {
+            "w": 378, "h": 832, "r": 32,
+            "bezelTop": 9, "bezelBottom": 11, "bezelSides": 9,
+            "buttons": { "power": { "y": 200 }, "volume": { "y": 256, "h": 88 } }
+          },
+          "colorways": [
+            { "id": "black",  "name": "Onyx Black",   "bezelColor": "#0e0e0f", "frameColor": "#1c1c1d", "sideButtonColor": "#2a2a2b" },
+            { "id": "violet", "name": "Cobalt Violet","bezelColor": "#372f55", "frameColor": "#4a3f6e", "sideButtonColor": "#675a90" },
+            { "id": "yellow", "name": "Amber Yellow", "bezelColor": "#dcc684", "frameColor": "#bea668", "sideButtonColor": "#8a753d" }
+          ],
+          "cameraFovH": 70,
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "galaxy-s24-ultra", "name": "Galaxy S24 Ultra", "platform": "android", "category": "phone",
+          "viewport": { "w": 412, "h": 883 }, "dpr": 3.75,
+          "safeArea": { "top": 30, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 30, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 8,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": { "x": 206, "y": 16, "r": 6 },
+          "body": {
+            "w": 430, "h": 918, "r": 14,
+            "bezelTop": 10, "bezelBottom": 11, "bezelSides": 9,
+            "buttons": { "power": { "y": 224 }, "volume": { "y": 286, "h": 94 } }
+          },
+          "colorways": [
+            { "id": "titanium-black", "name": "Titanium Black", "bezelColor": "#1a1a1c", "frameColor": "#26272a", "sideButtonColor": "#3a3b3e" },
+            { "id": "titanium-gray",  "name": "Titanium Gray",  "bezelColor": "#7e8388", "frameColor": "#6b6f73", "sideButtonColor": "#4a4d50" },
+            { "id": "titanium-violet","name": "Titanium Violet","bezelColor": "#9b8db2", "frameColor": "#80749a", "sideButtonColor": "#574e6c" }
+          ],
+          "cameraFovH": 75,
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "galaxy-a54", "name": "Galaxy A54", "platform": "android", "category": "phone-mid",
+          "viewport": { "w": 384, "h": 854 }, "dpr": 2.625,
+          "safeArea": { "top": 28, "right": 0, "bottom": 24, "left": 0 },
+          "statusBar": { "height": 28, "style": "android" },
+          "navArea":   { "height": 24, "style": "android-gesture" },
+          "displayRadius": 20,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": { "x": 192, "y": 14, "r": 5 },
+          "body": {
+            "w": 404, "h": 890, "r": 28,
+            "bezelTop": 10, "bezelBottom": 12, "bezelSides": 10,
+            "buttons": { "power": { "y": 208 }, "volume": { "y": 268, "h": 90 } }
+          },
+          "colorways": [
+            { "id": "graphite", "name": "Graphite", "bezelColor": "#2c2c2e", "frameColor": "#3a3a3c", "sideButtonColor": "#4a4a4c" },
+            { "id": "violet",   "name": "Violet",   "bezelColor": "#a299c4", "frameColor": "#867ca8", "sideButtonColor": "#5b5279" },
+            { "id": "lime",     "name": "Lime",     "bezelColor": "#cee4a5", "frameColor": "#b3cd86", "sideButtonColor": "#7e9656" }
+          ],
+          "cameraFovH": 70,
+          "userAgent": "Mozilla/5.0 (Linux; Android 13; SM-A546B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Mobile Safari/537.36"
+        },
+        {
+          "id": "tab-s9", "name": "Galaxy Tab S9", "platform": "android", "category": "tablet",
+          "viewport": { "w": 800, "h": 1280 }, "dpr": 2.0,
+          "safeArea": { "top": 28, "right": 0, "bottom": 0, "left": 0 },
+          "statusBar": { "height": 28, "style": "android" },
+          "navArea":   { "height": 0, "style": "none" },
+          "displayRadius": 18,
+          "notch": null, "dynamicIsland": null,
+          "punchHole": null,
+          "body": {
+            "w": 826, "h": 1320, "r": 28,
+            "bezelTop": 13, "bezelBottom": 13, "bezelSides": 13,
+            "buttons": { "power": { "y": 50 }, "volume": { "y": 110, "h": 96 } }
+          },
+          "colorways": [
+            { "id": "graphite", "name": "Graphite", "bezelColor": "#2a2a2c", "frameColor": "#3a3a3c", "sideButtonColor": "#4a4a4c" },
+            { "id": "beige",    "name": "Beige",    "bezelColor": "#cdc4ad", "frameColor": "#b0a690", "sideButtonColor": "#7d7560" }
+          ],
+          "cameraFovH": 70,
+          "userAgent": "Mozilla/5.0 (Linux; Android 13; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+        },
+        {
+          "id": "small-360", "name": "Baseline 360×640", "platform": "android", "category": "phone-legacy",
+          "viewport": { "w": 360, "h": 640 }, "dpr": 2.0,
+          "safeArea": { "top": 24, "right": 0, "bottom": 48, "left": 0 },
+          "statusBar": { "height": 24, "style": "android" },
+          "navArea":   { "height": 48, "style": "android-3btn" },
+          "displayRadius": 0,
+          "notch": null, "dynamicIsland": null, "punchHole": null,
+          "body": {
+            "w": 380, "h": 686, "r": 8,
+            "bezelTop": 10, "bezelBottom": 14, "bezelSides": 10,
+            "buttons": { "power": { "y": 160 }, "volume": { "y": 220, "h": 80 } }
+          },
+          "colorways": [
+            { "id": "black", "name": "Black", "bezelColor": "#1a1a1c", "frameColor": "#2a2a2c", "sideButtonColor": "#3a3a3c" }
+          ],
+          "cameraFovH": 60,
+          "userAgent": "Mozilla/5.0 (Linux; Android 7.0; SM-G930F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Mobile Safari/537.36"
+        }
+      ]
+    },
+    "ios": {
+      "label": "Apple App Store (iOS)",
+      "tintHex": "#0a84ff",
+      "defaultDeviceId": "iphone-15-pro",
+      "devices": [
+        {
+          "id": "iphone-15", "name": "iPhone 15", "platform": "ios", "category": "phone",
+          "viewport": { "w": 393, "h": 852 }, "dpr": 3.0,
+          "safeArea": { "top": 47, "right": 0, "bottom": 34, "left": 0 },
+          "statusBar": { "height": 47, "style": "ios" },
+          "navArea":   { "height": 34, "style": "ios-indicator" },
+          "displayRadius": 55,
+          "notch": { "w": 120, "h": 36, "r": 18, "yOffset": 8 },
+          "dynamicIsland": null, "punchHole": null,
+          "body": {
+            "w": 411, "h": 870, "r": 62,
+            "bezelTop": 9, "bezelBottom": 9, "bezelSides": 9,
+            "buttons": {
+              "power":  { "y": 198 },
+              "volume": { "y": 178, "h": 124 },
+              "mute":   { "y": 152, "h": 28 }
+            }
+          },
+          "colorways": [
+            { "id": "black",  "name": "Black",  "bezelColor": "#2a2a2c", "frameColor": "#1a1a1c", "sideButtonColor": "#3a3a3c" },
+            { "id": "blue",   "name": "Blue",   "bezelColor": "#c5d5e2", "frameColor": "#a7bccd", "sideButtonColor": "#6d8295" },
+            { "id": "pink",   "name": "Pink",   "bezelColor": "#f2cdcd", "frameColor": "#d8a8a8", "sideButtonColor": "#a07a7a" },
+            { "id": "yellow", "name": "Yellow", "bezelColor": "#f5e0a8", "frameColor": "#d8c280", "sideButtonColor": "#9c8b58" },
+            { "id": "green",  "name": "Green",  "bezelColor": "#bccdb6", "frameColor": "#9eb295", "sideButtonColor": "#6e8164" }
+          ],
+          "cameraFovH": 72,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        },
+        {
+          "id": "iphone-15-plus", "name": "iPhone 15 Plus", "platform": "ios", "category": "phone",
+          "viewport": { "w": 430, "h": 932 }, "dpr": 3.0,
+          "safeArea": { "top": 47, "right": 0, "bottom": 34, "left": 0 },
+          "statusBar": { "height": 47, "style": "ios" },
+          "navArea":   { "height": 34, "style": "ios-indicator" },
+          "displayRadius": 55,
+          "notch": { "w": 120, "h": 36, "r": 18, "yOffset": 8 },
+          "dynamicIsland": null, "punchHole": null,
+          "body": {
+            "w": 450, "h": 952, "r": 62,
+            "bezelTop": 10, "bezelBottom": 10, "bezelSides": 10,
+            "buttons": {
+              "power":  { "y": 220 },
+              "volume": { "y": 198, "h": 138 },
+              "mute":   { "y": 168, "h": 28 }
+            }
+          },
+          "colorways": [
+            { "id": "black",  "name": "Black",  "bezelColor": "#2a2a2c", "frameColor": "#1a1a1c", "sideButtonColor": "#3a3a3c" },
+            { "id": "blue",   "name": "Blue",   "bezelColor": "#c5d5e2", "frameColor": "#a7bccd", "sideButtonColor": "#6d8295" },
+            { "id": "pink",   "name": "Pink",   "bezelColor": "#f2cdcd", "frameColor": "#d8a8a8", "sideButtonColor": "#a07a7a" }
+          ],
+          "cameraFovH": 72,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        },
+        {
+          "id": "iphone-15-pro", "name": "iPhone 15 Pro", "platform": "ios", "category": "phone",
+          "viewport": { "w": 393, "h": 852 }, "dpr": 3.0,
+          "safeArea": { "top": 59, "right": 0, "bottom": 34, "left": 0 },
+          "statusBar": { "height": 59, "style": "ios-island" },
+          "navArea":   { "height": 34, "style": "ios-indicator" },
+          "displayRadius": 55,
+          "notch": null,
+          "dynamicIsland": { "w": 126, "h": 37, "r": 19, "yOffset": 11 },
+          "punchHole": null,
+          "body": {
+            "w": 411, "h": 870, "r": 62,
+            "bezelTop": 9, "bezelBottom": 9, "bezelSides": 9,
+            "buttons": {
+              "power":  { "y": 198 },
+              "volume": { "y": 178, "h": 124 },
+              "action": { "y": 152, "h": 28 }
+            }
+          },
+          "colorways": [
+            { "id": "natural", "name": "Natural Titanium", "bezelColor": "#a0a09a", "frameColor": "#8d8d87", "sideButtonColor": "#7c7c76" },
+            { "id": "blue",    "name": "Blue Titanium",    "bezelColor": "#3d4956", "frameColor": "#37414d", "sideButtonColor": "#2d3640" },
+            { "id": "white",   "name": "White Titanium",   "bezelColor": "#f3f1ec", "frameColor": "#dcdad5", "sideButtonColor": "#b9b7b2" },
+            { "id": "black",   "name": "Black Titanium",   "bezelColor": "#3a3936", "frameColor": "#2c2b29", "sideButtonColor": "#222220" }
+          ],
+          "cameraFovH": 73,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        },
+        {
+          "id": "iphone-15-pro-max", "name": "iPhone 15 Pro Max", "platform": "ios", "category": "phone",
+          "viewport": { "w": 430, "h": 932 }, "dpr": 3.0,
+          "safeArea": { "top": 59, "right": 0, "bottom": 34, "left": 0 },
+          "statusBar": { "height": 59, "style": "ios-island" },
+          "navArea":   { "height": 34, "style": "ios-indicator" },
+          "displayRadius": 55,
+          "notch": null,
+          "dynamicIsland": { "w": 126, "h": 37, "r": 19, "yOffset": 11 },
+          "punchHole": null,
+          "body": {
+            "w": 450, "h": 952, "r": 62,
+            "bezelTop": 10, "bezelBottom": 10, "bezelSides": 10,
+            "buttons": {
+              "power":  { "y": 220 },
+              "volume": { "y": 198, "h": 138 },
+              "action": { "y": 168, "h": 28 }
+            }
+          },
+          "colorways": [
+            { "id": "natural", "name": "Natural Titanium", "bezelColor": "#a0a09a", "frameColor": "#8d8d87", "sideButtonColor": "#7c7c76" },
+            { "id": "blue",    "name": "Blue Titanium",    "bezelColor": "#3d4956", "frameColor": "#37414d", "sideButtonColor": "#2d3640" },
+            { "id": "white",   "name": "White Titanium",   "bezelColor": "#f3f1ec", "frameColor": "#dcdad5", "sideButtonColor": "#b9b7b2" },
+            { "id": "black",   "name": "Black Titanium",   "bezelColor": "#3a3936", "frameColor": "#2c2b29", "sideButtonColor": "#222220" }
+          ],
+          "cameraFovH": 73,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        },
+        {
+          "id": "iphone-se", "name": "iPhone SE (3rd gen)", "platform": "ios", "category": "phone-legacy",
+          "viewport": { "w": 375, "h": 667 }, "dpr": 2.0,
+          "safeArea": { "top": 20, "right": 0, "bottom": 0, "left": 0 },
+          "statusBar": { "height": 20, "style": "ios" },
+          "navArea":   { "height": 0,  "style": "ios-home-button" },
+          "displayRadius": 0,
+          "notch": null, "dynamicIsland": null, "punchHole": null,
+          "body": {
+            "w": 395, "h": 753, "r": 18,
+            "bezelTop": 36, "bezelBottom": 42, "bezelSides": 10,
+            "buttons": {
+              "power":  { "y": 110 },
+              "volume": { "y": 150, "h": 92 },
+              "mute":   { "y": 120, "h": 24 }
+            }
+          },
+          "colorways": [
+            { "id": "midnight", "name": "Midnight", "bezelColor": "#1a1d1f", "frameColor": "#2a2d2f", "sideButtonColor": "#3a3d3f" },
+            { "id": "starlight","name": "Starlight","bezelColor": "#ebe4d6", "frameColor": "#d8cfb8", "sideButtonColor": "#a59e8a" },
+            { "id": "red",      "name": "(PRODUCT) RED", "bezelColor": "#a6231b", "frameColor": "#871810", "sideButtonColor": "#5f120c" }
+          ],
+          "cameraFovH": 60,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        },
+        {
+          "id": "ipad-air", "name": "iPad Air (M2 11\")", "platform": "ios", "category": "tablet",
+          "viewport": { "w": 820, "h": 1180 }, "dpr": 2.0,
+          "safeArea": { "top": 24, "right": 0, "bottom": 20, "left": 0 },
+          "statusBar": { "height": 24, "style": "ios" },
+          "navArea":   { "height": 20, "style": "ios-indicator" },
+          "displayRadius": 18,
+          "notch": null, "dynamicIsland": null, "punchHole": null,
+          "body": {
+            "w": 856, "h": 1220, "r": 28,
+            "bezelTop": 18, "bezelBottom": 18, "bezelSides": 18,
+            "buttons": {
+              "power":  { "y": 40 },
+              "volume": { "y": 100, "h": 100 }
+            }
+          },
+          "colorways": [
+            { "id": "space-gray", "name": "Space Gray", "bezelColor": "#3a3a3c", "frameColor": "#2c2c2e", "sideButtonColor": "#4a4a4c" },
+            { "id": "starlight",  "name": "Starlight",  "bezelColor": "#ebe4d6", "frameColor": "#d8cfb8", "sideButtonColor": "#a59e8a" },
+            { "id": "blue",       "name": "Blue",       "bezelColor": "#3e6f88", "frameColor": "#345d72", "sideButtonColor": "#234454" },
+            { "id": "purple",     "name": "Purple",     "bezelColor": "#5a4a6e", "frameColor": "#473b58", "sideButtonColor": "#2e2740" }
+          ],
+          "cameraFovH": 75,
+          "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        },
+        {
+          "id": "ipad-pro-11", "name": "iPad Pro 11 (M4)", "platform": "ios", "category": "tablet",
+          "viewport": { "w": 834, "h": 1194 }, "dpr": 2.0,
+          "safeArea": { "top": 24, "right": 0, "bottom": 20, "left": 0 },
+          "statusBar": { "height": 24, "style": "ios" },
+          "navArea":   { "height": 20, "style": "ios-indicator" },
+          "displayRadius": 26,
+          "notch": null, "dynamicIsland": null, "punchHole": null,
+          "body": {
+            "w": 868, "h": 1230, "r": 32,
+            "bezelTop": 17, "bezelBottom": 17, "bezelSides": 17,
+            "buttons": {
+              "power":  { "y": 40 },
+              "volume": { "y": 100, "h": 100 }
+            }
+          },
+          "colorways": [
+            { "id": "space-black", "name": "Space Black", "bezelColor": "#1a1a1c", "frameColor": "#0e0e10", "sideButtonColor": "#2a2a2c" },
+            { "id": "silver",      "name": "Silver",      "bezelColor": "#e0e0e2", "frameColor": "#c8c8ca", "sideButtonColor": "#a0a0a2" }
+          ],
+          "cameraFovH": 75,
+          "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+        }
+      ]
+    }
+  }
+}

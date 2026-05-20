@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mobile Preview · Ptolemaic Astronomy</title>
+<style>
+  :root {
+    --ink:        #0e0f12;
+    --ink2:       #15171d;
+    --panel:      #1c1f27;
+    --panel-hi:   #262a35;
+    --border:     #3a3f4d;
+    --fg:         #e8e9ec;
+    --muted:      #98a0b0;
+    --gold:       #c8a060;
+    --android:    #34a853;
+    --apple:      #0a84ff;
+    --warn:       #f4b942;
+    --green:      #4ad17a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background:
+      radial-gradient(ellipse 1000px 500px at 50% 60%, rgba(255,255,255,0.04), transparent 70%),
+      linear-gradient(180deg, var(--ink) 0%, var(--ink2) 100%);
+    color: var(--fg);
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── Dev bar ──────────────────────────────────────────────────── */
+  #bar {
+    position: fixed; inset: 0 0 auto 0; height: 56px;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--ink2) 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 14px;
+    z-index: 100;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  #bar::-webkit-scrollbar { display: none; }
+  #bar label {
+    font-size: 10px; letter-spacing: 0.10em; color: var(--muted);
+    text-transform: uppercase;
+    display: inline-flex; flex-direction: column; gap: 2px;
+  }
+  #bar select, #bar button {
+    background: var(--panel-hi);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 10px;
+    font: inherit;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  #bar select:hover, #bar button:hover { border-color: var(--gold); }
+
+  /* Segmented platform toggle */
+  #seg-platform { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  #seg-platform button {
+    border: 0; border-radius: 0;
+    padding: 7px 12px;
+    background: var(--panel);
+    color: var(--muted);
+    font-weight: 500;
+  }
+  #seg-platform button[aria-selected="true"][data-platform="android"] {
+    background: var(--android); color: #fff;
+  }
+  #seg-platform button[aria-selected="true"][data-platform="ios"] {
+    background: var(--apple); color: #fff;
+  }
+
+  /* Parity badge */
+  #parity-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px;
+    background: var(--panel-hi);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  #parity-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #6e6e6e; }
+  #parity-badge.live  .dot { background: #6e6e6e; }
+  #parity-badge.green .dot { background: var(--green); }
+  #parity-badge.yellow .dot { background: var(--warn); }
+  #parity-badge.error .dot { background: #d04040; }
+
+  #bar .spacer { flex: 1; }
+  #bar .small { font-size: 10px; color: var(--muted); padding: 0 6px; }
+  #bar button.action {
+    background: transparent; border: 1px dashed var(--border); color: var(--muted);
+  }
+
+  /* ── Stage (where the phone sits) ─────────────────────────────── */
+  #stage {
+    position: fixed; inset: 56px 0 0 0;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px;
+    overflow: auto;
+  }
+  .phone {
+    position: relative;
+    transform-origin: top center;
+    filter: drop-shadow(0 24px 60px rgba(0,0,0,0.65))
+            drop-shadow(0 4px 12px rgba(0,0,0,0.45));
+    transition: transform 0.25s ease;
+  }
+  .phone .body-svg { display: block; }
+  .phone .screen {
+    position: absolute;
+    background: #000;
+    overflow: hidden;
+  }
+  .phone iframe {
+    width: 100%; height: 100%;
+    border: 0; display: block;
+    background: var(--ink);
+  }
+  /* Status bar overlay */
+  .phone .statusbar {
+    position: absolute; left: 0; right: 0; top: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px;
+    pointer-events: none;
+    z-index: 10;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .phone .statusbar.android {
+    font: 500 13px Roboto, 'Google Sans', system-ui, sans-serif;
+  }
+  .phone .statusbar.ios {
+    font: 600 16px -apple-system, 'SF Pro Text', system-ui, sans-serif;
+  }
+  .phone .statusbar .sys-icons {
+    display: inline-flex; gap: 6px; align-items: center;
+  }
+  .phone .statusbar svg { display: block; }
+  /* Dynamic Island */
+  .phone .island {
+    position: absolute;
+    background: #000;
+    border-radius: 9999px;
+    z-index: 11;
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.04);
+  }
+  /* Notch */
+  .phone .notch {
+    position: absolute;
+    background: #000;
+    z-index: 11;
+  }
+  /* Punch hole */
+  .phone .punch {
+    position: absolute;
+    background: #000;
+    border-radius: 50%;
+    z-index: 11;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  /* System nav indicator (Android pill / iOS home indicator) */
+  .phone .nav-pill {
+    position: absolute; left: 50%;
+    transform: translateX(-50%);
+    border-radius: 3px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .phone .nav-pill.android-gesture { width: 128px; height: 4px; background: rgba(255,255,255,0.55); }
+  .phone .nav-pill.ios-indicator   { width: 134px; height: 5px; background: rgba(255,255,255,0.85); }
+  /* Android 3-button nav row */
+  .phone .nav-3btn {
+    position: absolute; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-around;
+    z-index: 10; pointer-events: none;
+    color: rgba(255,255,255,0.85);
+  }
+  .phone .nav-3btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+  /* Splash overlay (when ?splash=1) */
+  .phone .splash {
+    position: absolute; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--ink2);
+    transition: opacity 0.4s ease;
+  }
+  .phone .splash.hide { opacity: 0; pointer-events: none; }
+  .phone .splash img { max-width: 60%; max-height: 50%; opacity: 0.95; }
+
+  #empty {
+    color: var(--muted);
+    text-align: center;
+    margin-top: 80px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  #empty code { background: var(--panel-hi); padding: 2px 7px; border-radius: 3px; color: var(--gold); }
+
+  /* Hint chip top-right */
+  #hint {
+    position: fixed; right: 14px; bottom: 14px;
+    font-size: 10px;
+    color: var(--muted);
+    background: rgba(20,22,28,0.85);
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    pointer-events: none;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div id="seg-platform" role="tablist" aria-label="Platform">
+    <button role="tab" aria-selected="true"  data-platform="android" type="button">▲ Android</button>
+    <button role="tab" aria-selected="false" data-platform="ios"     type="button">  Apple</button>
+  </div>
+
+  <label>Device
+    <select id="sel-device"></select>
+  </label>
+
+  <label>Colorway
+    <select id="sel-colorway"></select>
+  </label>
+
+  <label>Orientation
+    <select id="sel-orient">
+      <option value="portrait">Portrait</option>
+      <option value="landscape">Landscape</option>
+    </select>
+  </label>
+
+  <label>Source
+    <select id="sel-source">
+      <option value="live">live (/index.html)</option>
+      <option value="bundled">bundled (www/ via /_cap/)</option>
+    </select>
+  </label>
+
+  <span id="parity-badge" class="live"><span class="dot"></span><span id="parity-text">live mode</span></span>
+
+  <label>Theme
+    <select id="sel-theme">
+      <option value="">app default</option>
+      <option value="dark">dark</option>
+      <option value="light">light</option>
+    </select>
+  </label>
+
+  <label style="display:inline-flex; flex-direction:row; gap:6px; align-items:center;">
+    <input type="checkbox" id="chk-ar-fake" />
+    AR mode (fake sensors)
+  </label>
+
+  <span class="spacer"></span>
+
+  <button id="btn-reload"      type="button" class="action" title="Reload iframe (soft)">↻ Reload</button>
+  <button id="btn-hard-reload" type="button" class="action" title="Hard reload — bypass SW">⇲ Hard reload</button>
+  <button id="btn-screenshot"  type="button" class="action" title="Capture screen as PNG">📷</button>
+  <a id="link-throttle" class="small" href="javascript:void 0"
+     title="Open Chrome DevTools and use Network throttling for behavior tests">DevTools ↗</a>
+</div>
+
+<div id="stage">
+  <div id="empty">
+    Loading device profiles…
+    <br><br>
+    If this persists, ensure the dev server is running:
+    <br><code>node scripts/dev-server.js</code>
+    <br>then open <code>http://localhost:8080/tools/mobile-preview.html</code>.
+  </div>
+</div>
+
+<div id="hint">drag header to move · scroll for zoom · all state in localStorage</div>
+
+<script type="module">
+'use strict';
+
+// ── State + persistence ─────────────────────────────────────────────────
+const LS_KEY = 'mobilePreview';
+const defaultState = {
+  platform: 'android',
+  deviceId: null,            // resolved from platform default
+  colorwayId: null,
+  orientation: 'portrait',
+  source: 'live',
+  theme: '',
+  fakeAr: false,
+};
+let state;
+try {
+  state = Object.assign({}, defaultState, JSON.parse(localStorage.getItem(LS_KEY) || '{}'));
+} catch (_e) { state = { ...defaultState }; }
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_e) {}
+}
+
+// ── Load device profiles ────────────────────────────────────────────────
+let PROFILES = null;
+async function loadProfiles() {
+  const res = await fetch('./device-profiles.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error('failed to load device-profiles.json');
+  return await res.json();
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const platformsRef = () => PROFILES?.platforms;
+function platformDevices(platform) { return platformsRef()?.[platform]?.devices || []; }
+function findDevice(deviceId) {
+  if (!PROFILES) return null;
+  for (const pf of Object.values(PROFILES.platforms)) {
+    const d = pf.devices.find((x) => x.id === deviceId);
+    if (d) return d;
+  }
+  return null;
+}
+function currentDevice() {
+  return findDevice(state.deviceId) ||
+    (platformDevices(state.platform)[0]) ||
+    null;
+}
+function currentColorway(dev) {
+  if (!dev) return null;
+  return dev.colorways.find((c) => c.id === state.colorwayId) || dev.colorways[0];
+}
+
+// ── Build bezel SVG inline from JSON profile (no external svg files) ────
+function buildBezelSvg(dev, orient, cw) {
+  // Body dimensions (in CSS px from profile)
+  let bw = dev.body.w, bh = dev.body.h;
+  const r  = dev.body.r;
+  const bs = dev.body.bezelSides, bt = dev.body.bezelTop, bb = dev.body.bezelBottom;
+  if (orient === 'landscape') { const t = bw; bw = bh; bh = t; }
+  const bezelFill = cw?.bezelColor || '#1b1b1d';
+  const frameFill = cw?.frameColor || '#2a2a2c';
+  const btnFill   = cw?.sideButtonColor || '#3a3a3c';
+
+  // Screen window (centered inside the body, smaller by bezel insets)
+  let sx = bs, sy = bt;
+  let sw = bw - 2 * bs;
+  let sh = bh - bt - bb;
+  if (orient === 'landscape') {
+    // In landscape we swap which bezel is "top" — choose: the longer-edge becomes top.
+    sx = bt; sy = bs;
+    sw = bw - bt - bb;
+    sh = bh - 2 * bs;
+  }
+  const screenR = dev.displayRadius;
+
+  // Side buttons
+  let buttons = '';
+  const btn = dev.body.buttons || {};
+  function rect(x, y, w, h, fill) {
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.5" fill="${fill}"/>`;
+  }
+  if (orient === 'portrait') {
+    // power on right edge
+    if (btn.power) buttons += rect(bw - 2, btn.power.y, 3, 48, btnFill);
+    // volume on left edge
+    if (btn.volume) buttons += rect(-1, btn.volume.y, 3, btn.volume.h, btnFill);
+    // iPhone mute/action on left edge
+    if (btn.mute) buttons += rect(-1, btn.mute.y, 3, btn.mute.h, btnFill);
+    if (btn.action) buttons += rect(-1, btn.action.y, 3, btn.action.h, btnFill);
+  } else {
+    // Landscape — buttons on the bottom/top edges (rotated)
+    if (btn.power) buttons += rect(btn.power.y, bh - 2, 48, 3, btnFill);
+    if (btn.volume) buttons += rect(btn.volume.y, -1, btn.volume.h, 3, btnFill);
+    if (btn.mute) buttons += rect(btn.mute.y, -1, btn.mute.h, 3, btnFill);
+    if (btn.action) buttons += rect(btn.action.y, -1, btn.action.h, 3, btnFill);
+  }
+
+  // iPhone SE home button on the bottom-chin bezel
+  let homeBtn = '';
+  if (dev.navArea.style === 'ios-home-button' && orient === 'portrait') {
+    const cx = bw / 2, cy = bh - bb / 2;
+    homeBtn = `
+      <circle cx="${cx}" cy="${cy}" r="14" fill="${frameFill}" stroke="${btnFill}" stroke-width="1.5"/>
+      <circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="${btnFill}" stroke-width="1.2"/>
+    `;
+  }
+
+  // Gloss overlay
+  const gloss = `
+    <linearGradient id="gloss-${dev.id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="white" stop-opacity="0.05"/>
+      <stop offset="20%" stop-color="white" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+  `;
+
+  return `
+    <svg class="body-svg" width="${bw}" height="${bh}" viewBox="0 0 ${bw} ${bh}" xmlns="http://www.w3.org/2000/svg">
+      <defs>${gloss}</defs>
+      <!-- frame outer -->
+      <rect x="0" y="0" width="${bw}" height="${bh}" rx="${r}" fill="${frameFill}"/>
+      <!-- bezel inset -->
+      <rect x="2" y="2" width="${bw-4}" height="${bh-4}" rx="${r-2}" fill="${bezelFill}"/>
+      <!-- screen pocket -->
+      <rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" rx="${screenR}" fill="#000"/>
+      <!-- side buttons -->
+      ${buttons}
+      <!-- home button (iPhone SE) -->
+      ${homeBtn}
+      <!-- gloss -->
+      <rect x="0" y="0" width="${bw}" height="${bh}" rx="${r}" fill="url(#gloss-${dev.id})"/>
+      <!-- edge highlight -->
+      <rect x="0.5" y="0.5" width="${bw-1}" height="${bh-1}" rx="${r-0.5}"
+            fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    </svg>
+    <!-- screen-window coords stashed for the HTML layer to consume -->
+    <span data-screen-meta data-x="${sx}" data-y="${sy}" data-w="${sw}" data-h="${sh}" hidden></span>
+  `;
+}
+
+// ── Build status bar HTML (per platform/style) ──────────────────────────
+function buildStatusBar(dev, sw) {
+  const style = dev.statusBar.style;
+  const h = dev.statusBar.height;
+  // Battery + signal icons (inline SVG, generic)
+  const iconWifi = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm0-4c-1.7 0-3.2.7-4.3 1.8l1.4 1.4a4 4 0 015.7 0l1.4-1.4A5.9 5.9 0 0012 12.5zm0-4a9.9 9.9 0 00-7.1 2.9l1.4 1.4a8 8 0 0111.4 0l1.4-1.4A9.9 9.9 0 0012 8.5zm0-4a13.9 13.9 0 00-9.9 4.1l1.4 1.4a12 12 0 0117 0l1.4-1.4A13.9 13.9 0 0012 4.5z"/></svg>`;
+  const iconBatt = `<svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="2" stroke="currentColor" fill="none"/><rect x="2" y="2" width="14" height="8" rx="1" fill="currentColor"/><rect x="19.5" y="3.5" width="1.5" height="5" rx="0.5" fill="currentColor"/></svg>`;
+  const iconSignal = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="14" width="3" height="6" rx="0.5"/><rect x="7" y="10" width="3" height="10" rx="0.5"/><rect x="12" y="6" width="3" height="14" rx="0.5"/><rect x="17" y="2" width="3" height="18" rx="0.5"/></svg>`;
+
+  if (style === 'android') {
+    return `
+      <div class="statusbar android" style="height:${h}px;">
+        <span class="clock" data-clock>9:41</span>
+        <span class="sys-icons">${iconSignal}${iconWifi}${iconBatt}</span>
+      </div>
+    `;
+  }
+  if (style === 'ios') {
+    // iPhone (notched but not Pro): time on the left side of the notch
+    return `
+      <div class="statusbar ios" style="height:${h}px;">
+        <span class="clock" data-clock style="margin-left:24px;">9:41</span>
+        <span class="sys-icons" style="margin-right:24px;">${iconSignal}${iconWifi}${iconBatt}</span>
+      </div>
+    `;
+  }
+  if (style === 'ios-island') {
+    return `
+      <div class="statusbar ios" style="height:${h}px;">
+        <span class="clock" data-clock style="margin-left:24px;">9:41</span>
+        <span class="sys-icons" style="margin-right:24px;">${iconSignal}${iconWifi}${iconBatt}</span>
+      </div>
+    `;
+  }
+  return '';
+}
+
+function buildNavArea(dev) {
+  const style = dev.navArea.style;
+  const h = dev.navArea.height;
+  if (style === 'android-gesture') {
+    return `<div class="nav-pill android-gesture" style="bottom:${Math.max(6,(h-4)/2)}px;"></div>`;
+  }
+  if (style === 'ios-indicator') {
+    return `<div class="nav-pill ios-indicator" style="bottom:${Math.max(8,(h-5)/2)}px;"></div>`;
+  }
+  if (style === 'android-3btn') {
+    const back   = `<svg viewBox="0 0 24 24"><path d="M16 5l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
+    const home   = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+    const recents= `<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+    return `<div class="nav-3btn" style="bottom:0; height:${h}px;">${back}${home}${recents}</div>`;
+  }
+  return '';
+}
+
+// ── Compose the phone DOM ───────────────────────────────────────────────
+function renderPhone() {
+  const dev = currentDevice();
+  if (!dev) return;
+  const cw = currentColorway(dev);
+  state.deviceId   = dev.id;
+  state.colorwayId = cw?.id || null;
+  save();
+
+  const stage = $('stage');
+  stage.innerHTML = '';
+
+  const vp = dev.viewport;
+  const w = state.orientation === 'landscape' ? vp.h : vp.w;
+  const h = state.orientation === 'landscape' ? vp.w : vp.h;
+
+  // Body SVG
+  const bezelHtml = buildBezelSvg(dev, state.orientation, cw);
+
+  const phone = document.createElement('div');
+  phone.className = 'phone';
+  phone.innerHTML = bezelHtml;
+
+  // Compute body dimensions
+  let bw = dev.body.w, bh = dev.body.h;
+  if (state.orientation === 'landscape') { const t = bw; bw = bh; bh = t; }
+  let sx = dev.body.bezelSides, sy = dev.body.bezelTop;
+  let sw = bw - 2 * dev.body.bezelSides;
+  let sh = bh - dev.body.bezelTop - dev.body.bezelBottom;
+  if (state.orientation === 'landscape') {
+    sx = dev.body.bezelTop; sy = dev.body.bezelSides;
+    sw = bw - dev.body.bezelTop - dev.body.bezelBottom;
+    sh = bh - 2 * dev.body.bezelSides;
+  }
+
+  // Iframe wrapper (inside screen pocket)
+  const screen = document.createElement('div');
+  screen.className = 'screen';
+  screen.style.left   = sx + 'px';
+  screen.style.top    = sy + 'px';
+  screen.style.width  = sw + 'px';
+  screen.style.height = sh + 'px';
+  screen.style.borderRadius = dev.displayRadius + 'px';
+  phone.appendChild(screen);
+
+  // Punch / notch / dynamic island
+  if (dev.punchHole) {
+    const ph = document.createElement('div');
+    ph.className = 'punch';
+    const x = state.orientation === 'landscape' ? (dev.punchHole.y) : dev.punchHole.x;
+    const y = state.orientation === 'landscape' ? (dev.viewport.w - dev.punchHole.x) : dev.punchHole.y;
+    ph.style.left   = (x - dev.punchHole.r) + 'px';
+    ph.style.top    = (y - dev.punchHole.r) + 'px';
+    ph.style.width  = (dev.punchHole.r * 2) + 'px';
+    ph.style.height = (dev.punchHole.r * 2) + 'px';
+    screen.appendChild(ph);
+  }
+  if (dev.notch) {
+    const n = document.createElement('div');
+    n.className = 'notch';
+    n.style.width  = dev.notch.w + 'px';
+    n.style.height = dev.notch.h + 'px';
+    n.style.left   = ((sw - dev.notch.w) / 2) + 'px';
+    n.style.top    = (dev.notch.yOffset || 0) + 'px';
+    n.style.borderRadius = `0 0 ${dev.notch.r}px ${dev.notch.r}px`;
+    screen.appendChild(n);
+  }
+  if (dev.dynamicIsland) {
+    const isl = document.createElement('div');
+    isl.className = 'island';
+    isl.style.width  = dev.dynamicIsland.w + 'px';
+    isl.style.height = dev.dynamicIsland.h + 'px';
+    isl.style.left   = ((sw - dev.dynamicIsland.w) / 2) + 'px';
+    isl.style.top    = (dev.dynamicIsland.yOffset || 11) + 'px';
+    screen.appendChild(isl);
+  }
+
+  // Status bar overlay (inside the screen pocket)
+  screen.insertAdjacentHTML('beforeend', buildStatusBar(dev, sw));
+
+  // Nav area overlay (inside the screen pocket, at bottom)
+  screen.insertAdjacentHTML('beforeend', buildNavArea(dev));
+
+  // Iframe
+  const iframe = document.createElement('iframe');
+  iframe.id = 'app-frame';
+  iframe.allow = 'camera; microphone; gyroscope; magnetometer; accelerometer; geolocation; xr-spatial-tracking';
+  iframe.setAttribute('allowfullscreen', '');
+  const url = buildIframeUrl(dev);
+  iframe.src = url;
+  screen.appendChild(iframe);
+
+  // Optional splash overlay (CSS-only, hidden by JS after timeout)
+  if (location.search.includes('splash=1')) {
+    const splash = document.createElement('div');
+    splash.className = 'splash';
+    splash.innerHTML = `<img src="${state.source === 'bundled' ? '/_cap/assets/icon-1024.png' : '/assets/icon-1024.png'}" alt="">`;
+    screen.appendChild(splash);
+    setTimeout(() => splash.classList.add('hide'), 1800);
+  }
+
+  stage.appendChild(phone);
+
+  // Auto-shrink to fit available stage size
+  fitPhone(phone, bw, bh);
+
+  // Inject CSS vars into iframe once it loads
+  iframe.addEventListener('load', () => injectIntoIframe(iframe, dev));
+}
+
+function buildIframeUrl(dev) {
+  const base = (state.source === 'bundled') ? '/_cap/index.html' : '/index.html';
+  const params = new URLSearchParams({
+    'mobile-preview': '1',
+    'platform':       state.platform,
+    'device':         dev.id,
+    'orient':         state.orientation,
+  });
+  if (state.theme)  params.set('theme', state.theme);
+  if (state.fakeAr) params.set('ar-fake', '1');
+  return `${base}?${params.toString()}#t=${Date.now()}`;
+}
+
+function injectIntoIframe(iframe, dev) {
+  let doc;
+  try { doc = iframe.contentDocument; } catch (_e) { return; }
+  if (!doc) return;
+  const root = doc.documentElement;
+  const sa = dev.safeArea;
+  root.style.setProperty('--sai-top',    sa.top    + 'px');
+  root.style.setProperty('--sai-right',  sa.right  + 'px');
+  root.style.setProperty('--sai-bottom', sa.bottom + 'px');
+  root.style.setProperty('--sai-left',   sa.left   + 'px');
+  // App CSS that wants safe areas should use:
+  //   var(--safe-area-inset-top, env(safe-area-inset-top))
+  // Inject the alias too.
+  const css = `:root{
+    --safe-area-inset-top:    ${sa.top}px;
+    --safe-area-inset-right:  ${sa.right}px;
+    --safe-area-inset-bottom: ${sa.bottom}px;
+    --safe-area-inset-left:   ${sa.left}px;
+  }`;
+  const style = doc.createElement('style');
+  style.dataset.mobilePreview = '1';
+  style.textContent = css;
+  doc.head.appendChild(style);
+}
+
+function fitPhone(phoneEl, bw, bh) {
+  const stage = $('stage');
+  const availW = stage.clientWidth  - 32;
+  const availH = stage.clientHeight - 48;
+  const scale  = Math.min(1, availW / bw, availH / bh);
+  phoneEl.style.transform = `scale(${scale.toFixed(4)})`;
+}
+
+// ── Repopulate UI from state ─────────────────────────────────────────────
+function repopulateDeviceSelect() {
+  const sel = $('sel-device');
+  sel.innerHTML = '';
+  const list = platformDevices(state.platform);
+  for (const d of list) {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = d.name + (d.category === 'phone-legacy' ? ' (legacy)' : '');
+    sel.appendChild(opt);
+  }
+  // Use saved deviceId if still valid for this platform; else platform default.
+  const valid = list.find((d) => d.id === state.deviceId);
+  if (!valid) {
+    state.deviceId = PROFILES.platforms[state.platform].defaultDeviceId;
+  }
+  sel.value = state.deviceId;
+}
+function repopulateColorwaySelect() {
+  const sel = $('sel-colorway');
+  sel.innerHTML = '';
+  const dev = currentDevice();
+  for (const c of (dev?.colorways || [])) {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    sel.appendChild(opt);
+  }
+  const valid = dev?.colorways.find((c) => c.id === state.colorwayId);
+  if (!valid) state.colorwayId = dev?.colorways[0]?.id || null;
+  sel.value = state.colorwayId || '';
+}
+function reflectPlatformSeg() {
+  for (const b of document.querySelectorAll('#seg-platform button')) {
+    b.setAttribute('aria-selected', String(b.dataset.platform === state.platform));
+  }
+}
+
+// ── Parity badge polling ────────────────────────────────────────────────
+async function pollParity() {
+  const badge = $('parity-badge');
+  const text  = $('parity-text');
+  if (state.source !== 'bundled') {
+    badge.className = 'live';
+    text.textContent = 'live mode';
+    return;
+  }
+  try {
+    const r = await fetch('/_cap/_meta', { cache: 'no-store' });
+    if (!r.ok) throw new Error('meta ' + r.status);
+    const meta = await r.json();
+    if (!meta.bundleExists) {
+      badge.className = 'error';
+      text.textContent = 'no www/ — run npm run build';
+      return;
+    }
+    if (meta.sourceMaxMtime > meta.buildTime + 1000) {
+      badge.className = 'yellow';
+      text.textContent = 'stale bundle — click DevTools → run npm run build';
+    } else {
+      badge.className = 'green';
+      text.textContent = 'in parity ✓';
+    }
+  } catch (e) {
+    badge.className = 'error';
+    text.textContent = 'parity check failed';
+  }
+}
+setInterval(pollParity, 2500);
+
+// ── Clock updater (status bar) ──────────────────────────────────────────
+function updateClock() {
+  const d = new Date();
+  const txt = d.getHours().toString().padStart(2,'0') + ':' +
+              d.getMinutes().toString().padStart(2,'0');
+  for (const el of document.querySelectorAll('[data-clock]')) {
+    el.textContent = txt;
+  }
+}
+setInterval(updateClock, 15000);
+
+// ── Wire controls ───────────────────────────────────────────────────────
+function bindControls() {
+  // Platform segmented control
+  for (const b of document.querySelectorAll('#seg-platform button')) {
+    b.addEventListener('click', () => {
+      if (state.platform === b.dataset.platform) return;
+      state.platform = b.dataset.platform;
+      state.deviceId = PROFILES.platforms[state.platform].defaultDeviceId;
+      state.colorwayId = null;
+      reflectPlatformSeg();
+      repopulateDeviceSelect();
+      repopulateColorwaySelect();
+      renderPhone();
+      save();
+    });
+  }
+  $('sel-device').addEventListener('change', (e) => {
+    state.deviceId = e.target.value;
+    state.colorwayId = null;
+    repopulateColorwaySelect();
+    renderPhone();
+    save();
+  });
+  $('sel-colorway').addEventListener('change', (e) => {
+    state.colorwayId = e.target.value;
+    renderPhone();
+    save();
+  });
+  $('sel-orient').addEventListener('change', (e) => {
+    state.orientation = e.target.value;
+    renderPhone();
+    save();
+  });
+  $('sel-source').addEventListener('change', (e) => {
+    state.source = e.target.value;
+    renderPhone();
+    save();
+    pollParity();
+  });
+  $('sel-theme').addEventListener('change', (e) => {
+    state.theme = e.target.value;
+    renderPhone();
+    save();
+  });
+  $('chk-ar-fake').addEventListener('change', (e) => {
+    state.fakeAr = !!e.target.checked;
+    renderPhone();
+    save();
+  });
+  $('btn-reload').addEventListener('click', () => {
+    const f = $('app-frame');
+    if (f) f.src = f.src; // soft reload
+  });
+  $('btn-hard-reload').addEventListener('click', () => {
+    // Clear SW for the iframe origin and reload
+    const f = $('app-frame');
+    if (!f) return;
+    try {
+      f.contentWindow.navigator.serviceWorker?.getRegistrations?.().then((regs) => {
+        Promise.all(regs.map((r) => r.unregister())).then(() => { f.src = buildIframeUrl(currentDevice()); });
+      }) || (f.src = buildIframeUrl(currentDevice()));
+    } catch (_e) {
+      f.src = buildIframeUrl(currentDevice());
+    }
+  });
+  $('btn-screenshot').addEventListener('click', async () => {
+    // No html2canvas dep — point user at the screenshot exporter.
+    alert('For pixel-exact Play / App Store screenshots, open tools/screenshot-export.html instead.\n\nFor a quick OS-level capture: use Win+Shift+S (Windows) or Cmd+Shift+4 (macOS) over the phone area.');
+  });
+
+  // Reflect saved state into UI
+  $('sel-orient').value  = state.orientation;
+  $('sel-source').value  = state.source;
+  $('sel-theme').value   = state.theme || '';
+  $('chk-ar-fake').checked = !!state.fakeAr;
+
+  // Resize fit on window resize
+  window.addEventListener('resize', () => {
+    const phone = document.querySelector('.phone');
+    if (!phone) return;
+    const dev = currentDevice();
+    let bw = dev.body.w, bh = dev.body.h;
+    if (state.orientation === 'landscape') { const t = bw; bw = bh; bh = t; }
+    fitPhone(phone, bw, bh);
+  });
+}
+
+// ── Boot ────────────────────────────────────────────────────────────────
+(async function boot() {
+  try {
+    PROFILES = await loadProfiles();
+  } catch (e) {
+    $('empty').textContent = 'Failed to load device profiles: ' + e.message;
+    return;
+  }
+  // Default deviceId if unset
+  if (!state.deviceId || !findDevice(state.deviceId)) {
+    state.deviceId = PROFILES.platforms[state.platform].defaultDeviceId;
+  }
+  reflectPlatformSeg();
+  repopulateDeviceSelect();
+  repopulateColorwaySelect();
+  bindControls();
+  renderPhone();
+  updateClock();
+  pollParity();
+})();
+</script>
+
+</body>
+</html>

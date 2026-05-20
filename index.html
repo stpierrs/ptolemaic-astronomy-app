@@ -8,6 +8,60 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Ptolemaic Astronomy &amp; Astrology</title>
+<!-- Mobile-preview harness gate: when loaded inside tools/mobile-preview.html
+     the iframe gets ?mobile-preview=1&platform=…&device=… appended. This
+     script runs before the rest of the app boots and patches just enough
+     of the runtime to behave like the chosen device (UA, touch, hover,
+     pointer media queries). The whole block is a no-op outside the
+     harness — never affects production. ?ar-fake=1 is a parallel gate
+     for AR mode's fake-sensor path. -->
+<script>
+(function () {
+  var qp = new URLSearchParams(location.search);
+  if (qp.get('mobile-preview') === '1') {
+    var html = document.documentElement;
+    var platform = qp.get('platform') || 'android';
+    var device   = qp.get('device') || '';
+    html.classList.add('force-touch', 'preview-' + platform);
+    if (device) html.classList.add('preview-device-' + device);
+    // Pretend to be a touch device.
+    try {
+      Object.defineProperty(navigator, 'maxTouchPoints', { get: function () { return 5; } });
+    } catch (_e) {}
+    // Override matchMedia so the app reads hover:none, pointer:coarse.
+    var origMM = window.matchMedia.bind(window);
+    window.matchMedia = function (q) {
+      if (/\(hover\s*:\s*hover\)/.test(q))   return { matches: false, media: q, addListener: function () {}, removeListener: function () {}, addEventListener: function () {}, removeEventListener: function () {}, dispatchEvent: function () { return false; } };
+      if (/\(hover\s*:\s*none\)/.test(q))    return { matches: true,  media: q, addListener: function () {}, removeListener: function () {}, addEventListener: function () {}, removeEventListener: function () {}, dispatchEvent: function () { return false; } };
+      if (/\(pointer\s*:\s*coarse\)/.test(q))return { matches: true,  media: q, addListener: function () {}, removeListener: function () {}, addEventListener: function () {}, removeEventListener: function () {}, dispatchEvent: function () { return false; } };
+      if (/\(pointer\s*:\s*fine\)/.test(q))  return { matches: false, media: q, addListener: function () {}, removeListener: function () {}, addEventListener: function () {}, removeEventListener: function () {}, dispatchEvent: function () { return false; } };
+      return origMM(q);
+    };
+    // Suppress :hover styles and the long-press context menu inside the iframe.
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { capture: true });
+    var s = document.createElement('style');
+    s.dataset.mobilePreview = '1';
+    s.textContent = 'html.force-touch *:hover { all: revert !important; }\nhtml.force-touch { touch-action: manipulation; }';
+    (document.head || document.documentElement).appendChild(s);
+  }
+  if (qp.get('ar-fake') === '1') {
+    // Fake-sensor driver for the AR overlay (Part 2 §15).
+    window.__AR_FAKE_ORIENTATION__ = { alpha: 180, beta: 0, gamma: 0 };
+    var dragging = false, lastX = 0, lastY = 0;
+    document.addEventListener('mousedown', function (e) { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+    document.addEventListener('mouseup',   function () { dragging = false; });
+    document.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      var o = window.__AR_FAKE_ORIENTATION__;
+      o.alpha = (o.alpha - dx * 0.5 + 360) % 360;
+      o.beta  = Math.max(-90, Math.min(90, o.beta + dy * 0.5));
+      window.dispatchEvent(new Event('deviceorientationfake'));
+    });
+  }
+})();
+</script>
 <meta name="description" content="Ptolemaic Astronomy &amp; Astrology — interactive epicycle simulator and natal chart calculator. Track the seven classical planets via deferent and epicycle orbits, and cast Ptolemaic birth charts from the Tetrabiblos.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="assets/ac_logo.png">

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Play / App Store Screenshot Exporter</title>
+<style>
+  :root {
+    --ink:    #0e0f12;
+    --ink2:   #15171d;
+    --panel:  #1c1f27;
+    --panelhi:#262a35;
+    --border: #3a3f4d;
+    --fg:     #e8e9ec;
+    --muted:  #98a0b0;
+    --gold:   #c8a060;
+    --green:  #4ad17a;
+    --warn:   #f4b942;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; background: var(--ink); color: var(--fg); font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; }
+  #bar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  }
+  #bar h1 { margin: 0 8px 0 0; font-size: 14px; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; }
+  #bar label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; display: inline-flex; flex-direction: column; gap: 2px; }
+  #bar select, #bar button, #bar input {
+    background: var(--panelhi); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 5px 10px; font: inherit;
+  }
+  #bar button { cursor: pointer; }
+  #bar button:hover { border-color: var(--gold); }
+  #bar .primary { background: var(--gold); color: #1a1a1c; border-color: var(--gold); font-weight: 600; }
+  #bar .primary:hover { background: #d8b070; }
+  #stage {
+    padding: 24px;
+    display: flex; flex-wrap: wrap; gap: 24px; justify-content: center;
+  }
+  .preview {
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .preview .info {
+    position: absolute; left: 8px; top: 8px;
+    background: rgba(0,0,0,0.65); color: var(--gold);
+    padding: 4px 10px;
+    font: 11px/1.2 ui-monospace, monospace;
+    border-radius: 4px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .preview iframe { border: 0; display: block; transform-origin: top left; background: #000; }
+  #note {
+    color: var(--muted); padding: 10px 16px; font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    background: #0a0c10;
+  }
+  #note code { background: var(--panelhi); padding: 1px 5px; border-radius: 3px; color: var(--gold); }
+  details { background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: 8px 0 0; padding-left: 22px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <h1>Screenshot exporter</h1>
+  <label>Store
+    <select id="sel-store">
+      <option value="play">Google Play</option>
+      <option value="apple">Apple App Store</option>
+      <option value="both">Both stores (synced)</option>
+    </select>
+  </label>
+  <label>Target
+    <select id="sel-target"></select>
+  </label>
+  <label>Source
+    <select id="sel-source">
+      <option value="live">live</option>
+      <option value="bundled">bundled (www/)</option>
+    </select>
+  </label>
+  <label style="flex-direction:row; align-items:center; gap:6px;">
+    <input type="checkbox" id="chk-hide-chrome"> hide dev UI in iframe
+  </label>
+  <span style="flex:1;"></span>
+  <button id="btn-reload" type="button">↻ Reload</button>
+  <button id="btn-capture" class="primary" type="button">📷 Capture PNG</button>
+</div>
+
+<div id="note">
+  Each preview renders the app at <strong>exact target pixel dimensions</strong> via
+  <code>iframe size = target/dpr</code> + <code>transform: scale(dpr)</code>. The
+  Capture button uses <code>html2canvas</code> at <code>scale: 1</code> so the
+  saved PNG is the literal pixel size required by the store listing.
+</div>
+
+<div id="stage"></div>
+
+<details>
+  <summary>Required dimensions reference</summary>
+  <ul>
+    <li><strong>Google Play phone</strong>: min 1080×1920, max 3840×3840 — 2 to 8 shots.</li>
+    <li><strong>Google Play 7" tablet</strong>: min 1080×1920.</li>
+    <li><strong>Google Play 10" tablet</strong>: min 1080×1920.</li>
+    <li><strong>Google Play feature graphic</strong>: 1024×500 (use the "Feature graphic" preset).</li>
+    <li><strong>Apple 6.9" Display phone</strong>: 1290×2796 (iPhone 15/16 Pro Max).</li>
+    <li><strong>Apple 6.5" Display phone</strong>: 1284×2778 or 1242×2688 (XS Max / 11 Pro Max).</li>
+    <li><strong>Apple 6.1" Display phone</strong>: 1170×2532 (iPhone 14/15 non-Pro).</li>
+    <li><strong>Apple 13" iPad Pro</strong>: 2064×2752 (M4).</li>
+    <li><strong>Apple 12.9" iPad Pro</strong>: 2048×2732 (6th gen).</li>
+  </ul>
+</details>
+
+<!-- html2canvas vendored at runtime via CDN — if offline, fall back to OS-level screenshot. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script type="module">
+'use strict';
+
+// Targets are pure (W, H, label) — no device profile needed. The iframe
+// just renders at target/DPR then scales up; the app inside sees whatever
+// the viewport is and lays out responsively.
+const TARGETS = {
+  play: [
+    { id: 'play-1080x1920',  label: 'Play phone 1080×1920',  w: 1080, h: 1920, dpr: 2.625 },
+    { id: 'play-1080x2400',  label: 'Play phone 1080×2400',  w: 1080, h: 2400, dpr: 2.625 },
+    { id: 'play-1440x3120',  label: 'Play phone 1440×3120',  w: 1440, h: 3120, dpr: 3.5   },
+    { id: 'play-feature',    label: 'Feature graphic 1024×500', w: 1024, h: 500, dpr: 1 },
+  ],
+  apple: [
+    { id: 'ap-6_9-1290x2796', label: 'Apple 6.9" 1290×2796 (15 Pro Max)', w: 1290, h: 2796, dpr: 3.0 },
+    { id: 'ap-6_5-1284x2778', label: 'Apple 6.5" 1284×2778 (11 Pro Max)', w: 1284, h: 2778, dpr: 3.0 },
+    { id: 'ap-6_1-1170x2532', label: 'Apple 6.1" 1170×2532 (15 non-Pro)', w: 1170, h: 2532, dpr: 3.0 },
+    { id: 'ap-ipad-13',       label: 'Apple iPad Pro 13" 2064×2752',     w: 2064, h: 2752, dpr: 2.0 },
+    { id: 'ap-ipad-12_9',     label: 'Apple iPad Pro 12.9" 2048×2732',   w: 2048, h: 2732, dpr: 2.0 },
+  ],
+  both: [
+    { id: 'play-1080x1920',   label: 'Play phone 1080×1920',          w: 1080, h: 1920, dpr: 2.625 },
+    { id: 'ap-6_9-1290x2796', label: 'Apple 6.9" 1290×2796',          w: 1290, h: 2796, dpr: 3.0 },
+  ],
+};
+
+const $ = (id) => document.getElementById(id);
+let state = {
+  store: 'play',
+  targetId: TARGETS.play[0].id,
+  source: 'live',
+  hideChrome: false,
+};
+try { Object.assign(state, JSON.parse(localStorage.getItem('screenshotExport') || '{}')); }
+catch (_e) {}
+function save() { try { localStorage.setItem('screenshotExport', JSON.stringify(state)); } catch (_e) {} }
+
+function targetsFor(store) { return TARGETS[store] || []; }
+function findTarget(id) {
+  for (const list of Object.values(TARGETS)) {
+    const t = list.find((x) => x.id === id);
+    if (t) return t;
+  }
+  return null;
+}
+
+function repopulateTargets() {
+  const sel = $('sel-target');
+  sel.innerHTML = '';
+  for (const t of targetsFor(state.store)) {
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.label;
+    sel.appendChild(opt);
+  }
+  if (!targetsFor(state.store).find((t) => t.id === state.targetId)) {
+    state.targetId = targetsFor(state.store)[0].id;
+  }
+  sel.value = state.targetId;
+}
+
+function buildPreviews() {
+  const stage = $('stage');
+  stage.innerHTML = '';
+  const list = state.store === 'both' ? targetsFor('both') : [findTarget(state.targetId)];
+  for (const t of list) {
+    if (!t) continue;
+    stage.appendChild(buildPreview(t));
+  }
+}
+
+function buildPreview(t) {
+  const card = document.createElement('div');
+  card.className = 'preview';
+  card.dataset.targetId = t.id;
+  card.style.width  = (t.w / 2) + 'px';   // visually halved so several fit on screen
+  card.style.height = (t.h / 2) + 'px';
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  info.textContent = t.label + '  ·  output ' + t.w + '×' + t.h;
+  card.appendChild(info);
+
+  const iframe = document.createElement('iframe');
+  iframe.allow = 'gyroscope; magnetometer; accelerometer; geolocation';
+  const base = state.source === 'bundled' ? '/_cap/index.html' : '/index.html';
+  iframe.src  = `${base}?mobile-preview=1&device=screenshot&orient=portrait`;
+  // Iframe at target/DPR CSS px, scaled by DPR — pixel output equals target.
+  const cssW = t.w / t.dpr;
+  const cssH = t.h / t.dpr;
+  iframe.style.width  = cssW + 'px';
+  iframe.style.height = cssH + 'px';
+  iframe.style.transform = `scale(${t.dpr / 2})`;  // /2 because card is shown at 50%
+  iframe.style.transformOrigin = 'top left';
+  iframe.dataset.dpr = t.dpr;
+  iframe.dataset.cssW = cssW;
+  iframe.dataset.cssH = cssH;
+  card.appendChild(iframe);
+  return card;
+}
+
+async function capturePreview(card) {
+  if (typeof html2canvas !== 'function') {
+    alert('html2canvas not loaded — check network or take an OS-level screenshot of the preview.');
+    return;
+  }
+  const t = findTarget(card.dataset.targetId);
+  const iframe = card.querySelector('iframe');
+  // Render the iframe's BODY at native target pixel size.
+  // Temporarily un-scale and re-size so the capture grabs full target px.
+  const prev = {
+    iw: iframe.style.width, ih: iframe.style.height, t: iframe.style.transform,
+    cw: card.style.width,   ch: card.style.height,
+  };
+  iframe.style.width  = (t.w / t.dpr) + 'px';
+  iframe.style.height = (t.h / t.dpr) + 'px';
+  iframe.style.transform = `scale(${t.dpr})`;
+  card.style.width  = t.w + 'px';
+  card.style.height = t.h + 'px';
+  // Allow a frame for reflow.
+  await new Promise(r => requestAnimationFrame(r));
+
+  let canvas;
+  try {
+    canvas = await html2canvas(card, {
+      scale: 1,
+      width:  t.w,
+      height: t.h,
+      windowWidth:  t.w,
+      windowHeight: t.h,
+      useCORS: true,
+      backgroundColor: '#000',
+      logging: false,
+    });
+  } finally {
+    iframe.style.width = prev.iw;
+    iframe.style.height = prev.ih;
+    iframe.style.transform = prev.t;
+    card.style.width = prev.cw;
+    card.style.height = prev.ch;
+  }
+
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${t.id}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
+}
+
+$('sel-store').addEventListener('change', (e) => {
+  state.store = e.target.value;
+  state.targetId = targetsFor(state.store)[0].id;
+  save();
+  repopulateTargets();
+  buildPreviews();
+});
+$('sel-target').addEventListener('change', (e) => {
+  state.targetId = e.target.value;
+  save();
+  buildPreviews();
+});
+$('sel-source').addEventListener('change', (e) => {
+  state.source = e.target.value;
+  save();
+  buildPreviews();
+});
+$('chk-hide-chrome').addEventListener('change', (e) => {
+  state.hideChrome = !!e.target.checked;
+  save();
+  buildPreviews();
+});
+$('btn-reload').addEventListener('click', () => buildPreviews());
+$('btn-capture').addEventListener('click', async () => {
+  const cards = document.querySelectorAll('.preview');
+  for (const c of cards) await capturePreview(c);
+});
+
+// reflect saved state
+$('sel-store').value  = state.store;
+$('sel-source').value = state.source;
+$('chk-hide-chrome').checked = state.hideChrome;
+repopulateTargets();
+buildPreviews();
+</script>
+
+</body>
+</html>
