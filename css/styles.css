@@ -3781,6 +3781,24 @@ body.fp-mode #god-fabs { display: none; }
 .pa-helio-evening-star          { color: #c4aa78; }
 .pa-helio-last-heliacal-setting { color: #ff9944; }
 
+/* Transit cards + timeline (Guide 10) */
+.pa-transit-card {
+  background: rgba(212, 184, 120, 0.04);
+  border: 1px solid rgba(212, 184, 120, 0.15);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.pa-transit-headline {
+  display: flex; gap: 10px; align-items: center;
+  font-size: 13px; font-weight: 700;
+  flex-wrap: wrap;
+}
+.pa-strength        { color: #ffd060; font-size: 11px; }
+.pa-transit-quality { font-size: 11px; color: var(--muted); margin-top: 4px; font-style: italic; }
+.pa-transit-meta    { font-size: 10px; color: #888; margin-top: 4px; }
+.pa-transit-station { color: #d4a824; margin: 0 4px; }
+
 /* Astrology onboarding modal (Guide 09) */
 .pa-onb-overlay {
   position: fixed; inset: 0; z-index: 1000;
