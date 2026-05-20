@@ -73,34 +73,17 @@ export const TRIPLICITY = {
 };
 
 // ── Ptolemaic Terms / Bounds (Book I, Ch. XXIII–XXIV) ────────────────────────
-// Each row = one sign; each pair = [planetName, endDegree (exclusive)]
-// Planet rules from previous endDegree up to (but not including) this endDegree.
-export const TERMS = [
-  // Aries
-  [['jupiter',6],['venus',12],['mercury',20],['mars',25],['saturn',30]],
-  // Taurus
-  [['venus',8],['mercury',14],['jupiter',22],['saturn',27],['mars',30]],
-  // Gemini
-  [['mercury',6],['jupiter',12],['venus',17],['mars',24],['saturn',30]],
-  // Cancer
-  [['mars',7],['venus',13],['mercury',19],['jupiter',26],['saturn',30]],
-  // Leo
-  [['jupiter',6],['venus',11],['saturn',18],['mercury',24],['mars',30]],
-  // Virgo
-  [['mercury',7],['venus',17],['jupiter',21],['mars',28],['saturn',30]],
-  // Libra
-  [['saturn',6],['mercury',14],['jupiter',21],['venus',28],['mars',30]],
-  // Scorpio
-  [['mars',7],['venus',11],['mercury',19],['jupiter',24],['saturn',30]],
-  // Sagittarius
-  [['jupiter',12],['venus',17],['mercury',21],['saturn',26],['mars',30]],
-  // Capricorn
-  [['mercury',7],['jupiter',14],['venus',22],['saturn',26],['mars',30]],
-  // Aquarius
-  [['mercury',7],['venus',13],['jupiter',20],['mars',25],['saturn',30]],
-  // Pisces
-  [['venus',12],['jupiter',16],['mercury',19],['mars',28],['saturn',30]],
-];
+// Single source of truth in js/data/astrology/egyptian_terms.js. Convert the
+// flat list into the [sign][term] = [planetName, endDeg] format the existing
+// getPlanetDignity consumer expects.
+import egyptianTerms from '../data/astrology/egyptian_terms.js';
+
+export const TERMS = (() => {
+  const out = Array.from({ length: 12 }, () => []);
+  for (const t of egyptianTerms) out[t.signIdx].push([t.ruler, t.endDeg]);
+  for (const row of out) row.sort((a, b) => a[1] - b[1]);
+  return out;
+})();
 
 // ── Faces / Decans (Book I, Ch. XXVI) ────────────────────────────────────────
 // Chaldean decan order: each 10° section of the zodiac (36 total) is assigned
