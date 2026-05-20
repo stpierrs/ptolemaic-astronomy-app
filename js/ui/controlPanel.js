@@ -1998,7 +1998,15 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshAxisBtn);
   refreshAxisBtn();
 
-  timeControls.append(btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  // Transport row trimmed (user request, 2026-05-19): only the play
+  // button remains here. Rewind, fast-forward, ½× / 2× speed buttons,
+  // and the ±day/±month/±year jump grid are now reached through the
+  // larger time bar that lives above this row. The unused buttons are
+  // still created in JS (their handlers, refreshTimeControls, demo /
+  // tracking logic all reference them) but they're never inserted into
+  // the DOM, which keeps the JS path safe without ghost UI.
+  void btnRew; void btnFf; void btnSlow; void btnSpeed; void jumpGrid;
+  timeControls.append(btnPlay, speedStack);
   barLeft.appendChild(geoHops);
 
   // Cel Theo presets. Each entry seeds observer lat/lon, tracker
@@ -2010,19 +2018,12 @@ export function buildControlPanel(host, model, demos) {
   // (1013.25 mbar, 15°C) so the user can compare event-conditions
   // refraction against standard-atmosphere refraction without
   // re-typing the numbers.
-  const CEL_THEO_PRESETS = [
-    {
-      code: 'PP',
-      name: 'Pikes Peak  ·  39 Aquarii  ·  2025-01-27 18:43:07 MST',
-      lat:  38.999700,
-      lon: -104.497230,
-      starId: 'star:ct_39_aqr',
-      utcMs: Date.UTC(2025, 0, 28, 1, 43, 7),
-      tzMin: -420,
-      pressureMbar: 787.8,
-      tempC: -0.2,
-    },
-  ];
+  // PP (Pikes Peak  ·  39 Aquarii  ·  2025-01-27) preset removed from
+  // the bottom bar by user request, 2026-05-19. The preset definition
+  // is preserved here in case it needs to be restored later — empty
+  // array means the for-loop below creates no buttons and the
+  // celTheoHops row stays empty.
+  const CEL_THEO_PRESETS = [];
   const DEFAULT_PRESSURE_MBAR = 1013.25;
   const DEFAULT_TEMP_C = 15;
   const celTheoHops = document.createElement('div');
