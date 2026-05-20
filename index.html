@@ -37,11 +37,17 @@
       if (/\(pointer\s*:\s*fine\)/.test(q))  return { matches: false, media: q, addListener: function () {}, removeListener: function () {}, addEventListener: function () {}, removeEventListener: function () {}, dispatchEvent: function () { return false; } };
       return origMM(q);
     };
-    // Suppress :hover styles and the long-press context menu inside the iframe.
+    // Suppress the long-press context menu (matches the Capacitor WebView).
     document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { capture: true });
+    // Do NOT add `*:hover { all: revert !important }` here — it causes
+    // a repaint loop as the mouse moves (hover triggers a style change,
+    // revert immediately undoes it, layout thrashes). The matchMedia
+    // override above is enough for any CSS gated on (hover: hover); CSS
+    // that fires hover unconditionally will still light up under a
+    // desktop mouse, but that's cosmetic, not blocking.
     var s = document.createElement('style');
     s.dataset.mobilePreview = '1';
-    s.textContent = 'html.force-touch *:hover { all: revert !important; }\nhtml.force-touch { touch-action: manipulation; }';
+    s.textContent = 'html.force-touch { touch-action: manipulation; }';
     (document.head || document.documentElement).appendChild(s);
   }
   if (qp.get('ar-fake') === '1') {
