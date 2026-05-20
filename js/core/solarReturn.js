@@ -1,10 +1,11 @@
-// PART 14.3 — Solar Returns
+// PART 14.3 / 12.5 — Solar Returns
 //
 // The annual chart cast for the moment the Sun re-attains its natal ecliptic
 // longitude. Governs the year between birthdays.
 
 import { bodyRADec } from './ephemeris.js';
 import { raDecToEclipticLon } from './astrology.js';
+import { buildNatalChart } from './natalChartBuilder.js';
 
 const MS_DAY = 86400 * 1000;
 
@@ -54,4 +55,50 @@ export function solarReturnDate(natalSunLon, birthDate, targetYear, source = 'ib
     birthDate.getUTCMinutes(),
   ));
   return solarReturnMoment(natalSunLon, guess, source);
+}
+
+/**
+ * Produce a full natal-shape chart for the solar return of `natalChart` in
+ * `targetYear`. By default the chart is cast at the native's natal location;
+ * pass `{ useNatalLocation: false, lat, lon }` for a relocated return.
+ *
+ * @param {object} natalChart - PART 20.10 chart from buildNatalChart
+ * @param {number} targetYear
+ * @param {{ useNatalLocation?: boolean, lat?: number, lon?: number }} [opts]
+ * @returns {object|null}
+ */
+export function solarReturnChart(natalChart, targetYear, opts = {}) {
+  if (!natalChart) return null;
+  const useNatal = opts.useNatalLocation !== false;
+  const lat = useNatal ? natalChart.lat : (opts.lat ?? natalChart.lat);
+  const lon = useNatal ? natalChart.lon : (opts.lon ?? natalChart.lon);
+  const natalSun = natalChart.planets?.find(p => p.name === 'sun');
+  if (!natalSun) return null;
+
+  // Use the natal Sun's longitude as the target. Anchor the search around the
+  // anniversary moment in `targetYear`.
+  const birth = natalChart.meta?.birth || {};
+  const guess = new Date(Date.UTC(
+    targetYear,
+    Math.max(0, (birth.month || natalChart.date?.getUTCMonth() + 1) - 1),
+    birth.day   || natalChart.date?.getUTCDate()    || 1,
+    birth.hour  || natalChart.date?.getUTCHours()   || 0,
+    birth.minute|| natalChart.date?.getUTCMinutes() || 0,
+  ));
+  const moment = solarReturnMoment(natalSun.lon, guess, natalChart.source || 'ibnshatir');
+  return buildNatalChart({
+    name: `${natalChart.meta?.name || 'Nativity'} · ${targetYear} SR`,
+    year:    moment.getUTCFullYear(),
+    month:   moment.getUTCMonth() + 1,
+    day:     moment.getUTCDate(),
+    hour:    moment.getUTCHours(),
+    minute:  moment.getUTCMinutes(),
+    utcOffset:      0,
+    latitude:       lat,
+    longitude:      lon,
+    locationName:   natalChart.meta?.location?.name || '',
+    timezone:       natalChart.meta?.location?.timezone || 'UTC',
+    birthTimeKnown: true,
+    source:         natalChart.source || 'ibnshatir',
+  });
 }
