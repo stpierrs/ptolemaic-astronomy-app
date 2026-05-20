@@ -12,33 +12,12 @@ const PRESETS = [
 export class Autoplay {
   constructor(model) {
     this.model = model;
-    // testing-rebaseline default: autoplay starts running at
-    // the "Day" preset (1 simulated hour per real second) so the
-    // baseline view shows the sun/moon already moving on load.
-    this.playing = true;
-    this.speed = PRESETS[0].days_per_sec;   // default: "Day"
+    // Default: open on real-world "now", paused. User presses ▶ to animate.
+    this.playing = false;
+    this.speed = PRESETS[0].days_per_sec;   // "Day" preset ready for when play is hit
     this._last = 0;
     this._tick = this._tick.bind(this);
     this._listeners = new Set();
-    if (this.playing) {
-      // Defer the first tick until the browser is idle so the
-      // cold-start frame budget (HTML parse + module loads + WebGL
-      // init + first paint) isn't competing with a per-frame
-      // `model.setState({ DateTime })` cascade. `requestIdleCallback`
-      // fires after the main thread settles; the timeout fallback
-      // caps the delay so autoplay still starts visibly within
-      // a second on browsers without rIC support.
-      const start = () => {
-        if (!this.playing) return;
-        this._last = performance.now();
-        requestAnimationFrame(this._tick);
-      };
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(start, { timeout: 1000 });
-      } else {
-        setTimeout(start, 800);
-      }
-    }
   }
 
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }

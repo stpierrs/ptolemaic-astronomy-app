@@ -6,7 +6,8 @@ const PERSISTED_KEYS = [
   'ObserverLat', 'ObserverLong', 'ObserverElevation',
   'Zoom', 'OpticalZoom',
   'CameraDirection', 'CameraHeight', 'CameraDistance',
-  'DateTime', 'VaultSize', 'VaultHeight',
+  /* DateTime intentionally excluded — always opens to real-world now */
+  'VaultSize', 'VaultHeight',
   'OpticalVaultSize', 'OpticalVaultHeight',
   'RayParameter',
   'ShowFeGrid', 'ShowShadow', 'ShowVault', 'ShowVaultGrid', 'ShowSunTrack',
@@ -85,7 +86,7 @@ const VERSION_GATED_KEYS = new Set([
   'BodySource',
   'ObserverLat', 'ObserverLong', 'ObserverHeading',
   'CameraDirection', 'CameraHeight', 'Zoom',
-  'DateTime', 'VaultHeight', 'OpticalVaultHeight',
+  'VaultHeight', 'OpticalVaultHeight',
   'RayParameter',
   'TimezoneOffsetMinutes', 'ObserverFigure',
   'ShowFeGrid', 'ShowTropicCancer', 'ShowEquator', 'ShowTropicCapricorn',
