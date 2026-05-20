@@ -3781,6 +3781,63 @@ body.fp-mode #god-fabs { display: none; }
 .pa-helio-evening-star          { color: #c4aa78; }
 .pa-helio-last-heliacal-setting { color: #ff9944; }
 
+/* Astrology onboarding modal (Guide 09) */
+.pa-onb-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex; align-items: center; justify-content: center;
+}
+.pa-onb-modal {
+  position: relative;
+  width: min(480px, 92vw);
+  background: var(--panel); color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px 22px;
+  font-size: 14px;
+}
+.pa-onb-modal h2 { font-family: 'Cinzel', Georgia, serif; color: var(--accent); margin: 0 0 4px; font-size: 22px; }
+.pa-onb-modal h3 { font-family: 'Cinzel', Georgia, serif; color: var(--accent); margin: 0 0 10px; font-size: 16px; }
+.pa-onb-modal p  { color: var(--muted); margin: 0 0 12px; }
+.pa-onb-modal .pa-input { width: 100%; margin-bottom: 10px; padding: 8px 10px; font-size: 14px; }
+.pa-onb-modal .pa-btn { padding: 8px 16px; font-size: 13px; cursor: pointer; }
+.pa-onb-cancel {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 18px; line-height: 1;
+}
+.pa-onb-cancel:hover { color: var(--fg); }
+.pa-onb-tagline { font-style: italic; }
+.pa-onb-screen { display: none; }
+.pa-onb-screen.active { display: block; }
+.pa-onb-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.pa-onb-row .pa-input { flex: 1; min-width: 0; margin-bottom: 0; }
+.pa-onb-accuracy-warn,
+.pa-onb-offline-notice {
+  color: #d4a824; font-size: 11px; margin: 8px 0;
+  padding: 6px 8px; background: rgba(212, 168, 36, 0.08);
+  border: 1px solid rgba(212, 168, 36, 0.25); border-radius: 4px;
+}
+.pa-onb-loc-results {
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: 6px; max-height: 220px; overflow-y: auto;
+}
+.pa-onb-loc-opt {
+  text-align: left; background: rgba(212, 184, 120, 0.05);
+  border: 1px solid rgba(212, 184, 120, 0.18); border-radius: 4px;
+  padding: 6px 10px; color: var(--fg); cursor: pointer;
+  font-size: 12px;
+}
+.pa-onb-loc-opt:hover { background: rgba(212, 184, 120, 0.12); border-color: var(--accent); }
+.pa-onb-no-results { font-size: 11px; color: var(--muted); padding: 6px 4px; }
+.pa-onb-manual    { margin-top: 12px; font-size: 12px; }
+.pa-onb-manual summary { cursor: pointer; color: var(--muted); }
+.pa-onb-summary   { font-size: 12px; line-height: 1.7; margin-bottom: 14px; }
+.pa-onb-summary span { color: var(--muted); display: inline-block; min-width: 64px; }
+.pa-onb-error     { color: #ff7055; font-size: 12px; margin-bottom: 10px; }
+.pa-onb-spinner   { font-size: 32px; text-align: center; animation: pa-onb-spin 1.2s linear infinite; }
+@keyframes pa-onb-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
 /* Profiles grid */
 .pa-profiles-grid { display: flex; flex-wrap: wrap; gap: 12px; }
 .pa-profile-card {
