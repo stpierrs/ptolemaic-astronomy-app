@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observation Mode — Explained · al-Shatir Geometry</title>
+<style>
+  :root {
+    --gold:   #c8a060;
+    --gold2:  #e8c97e;
+    --bronze: #8a5a28;
+    --bg:     #07080d;
+    --bg2:    #0d101a;
+    --silver: #b8c2d4;
+    --ink:    #e8e8ec;
+    --rule:   rgba(200,160,96,0.22);
+  }
+  html, body {
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'EB Garamond', 'Cinzel', serif;
+    line-height: 1.55;
+  }
+  body { padding: 40px max(20px, calc((100vw - 980px) / 2)) 80px; }
+  header.page-head {
+    margin-bottom: 40px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  header.page-head h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold2);
+    font-size: 1.55rem;
+    letter-spacing: 0.22em;
+    margin: 0 0 6px;
+    text-shadow: 0 0 10px rgba(232,201,126,0.30);
+  }
+  header.page-head .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--silver);
+    letter-spacing: 0.12em;
+    opacity: 0.85;
+  }
+  header.page-head .time-cap {
+    margin-top: 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.86rem;
+    color: var(--gold);
+    letter-spacing: 0.10em;
+  }
+  section.intro {
+    padding: 18px 22px;
+    margin-bottom: 42px;
+    background: linear-gradient(160deg, rgba(200,160,96,0.05), transparent);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+  section.body {
+    margin-bottom: 56px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  section.body h2 {
+    grid-column: 1 / span 2;
+    font-family: 'Cinzel', serif;
+    color: var(--gold2);
+    font-size: 1.15rem;
+    letter-spacing: 0.18em;
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+  section.body .diagram-wrap {
+    background: #04060a;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 6px;
+  }
+  canvas.diagram {
+    width: 340px; height: 320px;
+    display: block; background: #06080d;
+  }
+  section.body .prose {
+    font-size: 0.95rem;
+  }
+  section.body .prose p { margin: 0 0 10px; }
+  section.body .prose strong { color: var(--gold2); }
+  pre.formula {
+    background: #04060a;
+    border: 1px solid var(--rule);
+    color: #d8d4c8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 12px 14px;
+    margin: 14px 0 12px;
+    border-radius: 3px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  pre.formula .c { color: #7a8a9c; }
+  pre.formula .k { color: var(--gold); }
+  pre.formula .n { color: #e8c97e; }
+  table.params {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    margin: 6px 0;
+  }
+  table.params th, table.params td {
+    border: 1px solid var(--rule);
+    padding: 5px 9px;
+    text-align: left;
+  }
+  table.params th {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    background: rgba(200,160,96,0.06);
+    font-weight: normal;
+    letter-spacing: 0.10em;
+  }
+  table.params td .val { color: var(--gold2); }
+  section.mapping {
+    margin-top: 30px;
+    padding: 22px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: linear-gradient(160deg, rgba(200,160,96,0.04), transparent);
+  }
+  section.mapping h2 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold2);
+    font-size: 1.05rem;
+    letter-spacing: 0.18em;
+    margin: 0 0 10px;
+  }
+  footer {
+    margin-top: 60px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--silver);
+    opacity: 0.7;
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <h1>Observation Mode — How the Calculations Work</h1>
+  <div class="sub">Ibn al-Shatir · Nihāyat al-Suʾl fī Taṣḥīḥ al-Uṣūl · Damascus c. 1350 CE</div>
+  <div class="time-cap">Showing positions for: <span id="time-cap">1700 Jan 01</span></div>
+</header>
+
+<section class="intro">
+  <p>This page documents the geometry behind the 3D <em>Observation Mode</em>. Every body's position is computed by accumulating 2–3 vector arms from Earth at the world origin. Each arm has a uniform angular rate; their sum traces out the body's apparent geocentric longitude. There is no eccentric, no equant — this is al-Shatir's reform of Ptolemy, made purely from uniform circular motions.</p>
+</section>
+
+<!-- Sections built dynamically below -->
+<div id="sections"></div>
+
+<section class="mapping">
+  <h2>§ 8.  From 2D diagram to 3D position</h2>
+  <p>The diagrams above are 2D translations of vectors in canvas pixels: each arm has <em>(dx, dy)</em> proportional to <em>R·cos α</em> and <em>−R·sin α</em>, and the next joint sits at the previous joint plus that vector. Observation Mode does exactly the same thing in 3D, lifted onto the ecliptic plane:</p>
+  <pre class="formula"><span class="c">// helper</span>
+eclVec(lonDeg) = (cos(lonDeg), 0, −sin(lonDeg))
+
+<span class="c">// build each body</span>
+<span class="k">let</span> pos = Vector3(0, 0, 0);              <span class="c">// Earth</span>
+<span class="k">for</span> arm <span class="k">of</span> chainFor(body, raw):
+   pos += eclVec(arm.angle) * arm.radius;
+planet[body].position = pos;</pre>
+  <p>Earth sits at the world origin in both. The Sun mesh is the light source, so phase illumination on the inner planets (Mercury, Venus) and on the Moon emerges as a natural consequence of placing each body where the calculation says it is — not as a separate astronomical computation. The retrograde loops you see in the trails of Mars, Jupiter, and Saturn are likewise just the geometric output: the 2D arm chain swings past Earth's line-of-sight to the Sun, the planet appears to reverse, and the trail draws it.</p>
+  <p>If you compare a snapshot from Observation Mode against the 2D ephemeris page (the <code>⊕</code> button on the main app) at the same Julian Date, the angles will agree to within a fraction of a degree — the chains are equivalent.</p>
+</section>
+
+<footer>
+  Source: Ibn al-Shatir, Kitāb Nihāyat al-Suʾl, Damascus c. 1350 CE.
+  Sexagesimal radii from the Damascus manuscript tradition (Saliba 1987, Roberts 1957).
+  Geometry rendered live by the same engine as the <code>⊕</code> ephemeris page; this explainer drives the per-body canvases off the page's current synced Julian Date.
+</footer>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+//  ENGINE — copied verbatim from ibn-alshatir.html  (§5.4)
+// ═══════════════════════════════════════════════════════════════
+const DEG = Math.PI / 180;
+const TWO_PI = 2 * Math.PI;
+
+function gregorianToJD(y, m, d) {
+  const A = Math.floor((14 - m) / 12);
+  const Y = y + 4800 - A;
+  const M = m + 12 * A - 3;
+  return d + Math.floor((153 * M + 2) / 5) +
+    365 * Y + Math.floor(Y / 4) - Math.floor(Y / 100) +
+    Math.floor(Y / 400) - 32045 - 0.5;
+}
+function jdToGregorian(jd) {
+  const z = Math.floor(jd + 0.5);
+  const a = Math.floor((z - 1867216.25) / 36524.25);
+  const A = z + 1 + a - Math.floor(a / 4);
+  const B = A + 1524;
+  const C = Math.floor((B - 122.1) / 365.25);
+  const D = Math.floor(365.25 * C);
+  const E = Math.floor((B - D) / 30.6001);
+  const day = B - D - Math.floor(30.6001 * E);
+  const month = E < 14 ? E - 1 : E - 13;
+  const year = month > 2 ? C - 4716 : C - 4715;
+  return { year, month, day };
+}
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(jd) {
+  const { year, month, day } = jdToGregorian(jd);
+  return `${year} ${MONTHS[month-1]} ${String(day).padStart(2,'0')}`;
+}
+const EPOCH_JD = 2341972.5;
+
+const RATE = {
+  sun: 0.98564736, moon_lon: 13.17639648, moon_ano: 13.06499295, moon_lat: 13.22935024,
+  mercury: 3.10686, venus: 0.61652, mars: 0.52403, mars_ano: 0.46168,
+  jupiter: 0.08309, jup_ano: 0.90120, saturn: 0.03346, sat_ano: 0.95196,
+};
+const APOGEE = {
+  sun_0: 101.6, mars_0: 96.5, jupiter_0: 157.0, saturn_0: 234.8, mercury_0: 190.0, venus_0: 73.2,
+  sun_dpc: 1.719, mars_dpc: 1.800, jup_dpc: 1.520, sat_dpc: 1.420, merc_dpc: 1.940, ven_dpc: 1.620,
+};
+function apogee(b0, dpc, dt) { return norm(b0 + dpc * (dt / 36525.0)); }
+const EPOCH_LON = {
+  sun: 279.70, moon: 218.10, moon_ano: 358.90, moon_lat: 11.30,
+  mars: 317.30, mars_ano: 204.50, jupiter: 239.10, jup_ano: 61.50,
+  saturn: 76.50, sat_ano: 114.20, mercury: 279.70, merc_ano: 260.50,
+  venus: 279.70, ven_ano: 54.20,
+};
+const PARAM = {
+  sun:     { R1: 60, r2: 1.002,  color:'#ffcc44', glyph:'☀', name:'Sun' },
+  moon:    { R1: 60, R2: 6.583,  R3: 1.417,  color:'#c8d8f0', glyph:'☽', name:'Moon' },
+  mars:    { R1: 60, R2: 11.500, R3: 7+7/60, color:'#d06840', glyph:'♂', name:'Mars' },
+  jupiter: { R1: 60, R2: 2.75,   R3: 11.5,   color:'#c0a880', glyph:'♃', name:'Jupiter' },
+  saturn:  { R1: 60, R2: 1.717,  R3: 6.5,    color:'#b0a870', glyph:'♄', name:'Saturn' },
+  mercury: { R1: 60, R2: 22.5,   R3: 3.5,    color:'#a0b8c0', glyph:'☿', name:'Mercury' },
+  venus:   { R1: 60, R2: 43.167, R3: 0.833,  color:'#e8c090', glyph:'♀', name:'Venus' },
+};
+const GI = { omega: 360.0 / 32000.0, phase: 214.0, amp_jup: 0.320, amp_sat: 0.950, phase_sat_offset: 180.0 };
+function norm(a) { return ((a % 360) + 360) % 360; }
+function epicycleLon3(a1,a2,a3,R1,R2,R3){
+  const x=R1*Math.cos(a1*DEG)+R2*Math.cos(a2*DEG)+R3*Math.cos(a3*DEG);
+  const y=R1*Math.sin(a1*DEG)+R2*Math.sin(a2*DEG)+R3*Math.sin(a3*DEG);
+  return Math.atan2(y,x)/DEG;
+}
+function epicycleLon2(a1,a2,R1,R2){
+  const x=R1*Math.cos(a1*DEG)+R2*Math.cos(a2*DEG);
+  const y=R1*Math.sin(a1*DEG)+R2*Math.sin(a2*DEG);
+  return Math.atan2(y,x)/DEG;
+}
+function computeLongitude(t) {
+  const dt = t - EPOCH_JD;
+  const λ_sun  = norm(EPOCH_LON.sun     + RATE.sun      * dt);
+  const λ_moon = norm(EPOCH_LON.moon    + RATE.moon_lon * dt);
+  const M_moon = norm(EPOCH_LON.moon_ano + RATE.moon_ano * dt);
+  const λ_mars = norm(EPOCH_LON.mars    + RATE.mars     * dt);
+  const M_mars = norm(EPOCH_LON.mars_ano + RATE.mars_ano * dt);
+  const λ_jup  = norm(EPOCH_LON.jupiter + RATE.jupiter  * dt);
+  const M_jup  = norm(EPOCH_LON.jup_ano + RATE.jup_ano  * dt);
+  const λ_sat  = norm(EPOCH_LON.saturn  + RATE.saturn   * dt);
+  const M_sat  = norm(EPOCH_LON.sat_ano + RATE.sat_ano  * dt);
+  const M_merc = norm(EPOCH_LON.merc_ano + RATE.mercury  * dt);
+  const M_ven  = norm(EPOCH_LON.ven_ano  + RATE.venus    * dt);
+  const sunAp  = apogee(APOGEE.sun_0,     APOGEE.sun_dpc,  dt);
+  const marsAp = apogee(APOGEE.mars_0,    APOGEE.mars_dpc, dt);
+  const jupAp  = apogee(APOGEE.jupiter_0, APOGEE.jup_dpc,  dt);
+  const satAp  = apogee(APOGEE.saturn_0,  APOGEE.sat_dpc,  dt);
+  const mercAp = apogee(APOGEE.mercury_0, APOGEE.merc_dpc, dt);
+  const venAp  = apogee(APOGEE.venus_0,   APOGEE.ven_dpc,  dt);
+  const gi_angle = norm(GI.phase + GI.omega * dt);
+  const M_jup_gi = M_jup + GI.amp_jup * Math.sin(gi_angle * DEG);
+  const M_sat_gi = M_sat + GI.amp_sat * Math.sin(norm(gi_angle + GI.phase_sat_offset) * DEG);
+  const M_sun = norm(λ_sun - sunAp);
+  const λ_sun_true = epicycleLon2(λ_sun, M_sun, PARAM.sun.R1, PARAM.sun.r2);
+  const D = norm(λ_moon - λ_sun);
+  let moon_lon = epicycleLon3(λ_moon, M_moon, norm(-2 * D),
+                              PARAM.moon.R1, PARAM.moon.R2, PARAM.moon.R3);
+  moon_lon += 0.6584 * Math.sin(2 * D * DEG);
+  moon_lon += 0.1099 * Math.sin(M_sun * DEG);
+  const M_mars_from_ap = norm(M_mars + (APOGEE.mars_0 - marsAp));
+  const mars_lon = epicycleLon3(λ_mars, M_mars_from_ap, norm(-M_mars_from_ap),
+                                PARAM.mars.R1, PARAM.mars.R2, PARAM.mars.R3);
+  const M_jup_from_ap = norm(M_jup_gi + (APOGEE.jupiter_0 - jupAp));
+  const jupiter_lon = epicycleLon3(λ_jup, M_jup_from_ap, norm(-M_jup_from_ap),
+                                   PARAM.jupiter.R1, PARAM.jupiter.R2, PARAM.jupiter.R3);
+  const M_sat_from_ap = norm(M_sat_gi + (APOGEE.saturn_0 - satAp));
+  const saturn_lon = epicycleLon3(λ_sat, M_sat_from_ap, norm(-M_sat_from_ap),
+                                  PARAM.saturn.R1, PARAM.saturn.R2, PARAM.saturn.R3);
+  const M_merc_from_ap = norm(M_merc + (APOGEE.mercury_0 - mercAp));
+  const merc_lon = epicycleLon3(λ_sun, M_merc_from_ap, norm(-2 * M_merc_from_ap),
+                                PARAM.mercury.R1, PARAM.mercury.R2, PARAM.mercury.R3);
+  const M_ven_from_ap = norm(M_ven + (APOGEE.venus_0 - venAp));
+  const ven_lon = epicycleLon3(λ_sun, M_ven_from_ap, norm(M_ven_from_ap + 180),
+                               PARAM.venus.R1, PARAM.venus.R2, PARAM.venus.R3);
+  return {
+    sun: norm(λ_sun_true), moon: norm(moon_lon), mercury: norm(merc_lon),
+    venus: norm(ven_lon), mars: norm(mars_lon),
+    jupiter: norm(jupiter_lon), saturn: norm(saturn_lon),
+    raw: {
+      λ_sun, λ_moon, λ_mars, λ_jup, λ_sat, M_moon, D, M_sun,
+      M_mars_ap: M_mars_from_ap, M_jup_ap: M_jup_from_ap, M_sat_ap: M_sat_from_ap,
+      M_merc_ap: M_merc_from_ap, M_ven_ap: M_ven_from_ap,
+    },
+  };
+}
+const ZODIAC = ['♈ Ari','♉ Tau','♊ Gem','♋ Can','♌ Leo','♍ Vir','♎ Lib','♏ Sco','♐ Sag','♑ Cap','♒ Aqu','♓ Pis'];
+function fmtLon(deg){
+  const d=norm(deg), sign=Math.floor(d/30), rem=d%30, dd=Math.floor(rem), mm=Math.floor((rem-dd)*60);
+  return `${ZODIAC[sign]} ${String(dd).padStart(2,'0')}° ${String(mm).padStart(2,'0')}′`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE  + TIME SYNC RECEIVER  (per §6.4 — receive-only)
+// ═══════════════════════════════════════════════════════════════
+const state = { jd: gregorianToJD(2026, 5, 20) };
+const MY_ID = 'explained';
+window.addEventListener('message', (ev) => {
+  const m = ev.data;
+  if (!m || m.type !== 'ptol-time' || typeof m.jd !== 'number') return;
+  if (m.source === MY_ID) return;
+  if (Math.abs(m.jd - state.jd) < 1e-6) return;
+  state.jd = m.jd;
+  renderAll();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  Per-body sections (built from data)
+// ═══════════════════════════════════════════════════════════════
+const SECTIONS = [
+  {
+    id: 'sun', n: 1, glyph:'☀', title: 'Sun',
+    prose: `<p>The Sun rides a single epicycle on a deferent of radius 60 sexagesimal units. The deferent rotates at the solar mean motion <strong>ω<sub>☉</sub> ≈ 0.9856°/day</strong>; the small secondary arm rotates at the same rate but is measured from the slowly precessing solar apogee. Geometrically this <em>replaces</em> Ptolemy's eccentric and produces the same equation of centre — al-Shatir's whole point: an equant-free model that still reproduces observed solar longitudes.</p>
+    <p>The radius ratio R₂/R₁ ≈ 0.0167 corresponds to the modern solar eccentricity. In the diagram the secondary arm is drawn at <strong>12× exaggeration</strong> so it's actually visible at this canvas scale.</p>`,
+    formula: `<span class="c">// Sun — 2-arm</span>
+M_sun = norm(λ_sun − sunAp);
+λ_sun_true = epicycleLon2(
+  <span class="n">λ_sun</span>,  <span class="n">M_sun</span>,
+  <span class="n">PARAM.sun.R1</span>, <span class="n">PARAM.sun.r2</span>
+);`,
+    params: [['R₁', 60], ['R₂', 1.002], ['ω', '0.985647°/day'], ['λ₀', '279.70° at 1700-Jan-01'], ['apogee', '101.6° + 1.72°/century']],
+    arms: (raw) => [
+      { angle: raw.λ_sun, radius: 60, label: 'λ_sun · R₁=60' },
+      { angle: raw.M_sun, radius: 1.002 * 12, label: 'M_sun · R₂ (×12 scale)' },
+    ],
+    drawScale: 1.6,
+  },
+  {
+    id: 'moon', n: 2, glyph:'☽', title: 'Moon',
+    prose: `<p>The Moon uses the famous <strong>al-Shatir Damascus double epicycle</strong>: three arms, no equant. The deferent runs at the lunar tropical rate, the primary epicycle at the lunar anomaly rate, and a third tiny arm at <strong>−2D</strong>, where D = λ<sub>moon</sub> − λ<sub>sun</sub> is the elongation. The −2D arm reproduces the great <em>evection</em> term Ptolemy could only get from his clumsy lunar crank.</p>
+    <p>Two small tabular corrections (the <em>variation</em> and <em>annual equation</em>) are then added after the geometry — these mirror al-Shatir's own taqwīm tables and account for terms that pure circles cannot produce. R<sub>2</sub>=6;35 and R<sub>3</sub>=1;25 in the manuscripts.</p>`,
+    formula: `<span class="c">// Moon — 3-arm + taqwīm corrections</span>
+D = norm(λ_moon − λ_sun);
+λ_moon_true = epicycleLon3(
+  <span class="n">λ_moon</span>,  <span class="n">M_moon</span>,  <span class="n">−2·D</span>,
+  <span class="n">PARAM.moon.R1</span>, <span class="n">PARAM.moon.R2</span>, <span class="n">PARAM.moon.R3</span>
+);
+λ_moon_true += 0.6584° · sin(2D)   <span class="c">// variation</span>
+λ_moon_true += 0.1099° · sin(M_sun) <span class="c">// annual equation</span>`,
+    params: [['R₁', 60], ['R₂', '6.583 (6;35)'], ['R₃', '1.417 (1;25)'], ['ω_lon', '13.176396°/day'], ['ω_ano', '13.064993°/day']],
+    arms: (raw) => [
+      { angle: raw.λ_moon, radius: 60, label: 'λ_moon · R₁' },
+      { angle: raw.M_moon, radius: 6.583, label: 'M_moon · R₂' },
+      { angle: -2 * raw.D, radius: 1.417, label: '−2D · R₃' },
+    ],
+    drawScale: 1.6,
+  },
+  {
+    id: 'mercury', n: 3, glyph:'☿', title: 'Mercury — Tusi couple',
+    prose: `<p>Mercury's epicycle is geocentric: its centre rides the <em>solar</em> mean longitude λ<sub>☉</sub> (not a separate Mercury deferent). The primary anomaly arm runs at +ω<sub>merc</sub>; the secondary arm runs at <strong>−2ω<sub>merc</sub></strong> — this is the celebrated <em>Tusi couple</em>, the combined motion of two arms in a 1:−2 ratio collapses to a straight-line oscillation along the apse line.</p>
+    <p>This is the device that finally let medieval astronomers reproduce Mercury's eccentric motion without an equant. Note al-Shatir applies the Tusi ratio on the <strong>anomaly</strong>, not the longitude — the correct implementation.</p>`,
+    formula: `<span class="c">// Mercury — Tusi 3-arm</span>
+M_merc_from_ap = norm(M_merc + (APOGEE.mercury_0 − mercAp));
+merc_lon = epicycleLon3(
+  <span class="n">λ_sun</span>,  <span class="n">M_merc_from_ap</span>,  <span class="n">−2·M_merc_from_ap</span>,
+  <span class="n">PARAM.mercury.R1</span>, <span class="n">PARAM.mercury.R2</span>, <span class="n">PARAM.mercury.R3</span>
+);`,
+    params: [['R₁', 60], ['R₂', '22.5 (22;30)'], ['R₃', '3.5 (3;30)'], ['ω', '3.10686°/day'], ['apogee', '190.0° + 1.94°/century']],
+    arms: (raw) => [
+      { angle: raw.λ_sun, radius: 60, label: 'λ_sun · R₁' },
+      { angle: raw.M_merc_ap, radius: 22.5, label: 'M_merc · R₂' },
+      { angle: -2 * raw.M_merc_ap, radius: 3.5, label: '−2·M_merc · R₃' },
+    ],
+    drawScale: 1.6,
+  },
+  {
+    id: 'venus', n: 4, glyph:'♀', title: 'Venus',
+    prose: `<p>Venus also rides the solar longitude: the first arm is λ<sub>☉</sub>, the second is its anomaly from a slowly precessing apse, and the third is a tiny correction arm in the <em>opposite</em> direction (M<sub>ven</sub>+180°). The large R₂ ≈ 43;10 with a small R₃ ≈ 0;50 is what produces Venus's wide elongations (~47°) and its bright greatest-brilliancy phase.</p>
+    <p>Try the 3D mode around <em>1700-Apr-01</em> — Venus reaches greatest eastern elongation, sits ~47° east of the Sun, then begins curving back.</p>`,
+    formula: `<span class="c">// Venus — 3-arm</span>
+M_ven_from_ap = norm(M_ven + (APOGEE.venus_0 − venAp));
+ven_lon = epicycleLon3(
+  <span class="n">λ_sun</span>,  <span class="n">M_ven_from_ap</span>,  <span class="n">M_ven_from_ap + 180°</span>,
+  <span class="n">PARAM.venus.R1</span>, <span class="n">PARAM.venus.R2</span>, <span class="n">PARAM.venus.R3</span>
+);`,
+    params: [['R₁', 60], ['R₂', '43.167 (43;10)'], ['R₃', '0.833 (0;50)'], ['ω', '0.61652°/day (synodic)'], ['apogee', '73.2° + 1.62°/century']],
+    arms: (raw) => [
+      { angle: raw.λ_sun, radius: 60, label: 'λ_sun · R₁' },
+      { angle: raw.M_ven_ap, radius: 43.167, label: 'M_ven · R₂' },
+      { angle: raw.M_ven_ap + 180, radius: 0.833, label: 'M_ven+180 · R₃' },
+    ],
+    drawScale: 1.3,
+  },
+  {
+    id: 'mars', n: 5, glyph:'♂', title: 'Mars',
+    prose: `<p>Mars is the visual showpiece: its R₃ ≈ 7;7 epicycle is so large that the planet retrogrades dramatically at each opposition. The three arms here are λ<sub>mars</sub> (deferent), M<sub>mars</sub> (anomaly from apse), and −M<sub>mars</sub> (counter-rotating correction). The counter-rotation produces the retrograde loop you see in the 3D mode's gold trail.</p>
+    <p>Try the 3D mode around <em>1699-Dec-13</em>: Mars opposition — the retrograde loop is unmistakable.</p>`,
+    formula: `<span class="c">// Mars — 3-arm with precessing anomaly</span>
+M_mars_from_ap = norm(M_mars + (APOGEE.mars_0 − marsAp));
+mars_lon = epicycleLon3(
+  <span class="n">λ_mars</span>,  <span class="n">M_mars_from_ap</span>,  <span class="n">−M_mars_from_ap</span>,
+  <span class="n">PARAM.mars.R1</span>, <span class="n">PARAM.mars.R2</span>, <span class="n">PARAM.mars.R3</span>
+);`,
+    params: [['R₁', 60], ['R₂', '11.500 (11;30)'], ['R₃', '7.117 (7;7)'], ['ω_lon', '0.52403°/day'], ['ω_ano', '0.46168°/day'], ['apogee', '96.5° + 1.80°/century']],
+    arms: (raw) => [
+      { angle: raw.λ_mars, radius: 60, label: 'λ_mars · R₁' },
+      { angle: raw.M_mars_ap, radius: 11.5, label: 'M_mars · R₂' },
+      { angle: -raw.M_mars_ap, radius: 7.117, label: '−M_mars · R₃' },
+    ],
+    drawScale: 1.0,
+  },
+  {
+    id: 'jupiter', n: 6, glyph:'♃', title: 'Jupiter (great inequality)',
+    prose: `<p>Jupiter uses the same 3-arm pattern as Mars, but with a slow ~12-year deferent and a much smaller R₂. To capture the slow Jupiter–Saturn mutual perturbation (the <em>great inequality</em>, period ~876 years), the engine modulates Jupiter's mean anomaly by ±0.32° on a tabular cycle. This is not a new circle — it's an additive correction analogous to al-Shatir's own taqwīm-table method.</p>`,
+    formula: `<span class="c">// Jupiter — 3-arm + great-inequality correction</span>
+gi_angle = norm(GI.phase + GI.omega · dt);
+M_jup_gi = M_jup + 0.320° · sin(gi_angle);
+M_jup_from_ap = norm(M_jup_gi + (APOGEE.jupiter_0 − jupAp));
+jupiter_lon = epicycleLon3(
+  <span class="n">λ_jup</span>,  <span class="n">M_jup_from_ap</span>,  <span class="n">−M_jup_from_ap</span>,
+  <span class="n">PARAM.jupiter.R1</span>, <span class="n">PARAM.jupiter.R2</span>, <span class="n">PARAM.jupiter.R3</span>
+);`,
+    params: [['R₁', 60], ['R₂', 2.75], ['R₃', 11.5], ['ω_lon', '0.08309°/day'], ['ω_ano', '0.90120°/day'], ['GI amp', '0.320°']],
+    arms: (raw) => [
+      { angle: raw.λ_jup, radius: 60, label: 'λ_jup · R₁' },
+      { angle: raw.M_jup_ap, radius: 2.75, label: 'M_jup · R₂' },
+      { angle: -raw.M_jup_ap, radius: 11.5, label: '−M_jup · R₃' },
+    ],
+    drawScale: 1.0,
+  },
+  {
+    id: 'saturn', n: 7, glyph:'♄', title: 'Saturn (great inequality)',
+    prose: `<p>Saturn follows the same recipe as Jupiter — slowest deferent (~29.5-year period), and a great-inequality modulation of <strong>±0.95°</strong> (the larger amplitude reflects Saturn's heavier weighting in the J–S resonance). The modulation is anti-phase with Jupiter's, offset by 180° in <code>gi_angle</code>.</p>`,
+    formula: `<span class="c">// Saturn — 3-arm + great-inequality correction</span>
+M_sat_gi = M_sat + 0.950° · sin(gi_angle + 180°);
+M_sat_from_ap = norm(M_sat_gi + (APOGEE.saturn_0 − satAp));
+saturn_lon = epicycleLon3(
+  <span class="n">λ_sat</span>,  <span class="n">M_sat_from_ap</span>,  <span class="n">−M_sat_from_ap</span>,
+  <span class="n">PARAM.saturn.R1</span>, <span class="n">PARAM.saturn.R2</span>, <span class="n">PARAM.saturn.R3</span>
+);`,
+    params: [['R₁', 60], ['R₂', '1.717 (1;43)'], ['R₃', '6.5 (6;30)'], ['ω_lon', '0.03346°/day'], ['ω_ano', '0.95196°/day'], ['GI amp', '0.950°']],
+    arms: (raw) => [
+      { angle: raw.λ_sat, radius: 60, label: 'λ_sat · R₁' },
+      { angle: raw.M_sat_ap, radius: 1.717, label: 'M_sat · R₂' },
+      { angle: -raw.M_sat_ap, radius: 6.5, label: '−M_sat · R₃' },
+    ],
+    drawScale: 1.0,
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER  — sections, canvases, formulas, tables
+// ═══════════════════════════════════════════════════════════════
+function buildSections() {
+  const root = document.getElementById('sections');
+  let html = '';
+  for (const s of SECTIONS) {
+    html += `<section class="body" id="sec-${s.id}">
+      <h2>§ ${s.n}.  ${s.glyph} ${s.title}</h2>
+      <div class="diagram-wrap"><canvas class="diagram" id="c-${s.id}" width="340" height="320"></canvas></div>
+      <div class="prose">
+        ${s.prose}
+        <pre class="formula">${s.formula}</pre>
+        <table class="params"><tr><th>Param</th><th>Value</th></tr>
+          ${s.params.map(([k,v]) => `<tr><td>${k}</td><td><span class="val">${v}</span></td></tr>`).join('')}
+        </table>
+      </div>
+    </section>`;
+  }
+  root.innerHTML = html;
+}
+buildSections();
+
+function drawSection(s, jd) {
+  const canvas = document.getElementById('c-' + s.id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+
+  ctx.fillStyle = '#06080d';
+  ctx.fillRect(0,0,W,H);
+
+  // vignette
+  const vg = ctx.createRadialGradient(cx,cy,0,cx,cy,W*0.6);
+  vg.addColorStop(0,'rgba(20,28,50,0.25)');
+  vg.addColorStop(1,'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+
+  const pos = computeLongitude(jd);
+  const raw = pos.raw;
+  const arms = s.arms(raw);
+  const sc = s.drawScale || 1.6;
+
+  // chain
+  const pts = [{ x: cx, y: cy }];
+  for (const a of arms) {
+    const last = pts[pts.length-1];
+    const dx = a.radius * Math.cos(a.angle * DEG) * sc;
+    const dy = -a.radius * Math.sin(a.angle * DEG) * sc;
+    pts.push({ x: last.x + dx, y: last.y + dy });
+  }
+  const planet = pts[pts.length-1];
+
+  // deferent (dashed)
+  const R1px = Math.hypot(pts[1].x-cx, pts[1].y-cy);
+  ctx.beginPath(); ctx.arc(cx, cy, R1px, 0, TWO_PI);
+  ctx.strokeStyle = 'rgba(120,140,180,0.55)';
+  ctx.lineWidth = 1; ctx.setLineDash([4,5]); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // epicycle circles at intermediate joints
+  for (let i = 1; i < pts.length - 1; i++) {
+    const nextArm = arms[i];
+    const r = Math.hypot(nextArm.radius * Math.cos(nextArm.angle*DEG) * sc,
+                          nextArm.radius * Math.sin(nextArm.angle*DEG) * sc);
+    if (r < 1.5) continue;
+    ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, r, 0, TWO_PI);
+    ctx.strokeStyle = PARAM[s.id].color + '88';
+    ctx.lineWidth = 1; ctx.setLineDash([3,4]); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // arc showing the resulting longitude (from +X to the planet)
+  const lonRad = Math.atan2(-(planet.y-cy), planet.x-cx);
+  const arcR = 26;
+  ctx.beginPath(); ctx.arc(cx, cy, arcR, 0, -lonRad, lonRad > 0);
+  ctx.strokeStyle = 'rgba(200,160,96,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillStyle = '#e8c97e';
+  const angDeg = norm(lonRad * 180 / Math.PI);
+  ctx.fillText(`λ ${angDeg.toFixed(1)}°`, cx + arcR + 4, cy + 2);
+
+  // arms with labels
+  const armColors = ['#9bb0c8', PARAM[s.id].color, '#f0a030', '#c8a060'];
+  arms.forEach((a, i) => {
+    const from = pts[i], to = pts[i+1];
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y);
+    ctx.strokeStyle = armColors[i] || PARAM[s.id].color;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    // joint dot
+    if (i < arms.length - 1) {
+      ctx.beginPath(); ctx.arc(to.x, to.y, 3, 0, TWO_PI);
+      ctx.fillStyle = armColors[i] || PARAM[s.id].color; ctx.fill();
+      ctx.strokeStyle = '#06080d'; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    // label at midpoint
+    const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2;
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.fillStyle = '#b8c2d4cc';
+    ctx.fillText(a.label, mx + 4, my - 4);
+  });
+
+  // planet
+  const col = PARAM[s.id].color;
+  const dr = 6;
+  const grd = ctx.createRadialGradient(planet.x, planet.y, 0, planet.x, planet.y, dr*3);
+  grd.addColorStop(0, col + 'cc');
+  grd.addColorStop(0.4, col + '55');
+  grd.addColorStop(1, 'transparent');
+  ctx.beginPath(); ctx.arc(planet.x, planet.y, dr*3, 0, TWO_PI);
+  ctx.fillStyle = grd; ctx.fill();
+  ctx.beginPath(); ctx.arc(planet.x, planet.y, dr, 0, TWO_PI);
+  ctx.fillStyle = col; ctx.fill();
+
+  // glyph
+  ctx.font = '14px EB Garamond, serif';
+  ctx.fillStyle = col;
+  ctx.textAlign = 'center';
+  ctx.fillText(PARAM[s.id].glyph, planet.x, planet.y - dr - 3);
+  ctx.textAlign = 'start';
+
+  // Earth at centre
+  const eg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 7);
+  eg.addColorStop(0, '#4a90d0'); eg.addColorStop(1, '#0a2040');
+  ctx.beginPath(); ctx.arc(cx, cy, 6, 0, TWO_PI);
+  ctx.fillStyle = eg; ctx.fill();
+  ctx.strokeStyle = '#2060a0'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.font = '8px Cinzel, serif';
+  ctx.fillStyle = 'rgba(100,170,230,0.85)';
+  ctx.textAlign = 'center';
+  ctx.fillText('EARTH', cx, cy + 16);
+  ctx.textAlign = 'start';
+
+  // body longitude readout
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.fillStyle = '#e8c97e';
+  ctx.fillText(`${PARAM[s.id].name}: ${fmtLon(pos[s.id])}`, 10, H - 10);
+}
+
+function renderAll() {
+  document.getElementById('time-cap').textContent = fmtDate(state.jd);
+  for (const s of SECTIONS) drawSection(s, state.jd);
+}
+renderAll();
+</script>
+</body>
+</html>

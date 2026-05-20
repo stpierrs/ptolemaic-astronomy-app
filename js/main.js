@@ -30,6 +30,54 @@ import { buildPlanetaryHoursWidget } from './ui/planetaryHoursWidget.js';
 const model = new FeModel();
 const canvas = document.getElementById('feCanvas');
 
+// ── Cross-mode time sync (broker for ⊕ / ⊚ / observation / explained) ────
+const TIME_BROKER = (() => {
+  const JD_2017_01_01 = 2457754.5;
+  const iframes = [];   // [{ win, id }]
+  function currentJD() { return JD_2017_01_01 + (model.state.DateTime || 0); }
+  function publishFromState(except) {
+    const jd = currentJD();
+    iframes.forEach(({ win, id }) => {
+      if (id === except) return;
+      try { win.postMessage({ type: 'ptol-time', jd, source: 'parent' }, '*'); }
+      catch (_) { /* iframe not ready, ignore */ }
+    });
+  }
+  function register(win, id) {
+    iframes.push({ win, id });
+    const send = (tries) => {
+      try {
+        win.postMessage({ type: 'ptol-time', jd: currentJD(), source: 'parent' }, '*');
+      } catch (_) {
+        if (tries > 0) setTimeout(() => send(tries - 1), 100);
+      }
+    };
+    setTimeout(() => send(10), 50);
+  }
+  window.addEventListener('message', (ev) => {
+    const m = ev.data;
+    if (!m || m.type !== 'ptol-time' || typeof m.jd !== 'number') return;
+    if (m.source === 'parent') return;
+    const newDt = m.jd - JD_2017_01_01;
+    if (Math.abs(newDt - (model.state.DateTime || 0)) < 1e-9) return;
+    model.setState({ DateTime: newDt });
+    // Re-broadcast to other iframes (model emits 'update' but we explicitly
+    // skip the originator here to avoid sending back the same value).
+    publishFromState(m.source);
+  });
+  model.addEventListener('update', () => {
+    // Only re-broadcast if the time actually moved since the last broadcast.
+    const jd = currentJD();
+    if (TIME_BROKER._lastBroadcastJD === jd) return;
+    TIME_BROKER._lastBroadcastJD = jd;
+    iframes.forEach(({ win }) => {
+      try { win.postMessage({ type: 'ptol-time', jd, source: 'parent' }, '*'); }
+      catch (_) {}
+    });
+  });
+  return { register, publishFromState };
+})();
+
 // ── Feature AS-4: Loading Progress Bar ───────────────────────────────────
 const loadBar = document.getElementById('load-bar-fill');
 function setLoadProgress(pct) {
@@ -161,7 +209,12 @@ const HEAVENLY_TRACK_ZOOM  = 4.67;
 let _prevInsideVault = !!model.state.InsideVault;
 model.addEventListener('update', () => {
   const now = !!model.state.InsideVault;
-  if (now && !_prevInsideVault) {
+  // Update the flag BEFORE any setState below — those calls re-fire this
+  // listener synchronously, and if _prevInsideVault is still stale the
+  // branch fires again and recurses until the stack blows.
+  if (now === _prevInsideVault) return;
+  _prevInsideVault = now;
+  if (now) {
     if (model.state.FollowTarget) {
       // Tracking while entering Optical — keep zoom, skip pitch snap.
       // mouseHandler re-aims at the target on the next tick.
@@ -175,7 +228,7 @@ model.addEventListener('update', () => {
         CameraHeight: OPTICAL_ENTRY_PITCH,
       });
     }
-  } else if (!now && _prevInsideVault && model.state.FollowTarget) {
+  } else if (model.state.FollowTarget) {
     model.setState({
       CameraHeight:   HEAVENLY_TRACK_PITCH,
       CameraDistance: HEAVENLY_TRACK_DIST,
@@ -183,7 +236,6 @@ model.addEventListener('update', () => {
       FreeCamActive:  true,
     });
   }
-  _prevInsideVault = now;
 });
 
 // Cadence chip — step size, FOV, and heading when in Optical mode.
@@ -569,6 +621,9 @@ window.demos = demos;
   overlay.appendChild(closeBtn);
   overlay.appendChild(iframe);
   document.body.appendChild(overlay);
+  iframe.addEventListener('load', () => {
+    TIME_BROKER.register(iframe.contentWindow, 'ephemeris');
+  });
 
   closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
   // Esc key also closes
@@ -621,6 +676,9 @@ window.demos = demos;
   overlay.appendChild(closeBtn);
   overlay.appendChild(iframe);
   document.body.appendChild(overlay);
+  iframe.addEventListener('load', () => {
+    TIME_BROKER.register(iframe.contentWindow, 'reference');
+  });
 
   closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
   document.addEventListener('keydown', e => {
@@ -634,6 +692,119 @@ window.demos = demos;
     btn.type = 'button';
     btn.title = 'Ephemeris Reference';
     btn.textContent = '⊚';
+    btn.addEventListener('click', () => { overlay.style.display = 'flex'; });
+    const astrologyBtn = headerEl.querySelector('[title="Ptolemaic Astrology"]');
+    const infoBox = headerEl.querySelector('.info-box');
+    if (astrologyBtn) headerEl.insertBefore(btn, astrologyBtn);
+    else if (infoBox) headerEl.insertBefore(btn, infoBox);
+  }
+}
+
+// ── 3D Observation Mode (al-Shatir cinematic geocentric) ───────────────────
+{
+  const overlay = document.createElement('div');
+  overlay.id = 'obs-overlay';
+  Object.assign(overlay.style, {
+    position:'fixed', inset:'0', zIndex:'8500', display:'none',
+    flexDirection:'column', background:'#04060a',
+  });
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.title = 'Close Observation Mode';
+  closeBtn.innerHTML = '✕ Close';
+  Object.assign(closeBtn.style, {
+    position:'absolute', top:'10px', right:'14px', zIndex:'8501',
+    fontFamily:"'Cinzel',serif", fontSize:'0.72rem', letterSpacing:'0.15em',
+    background:'rgba(10,12,16,0.85)', border:'1px solid #c8960a',
+    color:'#c8960a', padding:'5px 14px', borderRadius:'3px',
+    cursor:'pointer', textTransform:'uppercase',
+  });
+  closeBtn.onmouseenter = () => { closeBtn.style.background='#c8960a'; closeBtn.style.color='#080a12'; };
+  closeBtn.onmouseleave = () => { closeBtn.style.background='rgba(10,12,16,0.85)'; closeBtn.style.color='#c8960a'; };
+
+  const iframe = document.createElement('iframe');
+  iframe.src = './observation-mode.html';
+  iframe.title = '3D Observation Mode — al-Shatir Geocentric';
+  Object.assign(iframe.style, { width:'100%', height:'100%', border:'none', display:'block' });
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+  iframe.addEventListener('load', () => {
+    TIME_BROKER.register(iframe.contentWindow, 'observation');
+  });
+
+  closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') overlay.style.display = 'none';
+  });
+
+  // FP-mode launcher dispatches this event so the in-sky button can open us.
+  window.addEventListener('ptol-open-observation', () => { overlay.style.display = 'flex'; });
+
+  const headerEl = document.querySelector('header');
+  if (headerEl) {
+    const btn = document.createElement('button');
+    btn.className = 'info-btn header-action-btn';
+    btn.type = 'button';
+    btn.title = 'Observation Mode (3D)';
+    btn.textContent = '◉';
+    btn.addEventListener('click', () => { overlay.style.display = 'flex'; });
+    const astrologyBtn = headerEl.querySelector('[title="Ptolemaic Astrology"]');
+    const infoBox = headerEl.querySelector('.info-box');
+    if (astrologyBtn) headerEl.insertBefore(btn, astrologyBtn);
+    else if (infoBox) headerEl.insertBefore(btn, infoBox);
+  }
+}
+
+// ── Observation Mode — Explained (per-body geometry walkthrough) ───────────
+{
+  const overlay = document.createElement('div');
+  overlay.id = 'obse-overlay';
+  Object.assign(overlay.style, {
+    position:'fixed', inset:'0', zIndex:'8500', display:'none',
+    flexDirection:'column', background:'#07080d',
+  });
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.title = 'Close';
+  closeBtn.innerHTML = '✕ Close';
+  Object.assign(closeBtn.style, {
+    position:'absolute', top:'10px', right:'14px', zIndex:'8501',
+    fontFamily:"'Cinzel',serif", fontSize:'0.72rem', letterSpacing:'0.15em',
+    background:'rgba(10,12,16,0.85)', border:'1px solid #c8960a',
+    color:'#c8960a', padding:'5px 14px', borderRadius:'3px',
+    cursor:'pointer', textTransform:'uppercase',
+  });
+  closeBtn.onmouseenter = () => { closeBtn.style.background='#c8960a'; closeBtn.style.color='#080a12'; };
+  closeBtn.onmouseleave = () => { closeBtn.style.background='rgba(10,12,16,0.85)'; closeBtn.style.color='#c8960a'; };
+
+  const iframe = document.createElement('iframe');
+  iframe.src = './observation-mode-explained.html';
+  iframe.title = 'Observation Mode — Explained';
+  Object.assign(iframe.style, { width:'100%', height:'100%', border:'none', display:'block' });
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+  iframe.addEventListener('load', () => {
+    TIME_BROKER.register(iframe.contentWindow, 'explained');
+  });
+
+  closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') overlay.style.display = 'none';
+  });
+
+  const headerEl = document.querySelector('header');
+  if (headerEl) {
+    const btn = document.createElement('button');
+    btn.className = 'info-btn header-action-btn';
+    btn.type = 'button';
+    btn.title = 'Observation Mode — Explained';
+    btn.textContent = '◎';
     btn.addEventListener('click', () => { overlay.style.display = 'flex'; });
     const astrologyBtn = headerEl.querySelector('[title="Ptolemaic Astrology"]');
     const infoBox = headerEl.querySelector('.info-box');
@@ -847,8 +1018,43 @@ maybeShowOnboarding();
 initPurchases().catch(() => {});
 
 // Service worker — re-enabled with cache-first strategy (AS-2).
+// When a new SW finishes installing while an old one is still in control,
+// kick the page so the user sees fresh JS/CSS instead of having to refresh
+// twice. Guard with a sessionStorage flag to avoid reload loops.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      if (!reg) return;
+      const reloadOnce = () => {
+        if (sessionStorage.getItem('ptol-sw-reloaded') === '1') return;
+        sessionStorage.setItem('ptol-sw-reloaded', '1');
+        location.reload();
+      };
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            // A new SW is waiting because an old one still controls this page.
+            reloadOnce();
+          }
+        });
+      });
+      // First arrival of a controller (e.g. after our SW activated mid-session).
+      let _hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (_hadController) reloadOnce();
+        _hadController = true;
+      });
+    }).catch(() => {});
+  });
+  // Clear the reload-once flag whenever the user successfully ends up on
+  // a page whose controller is the fresh SW (so a real future update
+  // can trigger the reload again).
+  window.addEventListener('pageshow', () => {
+    if (sessionStorage.getItem('ptol-sw-reloaded') === '1') {
+      // Give the freshly-loaded page one tick to settle, then clear.
+      setTimeout(() => sessionStorage.removeItem('ptol-sw-reloaded'), 1000);
+    }
   });
 }

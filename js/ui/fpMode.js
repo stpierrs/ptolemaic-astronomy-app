@@ -309,12 +309,20 @@ function buildBottomStrip(model) {
     planetsBtn.setAttribute('aria-pressed', planetOpen ? 'true' : 'false');
   });
 
+  // ── Observation Mode (3D al-Shatir cinematic) ────────────────────
+  // Dispatches a custom event that main.js's overlay listens for.
+  const obsBtn = mkBtn('fp-strip-btn', '◉', 'Observation Mode (3D)');
+  obsBtn.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('ptol-open-observation'));
+  });
+
   strip.append(
     vaultBtn,
     mkSep('fp-strip-sep'),
     azBtn, worldBtn,
     mkSep('fp-strip-sep'),
     planetsBtn,
+    obsBtn,
   );
 
   const skyMenu = document.createElement('div');
@@ -436,28 +444,175 @@ function buildMapMenu(model) {
 }
 
 // ── God-mode floating buttons (left side, visible in 3rd-person) ──────
+//
+// Two buttons share one popover menu:
+//   🌐 — World model: FE / Dual Pole / GE
+//   🗺 — Projection (filtered by world model — FE: AE/Gleason/Prop/Hellerick;
+//        GE: every wraps-sphere texture; DP: locked to AE-equatorial)
+//
+// The same menu lives on the right-side compass cluster as the World
+// button; this is the corresponding entry point for 3rd-person mode.
 function buildGodFabs(model) {
   const wrap = document.createElement('div');
   wrap.id = 'god-fabs';
 
-  const mapBtn = document.createElement('button');
-  mapBtn.type = 'button';
-  mapBtn.className = 'god-fab';
-  mapBtn.textContent = '🗺';
-  mapBtn.title = 'Map Projection';
-  mapBtn.addEventListener('click', () => {
-    if (model._featureOpen) model._featureOpen('Show', 'Map Projection');
-  });
+  // Shared popover floats over the canvas. Both fab buttons toggle it
+  // and reposition next to whichever one was clicked.
+  const popover = document.createElement('div');
+  popover.className = 'god-fab-popover';
+  popover.setAttribute('role', 'menu');
+  popover.style.cssText = [
+    'position: fixed',
+    'display: none',
+    'flex-direction: column',
+    'min-width: 240px',
+    'padding: 10px',
+    'background: rgba(8,10,14,0.96)',
+    'border: 1px solid rgba(200,160,96,0.55)',
+    'border-radius: 6px',
+    'box-shadow: 0 8px 28px rgba(0,0,0,0.55)',
+    'z-index: 6000',
+    "font-family: 'Cinzel', serif",
+    'font-size: 0.80rem',
+    'color: #e8c97e',
+    'letter-spacing: 0.08em',
+    'text-align: left',
+    'pointer-events: auto',
+  ].join(';');
+  popover.addEventListener('click', (e) => e.stopPropagation());
+
+  const MODES = [
+    { id: 'fe', label: 'FE — Flat Earth' },
+    { id: 'dp', label: 'Dual Pole' },
+    { id: 'ge', label: 'GE — Globe' },
+  ];
+  const FE_PROJ = [
+    { id: 'ae',           label: 'AE (Normal)' },
+    { id: 'hq_gleasons',  label: "Gleason's Map" },
+    { id: 'proportional', label: 'Proportional AE' },
+    { id: 'hellerick',    label: 'Hellerick Boreal' },
+  ];
+  const GE_PROJ = [
+    { id: 'hq_equirect_day',    label: 'Blue Marble (day)' },
+    { id: 'hq_equirect_night',  label: 'Black Marble (night)' },
+    { id: 'hq_world_shaded',    label: 'Shaded Relief' },
+    { id: 'hq_ortho',           label: 'Orthographic' },
+    { id: 'ge_art_line',        label: 'Art — Line' },
+    { id: 'ge_art_blueprint',   label: 'Art — Blueprint' },
+    { id: 'ge_art_topo',        label: 'Art — Topo' },
+    { id: 'ge_art_sepia',       label: 'Art — Sepia' },
+    { id: 'ge_art_neon',        label: 'Art — Neon' },
+    { id: 'ge_art_translucent', label: 'Art — Translucent' },
+  ];
+
+  function rowStyle(active, small) {
+    return [
+      'display: block', 'width: 100%',
+      'padding: ' + (small ? '6px 10px' : '8px 12px'),
+      'background: ' + (active ? 'rgba(200,160,96,0.22)' : 'transparent'),
+      'border: 1px solid ' + (active ? 'rgba(232,201,126,0.85)' : 'rgba(200,160,96,0.30)'),
+      'color: ' + (active ? '#ffe9b8' : '#e8c97e'),
+      'border-radius: 3px',
+      'cursor: pointer',
+      'text-align: left',
+      'font: inherit',
+      'font-size: ' + (small ? '0.74rem' : '0.80rem'),
+      'letter-spacing: 0.08em',
+      'margin-bottom: 4px',
+    ].join(';');
+  }
+
+  function render() {
+    const wm = model.state.WorldModel || 'fe';
+    popover.innerHTML = '';
+
+    const h1 = document.createElement('div');
+    h1.textContent = 'World';
+    h1.style.cssText = 'font-size:0.62rem; letter-spacing:0.22em; color:#c8a06a; padding:2px 4px 6px; text-transform:uppercase;';
+    popover.appendChild(h1);
+
+    MODES.forEach((m) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = m.label;
+      b.style.cssText = rowStyle(m.id === wm, false);
+      b.addEventListener('click', () => {
+        if (m.id !== model.state.WorldModel) model.setState({ WorldModel: m.id });
+        render();
+      });
+      popover.appendChild(b);
+    });
+
+    let projList = null;
+    if (wm === 'fe') projList = FE_PROJ;
+    else if (wm === 'ge') projList = GE_PROJ;
+
+    if (projList) {
+      const h2 = document.createElement('div');
+      h2.textContent = 'Projection';
+      h2.style.cssText = 'font-size:0.62rem; letter-spacing:0.22em; color:#c8a06a; padding:10px 4px 6px; text-transform:uppercase; border-top:1px solid rgba(200,160,96,0.20); margin-top:6px;';
+      popover.appendChild(h2);
+      const cur = wm === 'fe' ? model.state.MapProjection : model.state.MapProjectionGe;
+      projList.forEach((p) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = p.label;
+        b.style.cssText = rowStyle(p.id === cur, true);
+        b.addEventListener('click', () => {
+          if (wm === 'fe') model.setState({ MapProjection: p.id });
+          else model.setState({ MapProjectionGe: p.id });
+          render();
+        });
+        popover.appendChild(b);
+      });
+    } else {
+      const note = document.createElement('div');
+      note.textContent = 'Dual Pole uses a fixed AE-equatorial graticule.';
+      note.style.cssText = 'font-size:0.66rem; color:#8090b0; padding:10px 4px 0; line-height:1.4; letter-spacing:0.04em;';
+      popover.appendChild(note);
+    }
+  }
+
+  function showAt(anchor) {
+    render();
+    popover.style.display = 'flex';
+    const r = anchor.getBoundingClientRect();
+    // Place popover to the right of the FAB, top-aligned with it.
+    popover.style.left = (r.right + 10) + 'px';
+    popover.style.top  = Math.max(8, r.top) + 'px';
+  }
+  function hide() {
+    popover.style.display = 'none';
+    popover._anchor = null;
+  }
+  function toggle(anchor) {
+    if (popover.style.display === 'flex' && popover._anchor === anchor) {
+      hide();
+    } else {
+      popover._anchor = anchor;
+      showAt(anchor);
+    }
+  }
 
   const skyBtn = document.createElement('button');
   skyBtn.type = 'button';
   skyBtn.className = 'god-fab';
-  skyBtn.textContent = '⊕';
-  skyBtn.title = 'Sky Layers';
-  skyBtn.addEventListener('click', () => {
-    if (model._featureOpen) model._featureOpen('Show', 'Bodies');
+  skyBtn.textContent = '🌐';
+  skyBtn.title = 'World model & projection (FE / Dual Pole / GE)';
+  skyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggle(skyBtn);
   });
 
-  wrap.append(mapBtn, skyBtn);
+  document.addEventListener('click', hide);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hide();
+  });
+  model.addEventListener('update', () => {
+    if (popover.style.display === 'flex') render();
+  });
+
+  wrap.append(skyBtn);
+  document.body.appendChild(popover);
   return wrap;
 }

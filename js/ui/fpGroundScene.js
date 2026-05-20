@@ -474,8 +474,9 @@ function mkTorch(scene, x, z) {
 
 // ── Greek island stone house ──────────────────────────────────────────────
 function mkGreekHouse(scene, {stone, wood}) {
-  // White-lime plaster over rough stone (overrides stone colour locally)
+  // White-lime plaster — PBR upgraded async with rough_plaster set
   const plaster = new THREE.MeshStandardMaterial({ color: 0xf2ede0, roughness: 0.88, metalness: 0.0 });
+  upgradeMaterial(plaster, 'rough_plaster', { repeat:[2,2], normalScale:0.55, roughness:0.84, anisotropy:8 });
   const wm = wood;
 
   // Position: opposite horizon from temple (z=+44), slightly off-centre

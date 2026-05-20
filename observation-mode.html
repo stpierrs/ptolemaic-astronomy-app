@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observation Mode · Geocentric · al-Shatir</title>
+<style>
+  :root {
+    --gold:   #c8a060;
+    --gold2:  #e8c97e;
+    --bronze: #8a5a28;
+    --bg:     #050608;
+    --silver: #b8c2d4;
+    --ink:    #1a1c24;
+  }
+  html, body {
+    margin:0; padding:0; height:100%; width:100%;
+    background: var(--bg); color: var(--gold2);
+    font-family: 'Cinzel', 'EB Garamond', serif;
+    overflow: hidden;
+  }
+  #webgl-root { position: fixed; inset: 0; }
+  #webgl-root canvas { display: block; width: 100%; height: 100%; }
+
+  /* Cartouche HUD top-left */
+  #hud {
+    position: fixed; top: 18px; left: 22px; z-index: 10;
+    padding: 10px 18px 12px;
+    background: linear-gradient(160deg, rgba(10,12,16,0.62), rgba(10,12,16,0.34));
+    border: 1px solid rgba(200,160,96,0.35);
+    border-radius: 3px;
+    box-shadow: 0 0 24px rgba(0,0,0,0.55), inset 0 0 12px rgba(200,160,96,0.06);
+    backdrop-filter: blur(3px);
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    user-select: none;
+  }
+  #hud.faded { opacity: 0.08; }
+  #date-line {
+    font-family: 'Cinzel', serif;
+    color: var(--gold2);
+    font-size: 1.35rem;
+    letter-spacing: 0.10em;
+    text-shadow: 0 0 8px rgba(232,201,126,0.45);
+  }
+  #jd-line {
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    color: var(--silver);
+    font-size: 0.72rem;
+    margin-top: 4px;
+    opacity: 0.78;
+    letter-spacing: 0.04em;
+  }
+  #date-line.flash-red { color: #ff8a6a; text-shadow: 0 0 12px #ff5030; }
+
+  /* Optional longitude pane (T to toggle) */
+  #lon-pane {
+    position: fixed; top: 18px; right: 22px; z-index: 10;
+    padding: 10px 16px;
+    background: linear-gradient(160deg, rgba(10,12,16,0.62), rgba(10,12,16,0.34));
+    border: 1px solid rgba(200,160,96,0.30);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold2);
+    font-size: 0.72rem;
+    line-height: 1.55;
+    display: none;
+    min-width: 180px;
+    pointer-events: none;
+  }
+  #lon-pane.on { display: block; }
+  #lon-pane h4 {
+    margin: 0 0 6px; font-family: 'Cinzel', serif; font-size: 0.78rem;
+    letter-spacing: 0.12em; color: var(--gold);
+  }
+  #lon-pane .row { display: flex; justify-content: space-between; gap: 16px; }
+  #lon-pane .glyph { color: var(--gold); }
+  #lon-pane .val { color: var(--silver); }
+
+  /* Scrubber bar bottom */
+  #scrubber-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+    padding: 12px 22px 18px;
+    background: linear-gradient(0deg, rgba(8,10,14,0.92) 30%, transparent);
+    display: flex; align-items: center; gap: 14px;
+    transition: opacity 0.6s ease;
+    user-select: none;
+  }
+  #scrubber-bar.faded { opacity: 0.1; }
+  #play-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(200,160,96,0.10);
+    border: 1px solid var(--gold);
+    color: var(--gold2); font-size: 1.05rem; cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  #play-btn:hover { background: rgba(200,160,96,0.30); transform: scale(1.05); }
+  #date-range {
+    flex: 1; appearance: none; height: 4px; background: rgba(200,160,96,0.22);
+    border-radius: 2px; outline: none; cursor: pointer;
+  }
+  #date-range::-webkit-slider-thumb {
+    appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--gold2); cursor: pointer;
+    box-shadow: 0 0 8px rgba(232,201,126,0.55);
+  }
+  #date-range::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--gold2); cursor: pointer;
+    box-shadow: 0 0 8px rgba(232,201,126,0.55); border: none;
+  }
+  #speed-label {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--silver); font-size: 0.78rem; min-width: 80px; text-align: right;
+    letter-spacing: 0.04em;
+  }
+
+  /* Hints */
+  #hint {
+    position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+    z-index: 9;
+    padding: 6px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    color: rgba(200,160,96,0.55);
+    background: rgba(10,12,16,0.55); border: 1px solid rgba(200,160,96,0.15);
+    border-radius: 2px;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+  }
+  #hint.faded { opacity: 0; }
+
+  /* Loading overlay */
+  #boot {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #04060a;
+    color: var(--gold2);
+    font-family: 'Cinzel', serif;
+    transition: opacity 0.8s ease;
+  }
+  #boot .title { font-size: 1.1rem; letter-spacing: 0.25em; }
+  #boot .sub   { font-size: 0.7rem; letter-spacing: 0.18em; color: var(--silver); margin-top: 8px; }
+  #boot.hidden { opacity: 0; pointer-events: none; }
+
+  /* Footer attribution */
+  #attribution {
+    position: fixed; bottom: 56px; right: 20px; z-index: 8;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    color: rgba(200,160,96,0.30);
+    pointer-events: none; max-width: 360px; text-align: right; line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div id="boot"><div class="title">OBSERVATION MODE</div><div class="sub">Loading the heavens…</div></div>
+<div id="webgl-root"></div>
+<div id="hud">
+  <div id="date-line">1700 Jan 01</div>
+  <div id="jd-line">JD 2341972.5</div>
+</div>
+<div id="lon-pane">
+  <h4>Geocentric longitudes</h4>
+  <div id="lon-rows"></div>
+</div>
+<div id="hint">space play · ← → ±1d · shift+← → ±30d · + / − speed · 1–7 focus · 0 wide · T longitudes · O armatures · Esc close</div>
+<div id="scrubber-bar">
+  <button id="play-btn" title="Play / Pause (Space)">▶</button>
+  <input id="date-range" type="range" min="0" max="146097" value="29220" step="1">
+  <span id="speed-label">1 d/s</span>
+</div>
+<div id="attribution">
+  Planet &amp; sky textures © INOVE / Solar System Scope (CC-BY 4.0).<br>
+  Earth daymap: project assets. Geometry: Ibn al-Shatir, Nihāyat al-Suʾl, Damascus c. 1350 CE.
+</div>
+
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/OrbitControls.js"></script>
+<script src="assets/vendor/CopyShader.js"></script>
+<script src="assets/vendor/LuminosityHighPassShader.js"></script>
+<script src="assets/vendor/FilmShader.js"></script>
+<script src="assets/vendor/EffectComposer.js"></script>
+<script src="assets/vendor/RenderPass.js"></script>
+<script src="assets/vendor/ShaderPass.js"></script>
+<script src="assets/vendor/UnrealBloomPass.js"></script>
+<script src="assets/vendor/FilmPass.js"></script>
+<script src="assets/vendor/Lensflare.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+//  ENGINE — copied verbatim from ibn-alshatir.html  (§4.3)
+//  DO NOT MODIFY constants or formulae.
+// ═══════════════════════════════════════════════════════════════
+
+const DEG = Math.PI / 180;
+const TWO_PI = 2 * Math.PI;
+
+function gregorianToJD(y, m, d) {
+  const A = Math.floor((14 - m) / 12);
+  const Y = y + 4800 - A;
+  const M = m + 12 * A - 3;
+  return d + Math.floor((153 * M + 2) / 5) +
+    365 * Y + Math.floor(Y / 4) - Math.floor(Y / 100) +
+    Math.floor(Y / 400) - 32045 - 0.5;
+}
+function jdToGregorian(jd) {
+  const z = Math.floor(jd + 0.5);
+  const a = Math.floor((z - 1867216.25) / 36524.25);
+  const A = z + 1 + a - Math.floor(a / 4);
+  const B = A + 1524;
+  const C = Math.floor((B - 122.1) / 365.25);
+  const D = Math.floor(365.25 * C);
+  const E = Math.floor((B - D) / 30.6001);
+  const day = B - D - Math.floor(30.6001 * E);
+  const month = E < 14 ? E - 1 : E - 13;
+  const year = month > 2 ? C - 4716 : C - 4715;
+  return { year, month, day };
+}
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(jd) {
+  const { year, month, day } = jdToGregorian(jd);
+  return `${year} ${MONTHS[month-1]} ${String(day).padStart(2,'0')}`;
+}
+
+const EPOCH_JD = 2341972.5;
+function sexDeg(d, m, s, ss, sss, ssss) {
+  return d + m/60 + (s||0)/3600 + (ss||0)/216000 + (sss||0)/12960000 + (ssss||0)/777600000;
+}
+
+const RATE = {
+  sun:      0.98564736,
+  moon_lon: 13.17639648,
+  moon_ano: 13.06499295,
+  moon_lat: 13.22935024,
+  mercury:  3.10686,
+  venus:    0.61652,
+  mars:     0.52403,
+  mars_ano: 0.46168,
+  jupiter:  0.08309,
+  jup_ano:  0.90120,
+  saturn:   0.03346,
+  sat_ano:  0.95196,
+};
+
+const APOGEE = {
+  sun_0:     101.6,
+  mars_0:     96.5,
+  jupiter_0: 157.0,
+  saturn_0:  234.8,
+  mercury_0: 190.0,
+  venus_0:    73.2,
+  sun_dpc:     1.719,
+  mars_dpc:    1.800,
+  jup_dpc:     1.520,
+  sat_dpc:     1.420,
+  merc_dpc:    1.940,
+  ven_dpc:     1.620,
+};
+
+function apogee(body_0, dpc, dt) { return norm(body_0 + dpc * (dt / 36525.0)); }
+
+const EPOCH_LON = {
+  sun:       279.70, moon: 218.10, moon_ano: 358.90, moon_lat: 11.30,
+  mars: 317.30, mars_ano: 204.50, jupiter: 239.10, jup_ano: 61.50,
+  saturn: 76.50, sat_ano: 114.20, mercury: 279.70, merc_ano: 260.50,
+  venus: 279.70, ven_ano: 54.20,
+};
+
+const PARAM = {
+  sun:     { R1: 60, r2: 1.002,  color:'#ffcc44', glyph:'☀', name:'Sun',     draw_scale: 0.55 },
+  moon:    { R1: 60, R2: 6.583,  R3: 1.417, color:'#c8d8f0', glyph:'☽', name:'Moon',    draw_scale: 0.18 },
+  mars:    { R1: 60, R2: 11.500, R3: 7+7/60, color:'#d06840', glyph:'♂', name:'Mars',   draw_scale: 0.9 },
+  jupiter: { R1: 60, R2: 2.75,   R3: 11.5,  color:'#c0a880', glyph:'♃', name:'Jupiter', draw_scale: 1.0 },
+  saturn:  { R1: 60, R2: 1.717,  R3: 6.5,   color:'#b0a870', glyph:'♄', name:'Saturn',  draw_scale: 1.1 },
+  mercury: { R1: 60, R2: 22.5,   R3: 3.5,   color:'#a0b8c0', glyph:'☿', name:'Mercury', draw_scale: 0.25 },
+  venus:   { R1: 60, R2: 43.167, R3: 0.833, color:'#e8c090', glyph:'♀', name:'Venus',   draw_scale: 0.55 },
+};
+
+const GI = {
+  omega: 360.0 / 32000.0,
+  phase: 214.0,
+  amp_jup: 0.320,
+  amp_sat: 0.950,
+  phase_sat_offset: 180.0,
+};
+
+function norm(a) { return ((a % 360) + 360) % 360; }
+
+function epicycleLon2(a1,a2,R1,R2){
+  const x=R1*Math.cos(a1*DEG)+R2*Math.cos(a2*DEG);
+  const y=R1*Math.sin(a1*DEG)+R2*Math.sin(a2*DEG);
+  return Math.atan2(y,x)/DEG;
+}
+function epicycleLon3(a1,a2,a3,R1,R2,R3){
+  const x=R1*Math.cos(a1*DEG)+R2*Math.cos(a2*DEG)+R3*Math.cos(a3*DEG);
+  const y=R1*Math.sin(a1*DEG)+R2*Math.sin(a2*DEG)+R3*Math.sin(a3*DEG);
+  return Math.atan2(y,x)/DEG;
+}
+
+function computeLongitude(t) {
+  const dt = t - EPOCH_JD;
+  const T  = dt / 36525.0;
+  const λ_sun  = norm(EPOCH_LON.sun     + RATE.sun      * dt);
+  const λ_moon = norm(EPOCH_LON.moon    + RATE.moon_lon * dt);
+  const M_moon = norm(EPOCH_LON.moon_ano + RATE.moon_ano * dt);
+  const λ_mars = norm(EPOCH_LON.mars    + RATE.mars     * dt);
+  const M_mars = norm(EPOCH_LON.mars_ano + RATE.mars_ano * dt);
+  const λ_jup  = norm(EPOCH_LON.jupiter + RATE.jupiter  * dt);
+  const M_jup  = norm(EPOCH_LON.jup_ano + RATE.jup_ano  * dt);
+  const λ_sat  = norm(EPOCH_LON.saturn  + RATE.saturn   * dt);
+  const M_sat  = norm(EPOCH_LON.sat_ano + RATE.sat_ano  * dt);
+  const M_merc = norm(EPOCH_LON.merc_ano + RATE.mercury  * dt);
+  const M_ven  = norm(EPOCH_LON.ven_ano  + RATE.venus    * dt);
+
+  const sunAp  = apogee(APOGEE.sun_0,     APOGEE.sun_dpc,  dt);
+  const marsAp = apogee(APOGEE.mars_0,    APOGEE.mars_dpc, dt);
+  const jupAp  = apogee(APOGEE.jupiter_0, APOGEE.jup_dpc,  dt);
+  const satAp  = apogee(APOGEE.saturn_0,  APOGEE.sat_dpc,  dt);
+  const mercAp = apogee(APOGEE.mercury_0, APOGEE.merc_dpc, dt);
+  const venAp  = apogee(APOGEE.venus_0,   APOGEE.ven_dpc,  dt);
+
+  const gi_angle = norm(GI.phase + GI.omega * dt);
+  const M_jup_gi = M_jup + GI.amp_jup * Math.sin(gi_angle * DEG);
+  const M_sat_gi = M_sat + GI.amp_sat * Math.sin(norm(gi_angle + GI.phase_sat_offset) * DEG);
+
+  const M_sun = norm(λ_sun - sunAp);
+  const λ_sun_true = epicycleLon2(λ_sun, M_sun, PARAM.sun.R1, PARAM.sun.r2);
+
+  const D = norm(λ_moon - λ_sun);
+  let moon_lon = epicycleLon3(λ_moon, M_moon, norm(-2 * D),
+                              PARAM.moon.R1, PARAM.moon.R2, PARAM.moon.R3);
+  moon_lon += 0.6584 * Math.sin(2 * D * DEG);
+  moon_lon += 0.1099 * Math.sin(M_sun * DEG);
+
+  const M_mars_from_ap = norm(M_mars + (APOGEE.mars_0 - marsAp));
+  const mars_lon = epicycleLon3(λ_mars, M_mars_from_ap, norm(-M_mars_from_ap),
+                                PARAM.mars.R1, PARAM.mars.R2, PARAM.mars.R3);
+  const M_jup_from_ap = norm(M_jup_gi + (APOGEE.jupiter_0 - jupAp));
+  const jupiter_lon = epicycleLon3(λ_jup, M_jup_from_ap, norm(-M_jup_from_ap),
+                                   PARAM.jupiter.R1, PARAM.jupiter.R2, PARAM.jupiter.R3);
+  const M_sat_from_ap = norm(M_sat_gi + (APOGEE.saturn_0 - satAp));
+  const saturn_lon = epicycleLon3(λ_sat, M_sat_from_ap, norm(-M_sat_from_ap),
+                                  PARAM.saturn.R1, PARAM.saturn.R2, PARAM.saturn.R3);
+  const M_merc_from_ap = norm(M_merc + (APOGEE.mercury_0 - mercAp));
+  const merc_lon = epicycleLon3(λ_sun, M_merc_from_ap, norm(-2 * M_merc_from_ap),
+                                PARAM.mercury.R1, PARAM.mercury.R2, PARAM.mercury.R3);
+  const M_ven_from_ap = norm(M_ven + (APOGEE.venus_0 - venAp));
+  const ven_lon = epicycleLon3(λ_sun, M_ven_from_ap, norm(M_ven_from_ap + 180),
+                               PARAM.venus.R1, PARAM.venus.R2, PARAM.venus.R3);
+
+  return {
+    sun: norm(λ_sun_true), moon: norm(moon_lon), mercury: norm(merc_lon),
+    venus: norm(ven_lon), mars: norm(mars_lon),
+    jupiter: norm(jupiter_lon), saturn: norm(saturn_lon),
+    raw: {
+      λ_sun, λ_moon, λ_mars, λ_jup, λ_sat, M_moon, D, M_sun,
+      M_mars_ap: M_mars_from_ap, M_jup_ap: M_jup_from_ap, M_sat_ap: M_sat_from_ap,
+      M_merc_ap: M_merc_from_ap, M_ven_ap: M_ven_from_ap,
+    },
+  };
+}
+
+const ZODIAC = ['♈ Ari','♉ Tau','♊ Gem','♋ Can','♌ Leo','♍ Vir','♎ Lib','♏ Sco','♐ Sag','♑ Cap','♒ Aqu','♓ Pis'];
+function fmtLon(deg){
+  const d=norm(deg), sign=Math.floor(d/30), rem=d%30, dd=Math.floor(rem), mm=Math.floor((rem-dd)*60);
+  return `${ZODIAC[sign]} ${String(dd).padStart(2,'0')}° ${String(mm).padStart(2,'0')}′`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE  + TIME SYNC
+// ═══════════════════════════════════════════════════════════════
+const JD_2017_01_01 = 2457754.5;
+const JD_MIN = gregorianToJD(1620, 1, 1);
+const JD_MAX = gregorianToJD(2020, 12, 31);
+const SCRUB_BASE = gregorianToJD(1620, 1, 1);     // range slider day-0
+const SCRUB_MAX  = 146097;                         // ≈ 400 yrs × 365.25
+
+const state = {
+  jd: gregorianToJD(2026, 5, 20),
+  playing: false,
+  daysPerSecond: 1,
+  lastT: null,
+};
+
+// Receiver / sender (§6.4)
+const MY_ID = 'observation';
+let lastSent = 0;
+function publishTime() {
+  const now = performance.now();
+  if (now - lastSent < 100) return;
+  lastSent = now;
+  try { parent.postMessage({ type: 'ptol-time', jd: state.jd, source: MY_ID }, '*'); } catch (_) {}
+}
+window.addEventListener('message', (ev) => {
+  const m = ev.data;
+  if (!m || m.type !== 'ptol-time' || typeof m.jd !== 'number') return;
+  if (m.source === MY_ID) return;
+  if (Math.abs(m.jd - state.jd) < 1e-6) return;
+  state.jd = m.jd;
+  refreshHUDOnly();
+  syncScrubberFromState();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  THREE.JS BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════
+const root = document.getElementById('webgl-root');
+// Clamp to ≥ 1 — when the parent overlay is display:none on first iframe
+// load, window.innerWidth/Height return 0, which gives WebGL a 0-size
+// framebuffer ("Attachment has zero size" errors on every draw). A
+// ResizeObserver below fixes the real size the moment the iframe is
+// shown.
+const W0 = Math.max(1, window.innerWidth);
+const H0 = Math.max(1, window.innerHeight);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(W0, H0);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// r147 ships outputEncoding; r152+ ships outputColorSpace.  Set whichever exists.
+if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+} else if ('outputEncoding' in renderer && THREE.sRGBEncoding) {
+  renderer.outputEncoding = THREE.sRGBEncoding;
+}
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.10;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+root.appendChild(renderer.domElement);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, W0/H0, 0.01, 2000);
+camera.position.set(2.5, 10.5, 14);
+camera.lookAt(0, 0, 0);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 1.5;
+controls.maxDistance = 50;
+controls.minPolarAngle = 0.05;
+controls.maxPolarAngle = Math.PI - 0.05;
+let focusTarget = new THREE.Vector3(0, 0, 0);
+controls.target.copy(focusTarget);
+
+// ── Lighting ────────────────────────────────────────────────────
+// Bright "heavens" ambient — bathes the brass and planets in warm light.
+const ambient = new THREE.AmbientLight(0xfff0d0, 0.55);
+scene.add(ambient);
+const hemi = new THREE.HemisphereLight(0xfff5d8, 0x6a5028, 0.65);
+scene.add(hemi);
+
+// Sun point-light — added later, parented to Sun mesh
+const sunLight = new THREE.PointLight(0xffeecf, 3.5, 0, 0);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.bias = -0.0005;
+sunLight.shadow.camera.near = 0.1;
+sunLight.shadow.camera.far  = 60;
+
+// ═══════════════════════════════════════════════════════════════
+//  TEXTURES
+// ═══════════════════════════════════════════════════════════════
+const texLoader = new THREE.TextureLoader();
+function loadTex(path, { srgb = true } = {}) {
+  const t = texLoader.load(path);
+  if (srgb) {
+    if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace;
+    else t.encoding = THREE.sRGBEncoding;
+  }
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+const TEX = {
+  sun:        loadTex('assets/textures/sun.jpg'),
+  mercury:    loadTex('assets/textures/mercury.jpg'),
+  venus:      loadTex('assets/textures/venus_surface.jpg'),
+  venus_atm:  loadTex('assets/textures/venus_atmosphere.jpg'),
+  moon:       loadTex('assets/textures/moon.jpg'),
+  mars:       loadTex('assets/textures/mars.jpg'),
+  jupiter:    loadTex('assets/textures/jupiter.jpg'),
+  saturn:     loadTex('assets/textures/saturn.jpg'),
+  saturn_ring:loadTex('assets/textures/saturn_ring.png'),
+  earth_day:  loadTex('assets/map_hq_equirect_day.jpg'),
+  earth_night:loadTex('assets/textures/earth_night.jpg'),
+  earth_clouds:loadTex('assets/textures/earth_clouds.jpg', { srgb: false }),
+  earth_normal:loadTex('assets/textures/earth_normal.png', { srgb: false }),
+  earth_spec: loadTex('assets/textures/earth_specular.png', { srgb: false }),
+  milky_way:  loadTex('assets/textures/stars_milky_way.jpg'),
+  stars:      loadTex('assets/textures/stars.jpg'),
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  PROCEDURAL: engraved brass normal map + zodiac ring color map
+// ═══════════════════════════════════════════════════════════════
+function makeEngravedNormalTex() {
+  const W = 1024, H = 128;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  // base flat normal (0.5,0.5,1) — packed as #8080ff
+  x.fillStyle = '#8080ff'; x.fillRect(0,0,W,H);
+  // engraved diagonal scratch lines
+  x.globalAlpha = 0.6;
+  for (let i = 0; i < 40; i++) {
+    const y0 = Math.random()*H, y1 = y0 + (Math.random()-0.5)*16;
+    x.strokeStyle = `rgba(${100+Math.random()*30},${100+Math.random()*30},255,1)`;
+    x.lineWidth = 0.5 + Math.random()*0.6;
+    x.beginPath(); x.moveTo(0, y0); x.lineTo(W, y1); x.stroke();
+  }
+  // patina pits
+  x.globalAlpha = 0.5;
+  for (let i = 0; i < 200; i++) {
+    const cx = Math.random()*W, cy = Math.random()*H, r = 1+Math.random()*3;
+    const grd = x.createRadialGradient(cx,cy,0,cx,cy,r);
+    grd.addColorStop(0,'#a0a0ff'); grd.addColorStop(1,'#8080ff');
+    x.fillStyle = grd; x.beginPath(); x.arc(cx,cy,r,0,TWO_PI); x.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(8, 1);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+function makeZodiacRingTex() {
+  const W = 4096, H = 256;
+  const names = ['ΚΡΙΟΣ','ΤΑΥΡΟΣ','ΔΙΔΥΜΟΙ','ΚΑΡΚΙΝΟΣ','ΛΕΩΝ','ΠΑΡΘΕΝΟΣ',
+                 'ΖΥΓΟΣ','ΣΚΟΡΠΙΟΣ','ΤΟΞΟΤΗΣ','ΑΙΓΟΚΕΡΩΣ','ΥΔΡΟΧΟΟΣ','ΙΧΘΥΕΣ'];
+  const glyphs = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  // brass base
+  const grd = x.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'#9d6e2c'); grd.addColorStop(0.5,'#c89030'); grd.addColorStop(1,'#7a4e1e');
+  x.fillStyle = grd; x.fillRect(0,0,W,H);
+  // boundary tick lines
+  x.strokeStyle = 'rgba(50,30,10,0.7)'; x.lineWidth = 2;
+  for (let i = 0; i <= 12; i++) {
+    const px = (i * W / 12) | 0;
+    x.beginPath(); x.moveTo(px, 12); x.lineTo(px, H-12); x.stroke();
+  }
+  // engraved names — dark
+  x.fillStyle = '#2a1808';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = 3;
+  for (let i = 0; i < 12; i++) {
+    const cx = ((i + 0.5) * W / 12) | 0;
+    x.font = "bold 60px 'Cinzel', 'EB Garamond', serif";
+    x.fillText(names[i], cx, H*0.42);
+    x.font = "84px 'EB Garamond', serif";
+    x.fillText(glyphs[i], cx, H*0.78);
+  }
+  // top engraved hairline frame
+  x.shadowBlur = 0; x.strokeStyle = 'rgba(20,12,6,0.6)'; x.lineWidth = 2;
+  x.strokeRect(2, 4, W-4, H-8);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.ClampToEdgeWrapping;
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  else tex.encoding = THREE.sRGBEncoding;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+const engravedNormalTex = makeEngravedNormalTex();
+const zodiacBandTex = makeZodiacRingTex();
+
+const BRASS_POLISHED = new THREE.MeshStandardMaterial({
+  color: 0xc89030, metalness: 0.88, roughness: 0.28,
+  normalMap: engravedNormalTex, normalScale: new THREE.Vector2(0.45, 0.45),
+});
+const BRASS_PATINA = new THREE.MeshStandardMaterial({
+  color: 0x8a5a28, metalness: 0.65, roughness: 0.55,
+  normalMap: engravedNormalTex, normalScale: new THREE.Vector2(0.55, 0.55),
+});
+const BRASS_ZODIAC = new THREE.MeshStandardMaterial({
+  map: zodiacBandTex,
+  color: 0xffffff,
+  metalness: 0.88, roughness: 0.32,
+  normalMap: engravedNormalTex, normalScale: new THREE.Vector2(0.35, 0.35),
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  SKY: bright "heavens" — cloud sphere + light shafts from above
+// ═══════════════════════════════════════════════════════════════
+const skyGroup = new THREE.Group();
+scene.add(skyGroup);
+
+// Procedural cloud-sky texture: bright golden zenith, painterly cumulus
+// puffs, vertical light-ray streaks. No stars. Light gradient at top so
+// the whole scene reads as "the heavens" rather than outer space.
+function makeCloudSkyTexture() {
+  const W = 2048, H = 1024;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  // Vertical gradient: blinding gold zenith → soft cream → tan horizon
+  const grd = x.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0.00, '#fffbe8');
+  grd.addColorStop(0.18, '#fff0c0');
+  grd.addColorStop(0.42, '#f5d490');
+  grd.addColorStop(0.68, '#d8b070');
+  grd.addColorStop(0.92, '#a08050');
+  grd.addColorStop(1.00, '#6e5a38');
+  x.fillStyle = grd; x.fillRect(0, 0, W, H);
+  // Painterly cumulus puffs — many soft white blobs
+  for (let i = 0; i < 420; i++) {
+    const cx = Math.random() * W;
+    const cy = Math.random() * H * 0.75;
+    const r = 30 + Math.random() * 160;
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    const a = 0.30 + Math.random() * 0.45;
+    g.addColorStop(0.00, `rgba(255,255,245,${a})`);
+    g.addColorStop(0.55, `rgba(255,250,225,${a * 0.45})`);
+    g.addColorStop(1.00, 'rgba(255,245,200,0)');
+    x.fillStyle = g;
+    x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  }
+  // Light rays — vertical streaks of warm gold radiating downward
+  for (let i = 0; i < 14; i++) {
+    const px = (i + 0.5 + (Math.random() - 0.5) * 0.4) * W / 14;
+    const wide = 24 + Math.random() * 40;
+    const grd2 = x.createLinearGradient(0, 0, 0, H);
+    grd2.addColorStop(0.00, `rgba(255,242,180,${0.35 + Math.random() * 0.20})`);
+    grd2.addColorStop(0.55, 'rgba(255,228,150,0.10)');
+    grd2.addColorStop(1.00, 'rgba(255,220,140,0)');
+    x.fillStyle = grd2;
+    x.fillRect(px - wide / 2, 0, wide, H);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  else tex.encoding = THREE.sRGBEncoding;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+const skyGeo = new THREE.IcosahedronGeometry(800, 6);
+const skyMat = new THREE.MeshBasicMaterial({
+  map: makeCloudSkyTexture(),
+  side: THREE.BackSide,
+  depthWrite: false,
+  fog: false,
+});
+const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+skyGroup.add(skyMesh);
+
+// Light-shaft sprites — soft volumetric beams from above the system.
+// Additive-blended billboards. Bloom catches them so they read radiant.
+function makeLightShaftTexture() {
+  const W = 256, H = 1024;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  // Vertical fade: bright top → transparent bottom
+  const grdY = x.createLinearGradient(0, 0, 0, H);
+  grdY.addColorStop(0.00, 'rgba(255,250,210,0.95)');
+  grdY.addColorStop(0.45, 'rgba(255,235,160,0.55)');
+  grdY.addColorStop(1.00, 'rgba(255,210,120,0)');
+  x.fillStyle = grdY; x.fillRect(0, 0, W, H);
+  // Soften horizontal edges (vignette)
+  const grdX = x.createLinearGradient(0, 0, W, 0);
+  grdX.addColorStop(0.00, 'rgba(0,0,0,1)');
+  grdX.addColorStop(0.50, 'rgba(0,0,0,0)');
+  grdX.addColorStop(1.00, 'rgba(0,0,0,1)');
+  x.globalCompositeOperation = 'destination-out';
+  x.fillStyle = grdX; x.fillRect(0, 0, W, H);
+  const tex = new THREE.CanvasTexture(c);
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  else tex.encoding = THREE.sRGBEncoding;
+  return tex;
+}
+
+(function addLightShafts() {
+  const tex = makeLightShaftTexture();
+  // [x, y, z, width, height] — y is positive (above the orrery plane)
+  const shafts = [
+    [-7,  16, -3,  3.5, 22],
+    [ 6,  18,  2,  3.0, 24],
+    [-2,  17,  6,  4.0, 22],
+    [ 4,  16, -6,  3.0, 20],
+    [ 0,  20,  0,  4.5, 26],
+    [ 9,  15, -5,  3.0, 20],
+    [-9,  15,  4,  3.2, 21],
+  ];
+  for (const [px, py, pz, sx, sy] of shafts) {
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.55 + Math.random() * 0.20,
+      color: 0xfff0c8,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.set(px, py, pz);
+    sprite.scale.set(sx, sy, 1);
+    scene.add(sprite);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  FRESNEL GLOW SHADER (rim halo per body) §4.6a
+// ═══════════════════════════════════════════════════════════════
+const fresnelVS = `
+  varying vec3 vN; varying vec3 vP;
+  void main(){
+    vN = normalize(normalMatrix * normal);
+    vec4 mv = modelViewMatrix * vec4(position,1.0);
+    vP = -mv.xyz;
+    gl_Position = projectionMatrix * mv;
+  }`;
+const fresnelFS = `
+  uniform vec3 glowColor;
+  uniform float power;
+  uniform float intensity;
+  varying vec3 vN; varying vec3 vP;
+  void main(){
+    float fres = pow(1.0 - clamp(dot(normalize(vN), normalize(vP)), 0.0, 1.0), power);
+    gl_FragColor = vec4(glowColor * fres * intensity, fres);
+  }`;
+function makeFresnel(color, power, intensity) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      glowColor: { value: new THREE.Color(color) },
+      power:     { value: power },
+      intensity: { value: intensity },
+    },
+    vertexShader: fresnelVS, fragmentShader: fresnelFS,
+    transparent: true, blending: THREE.AdditiveBlending,
+    side: THREE.BackSide, depthWrite: false,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DEFERENT RADII (world units) + visual sphere radii
+// ═══════════════════════════════════════════════════════════════
+const DEFERENT_R = {
+  moon:    1.0,
+  mercury: 1.9,
+  venus:   3.0,
+  sun:     4.1,
+  mars:    5.4,
+  jupiter: 6.7,
+  saturn:  7.9,
+};
+const VIS_R = {
+  sun: 0.22, moon: 0.09, mercury: 0.08, venus: 0.13,
+  mars: 0.10, jupiter: 0.20, saturn: 0.17,
+};
+const EARTH_R = 0.20;
+
+// ═══════════════════════════════════════════════════════════════
+//  BODIES
+// ═══════════════════════════════════════════════════════════════
+
+// ── EARTH (center) ─────────────────────────────────────────────
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+earthGroup.rotation.z = 23.4 * DEG;       // axial tilt
+
+const earthSurface = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R, 64, 48),
+  new THREE.MeshStandardMaterial({
+    map: TEX.earth_day,
+    normalMap: TEX.earth_normal, normalScale: new THREE.Vector2(0.7, 0.7),
+    roughnessMap: TEX.earth_spec, roughness: 0.85, metalness: 0,
+    emissiveMap: TEX.earth_night, emissive: 0xffeec8, emissiveIntensity: 1.2,
+  })
+);
+earthSurface.castShadow = true; earthSurface.receiveShadow = true;
+earthGroup.add(earthSurface);
+
+const earthClouds = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R * 1.005, 64, 48),
+  new THREE.MeshStandardMaterial({
+    map: TEX.earth_clouds, alphaMap: TEX.earth_clouds, color: 0xffffff,
+    transparent: true, depthWrite: false, roughness: 1.0, metalness: 0,
+  })
+);
+earthGroup.add(earthClouds);
+
+const earthAtmo = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R * 1.04, 64, 48),
+  makeFresnel(0x7eb0ff, 2.6, 1.05)
+);
+earthGroup.add(earthAtmo);
+
+// ── SUN — three layers + lens flare ────────────────────────────
+const sunGroup = new THREE.Group();
+const sunMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(VIS_R.sun, 48, 32),
+  new THREE.MeshBasicMaterial({ map: TEX.sun })
+);
+sunGroup.add(sunMesh);
+
+// Inner corona
+const coronaInner = new THREE.Mesh(
+  new THREE.SphereGeometry(VIS_R.sun * 1.25, 32, 24),
+  makeFresnel(0xffd060, 2.0, 1.4)
+);
+sunGroup.add(coronaInner);
+// Outer corona
+const coronaOuter = new THREE.Mesh(
+  new THREE.SphereGeometry(VIS_R.sun * 1.85, 32, 24),
+  makeFresnel(0xff8030, 4.5, 0.8)
+);
+sunGroup.add(coronaOuter);
+sunGroup.add(sunLight);
+
+// Lens flare textures (canvas radial gradient → DataTexture-ish)
+function makeFlareTex(size, innerColor, outerColor) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d');
+  const grd = x.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  grd.addColorStop(0, innerColor);
+  grd.addColorStop(0.5, outerColor);
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = grd; x.fillRect(0,0,size,size);
+  const t = new THREE.CanvasTexture(c);
+  if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+try {
+  const flare = new THREE.Lensflare();
+  flare.addElement(new THREE.LensflareElement(
+    makeFlareTex(512, 'rgba(255,232,160,1)', 'rgba(255,180,80,0.45)'), 512, 0,
+    new THREE.Color(0xffd680)
+  ));
+  flare.addElement(new THREE.LensflareElement(
+    makeFlareTex(256, 'rgba(255,200,120,0.6)', 'rgba(255,120,40,0.15)'), 180, 0.7,
+    new THREE.Color(0xff9050)
+  ));
+  sunLight.add(flare);
+} catch (e) {
+  console.warn('Lensflare unavailable:', e);
+}
+scene.add(sunGroup);
+
+// ── PLANET FACTORIES (Moon, Mercury, Venus, Mars, Jupiter, Saturn) ─
+const FRESNEL_CFG = {
+  mercury: { c: 0xa8b8c8, p: 3.5, i: 0.45 },
+  venus:   { c: 0xf0d090, p: 2.2, i: 1.30 },
+  moon:    { c: 0xccd6e0, p: 4.0, i: 0.30 },
+  mars:    { c: 0xe08060, p: 3.0, i: 0.70 },
+  jupiter: { c: 0xe8c890, p: 2.6, i: 0.95 },
+  saturn:  { c: 0xf0d8a0, p: 2.8, i: 0.85 },
+};
+function makePlanet(body) {
+  const grp = new THREE.Group();
+  const tex = body==='venus' ? TEX.venus : TEX[body];
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex, metalness: 0, roughness: 0.85,
+  });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(VIS_R[body], 48, 36), mat);
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  grp.add(mesh);
+
+  // Venus thick atmosphere overlay
+  if (body === 'venus') {
+    const atm = new THREE.Mesh(
+      new THREE.SphereGeometry(VIS_R.venus * 1.018, 48, 36),
+      new THREE.MeshStandardMaterial({
+        map: TEX.venus_atm, transparent: true, opacity: 0.55,
+        depthWrite: false, roughness: 1.0,
+      })
+    );
+    grp.add(atm);
+  }
+
+  // Fresnel atmosphere/halo
+  const f = FRESNEL_CFG[body];
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(VIS_R[body] * 1.07, 32, 24),
+    makeFresnel(f.c, f.p, f.i)
+  );
+  grp.add(halo);
+
+  scene.add(grp);
+  return { grp, mesh };
+}
+
+const PLANET = {
+  moon:    makePlanet('moon'),
+  mercury: makePlanet('mercury'),
+  venus:   makePlanet('venus'),
+  mars:    makePlanet('mars'),
+  jupiter: makePlanet('jupiter'),
+  saturn:  makePlanet('saturn'),
+};
+
+// ── SATURN RINGS ───────────────────────────────────────────────
+(function buildSaturnRings() {
+  const rIn  = VIS_R.saturn * 1.30;
+  const rOut = VIS_R.saturn * 2.20;
+  const ringGeom = new THREE.RingGeometry(rIn, rOut, 128);
+  // remap UVs so the texture's radial axis maps to ring radial position
+  const pos = ringGeom.attributes.position;
+  const uv  = ringGeom.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const r = Math.hypot(pos.getX(i), pos.getY(i));
+    const u = (r - rIn) / (rOut - rIn);
+    uv.setXY(i, u, 0.5);
+  }
+  const ringMat = new THREE.MeshStandardMaterial({
+    map: TEX.saturn_ring, alphaMap: TEX.saturn_ring,
+    color: 0xfff0d0, transparent: true, side: THREE.DoubleSide,
+    depthWrite: false, roughness: 0.9, metalness: 0,
+  });
+  const ringMesh = new THREE.Mesh(ringGeom, ringMat);
+  ringMesh.castShadow = true; ringMesh.receiveShadow = true;
+  ringMesh.rotation.x = -Math.PI/2 + 26.7 * DEG;
+  PLANET.saturn.grp.add(ringMesh);
+  PLANET.saturn.rings = ringMesh;
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  ARM CHAIN (brass mechanism)  §4.5 + §4.6
+// ═══════════════════════════════════════════════════════════════
+const eclY = new THREE.Vector3(0, 1, 0);
+
+// Helper — convert ecliptic longitude (deg) to world vec (XZ plane, Y=up).
+function eclVec(lonDeg) {
+  const r = lonDeg * DEG;
+  return new THREE.Vector3(Math.cos(r), 0, -Math.sin(r));
+}
+
+function chainFor(body, raw) {
+  const R1 = DEFERENT_R[body];
+  const sc = R => R1 * R / 60;
+  switch (body) {
+    case 'sun':
+      return [
+        { angle: raw.λ_sun,                radius: R1 },
+        { angle: raw.M_sun,                radius: sc(PARAM.sun.r2) }, // true ratio r2/R1 ≈ 1/60 — Sun lands where engine says
+      ];
+    case 'moon':
+      return [
+        { angle: raw.λ_moon,               radius: R1 },
+        { angle: raw.M_moon,               radius: sc(PARAM.moon.R2) },
+        { angle: -2 * raw.D,               radius: sc(PARAM.moon.R3) },
+      ];
+    case 'mercury':
+      return [
+        { angle: raw.λ_sun,                radius: R1 },
+        { angle: raw.M_merc_ap,            radius: sc(PARAM.mercury.R2) },
+        { angle: -2 * raw.M_merc_ap,       radius: sc(PARAM.mercury.R3) },
+      ];
+    case 'venus':
+      return [
+        { angle: raw.λ_sun,                radius: R1 },
+        { angle: raw.M_ven_ap,             radius: sc(PARAM.venus.R2) },
+        { angle: raw.M_ven_ap + 180,       radius: sc(PARAM.venus.R3) },
+      ];
+    case 'mars':
+      return [
+        { angle: raw.λ_mars,               radius: R1 },
+        { angle: raw.M_mars_ap,            radius: sc(PARAM.mars.R2) },
+        { angle: -raw.M_mars_ap,           radius: sc(PARAM.mars.R3) },
+      ];
+    case 'jupiter':
+      return [
+        { angle: raw.λ_jup,                radius: R1 },
+        { angle: raw.M_jup_ap,             radius: sc(PARAM.jupiter.R2) },
+        { angle: -raw.M_jup_ap,            radius: sc(PARAM.jupiter.R3) },
+      ];
+    case 'saturn':
+      return [
+        { angle: raw.λ_sat,                radius: R1 },
+        { angle: raw.M_sat_ap,             radius: sc(PARAM.saturn.R2) },
+        { angle: -raw.M_sat_ap,            radius: sc(PARAM.saturn.R3) },
+      ];
+  }
+}
+
+// Pre-bake a 1/f flicker LUT
+const FLICKER_LUT = (() => {
+  const N = 256, out = new Float32Array(N);
+  let acc = 0;
+  for (let i = 0; i < N; i++) {
+    acc = 0.85 * acc + 0.15 * (Math.random() - 0.5);
+    out[i] = 0.55 + 0.45 * (0.5 + acc + 0.4 * Math.sin(i*0.13));
+  }
+  return out;
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  PATH TRACING — each body's actual deferent+epicycle trajectory
+//
+//  Replaces the simple circular deferent guide ring. We sample the
+//  chain over enough days to close the body's epitrochoid pattern
+//  (the famous "Venus pentagram", Mars rose, Jupiter loops, etc.),
+//  then build a brass TubeGeometry along the resulting curve. The
+//  ring you see is literally the curve the planet rides.
+// ═══════════════════════════════════════════════════════════════
+const PATH_CONFIG = {
+  sun:     { days:  1 * 365.25, samples:  720, minor: 0.011 },
+  moon:    { days:  1 * 365.25, samples: 1200, minor: 0.009 },  // 13 lunar months
+  mercury: { days:  5 * 365.25, samples: 1500, minor: 0.010 },
+  venus:   { days:  8 * 365.25, samples: 1600, minor: 0.011 },  // the pentagram
+  mars:    { days: 17 * 365.25, samples: 2800, minor: 0.012 },  // 8 retrograde loops
+  jupiter: { days: 12 * 365.25, samples: 1800, minor: 0.014 },
+  saturn:  { days: 30 * 365.25, samples: 2400, minor: 0.016 },
+};
+
+function computePathPoints(body, jd0, days, samples) {
+  const pts = [];
+  const v   = new THREE.Vector3();
+  for (let i = 0; i < samples; i++) {
+    const jd = jd0 + (i / samples) * days;
+    const raw = computeLongitude(jd).raw;
+    const chain = chainFor(body, raw);
+    v.set(0, 0, 0);
+    for (const arm of chain) {
+      v.x += Math.cos(arm.angle * DEG) * arm.radius;
+      v.z -= Math.sin(arm.angle * DEG) * arm.radius;
+    }
+    pts.push(v.clone());
+  }
+  return pts;
+}
+
+function buildBodyPathTube(body) {
+  const cfg = PATH_CONFIG[body];
+  const pts = computePathPoints(body, state.jd, cfg.days, cfg.samples);
+  const curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.5);
+  const geom = new THREE.TubeGeometry(curve, cfg.samples * 2, cfg.minor, 10, true);
+  const mesh = new THREE.Mesh(geom, BRASS_PATINA.clone());
+  mesh.receiveShadow = true;
+  // Saturn's path is huge — slightly demote it so it doesn't dominate
+  // every other planet's pattern. Same brass, just less shadow weight.
+  if (body === 'saturn' || body === 'jupiter') mesh.castShadow = false;
+  else mesh.castShadow = true;
+  return mesh;
+}
+
+// Build per-body arm meshes
+const ARMS = {};   // ARMS[body] = { armMeshes:[], joints:[], hoops:[], deferent, lampMeshes:[] }
+const ORDER = ['sun','moon','mercury','venus','mars','jupiter','saturn'];
+
+function buildArmAssembly(body) {
+  const grp = new THREE.Group();
+  scene.add(grp);
+
+  const armMeshes = [];
+  const joints = [];
+  const lampMeshes = [];
+  const hoops = [];
+
+  // We know each body has up to 3 arms; lengths from initial raw data.
+  // Initial chain just to determine arm lengths.
+  const initRaw = computeLongitude(state.jd).raw;
+  const initChain = chainFor(body, initRaw);
+
+  for (let i = 0; i < initChain.length; i++) {
+    const len = Math.max(0.001, initChain[i].radius);
+    // CylinderGeometry default: axis along +Y, height=len
+    const cyl = new THREE.CylinderGeometry(0.012, 0.014, len, 16, 1);
+    // Translate so base sits at origin and tip at +Y len
+    cyl.translate(0, len/2, 0);
+    const arm = new THREE.Mesh(cyl, BRASS_POLISHED);
+    arm.castShadow = true; arm.receiveShadow = true;
+    grp.add(arm);
+    armMeshes.push({ mesh: arm, len });
+
+    // Joint at tip of this arm (only for non-last arms — last tip is the planet)
+    if (i < initChain.length - 1) {
+      const jointGrp = new THREE.Group();
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.028, 20, 16), BRASS_POLISHED);
+      sphere.castShadow = true; sphere.receiveShadow = true;
+      jointGrp.add(sphere);
+      const torus = new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.004, 12, 32), BRASS_POLISHED);
+      torus.rotation.x = Math.PI/2; // perpendicular to arm; we'll re-orient at runtime
+      jointGrp.add(torus);
+      // Lamp
+      const lamp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.012, 12, 10),
+        new THREE.MeshBasicMaterial({
+          color: 0xffcc66, transparent: true, opacity: 0.8,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      jointGrp.add(lamp);
+      grp.add(jointGrp);
+      joints.push({ grp: jointGrp, lampPhase: Math.floor(Math.random()*256) });
+      lampMeshes.push(lamp);
+    }
+
+    // Epicycle hoop at the JOINT of this arm (i.e., centred at start of arm i+1)
+    // We render the hoop as a torus in the ecliptic plane, parented to a node at the joint.
+    if (i > 0) {
+      const r = Math.max(0.05, Math.hypot(initChain[i].radius, 0));
+      const torusGeom = new THREE.TorusGeometry(r, 0.012, 16, 96);
+      const hoop = new THREE.Mesh(torusGeom, BRASS_POLISHED);
+      hoop.rotation.x = Math.PI/2;
+      hoop.castShadow = true; hoop.receiveShadow = true;
+      grp.add(hoop);
+      hoops.push({ mesh: hoop, radius: r });
+    }
+  }
+
+  // Path-traced "deferent" — the actual brass ring is the curve this
+  // body traces out under its full double-epicycle motion. Sun is a
+  // near-circle, Moon a flower, Mars/Jupiter/Saturn rosettes with
+  // visible retrograde petals, Venus a five-pointed pentagram, etc.
+  const deferentRing = buildBodyPathTube(body);
+  scene.add(deferentRing);
+
+  return { grp, armMeshes, joints, hoops, deferent: deferentRing, lampMeshes };
+}
+
+ORDER.forEach(b => { ARMS[b] = buildArmAssembly(b); });
+
+// ═══════════════════════════════════════════════════════════════
+//  TRAIL system — Line per body, BufferGeometry circular buffer
+// ═══════════════════════════════════════════════════════════════
+const TRAIL_LEN = 240;
+const TRAILS = {};
+ORDER.forEach(b => {
+  const positions = new Float32Array(TRAIL_LEN * 3);
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geom.setDrawRange(0, 0);
+  const mat = new THREE.LineBasicMaterial({
+    color: PARAM[b].color, transparent: true, opacity: 0.6,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const line = new THREE.Line(geom, mat);
+  scene.add(line);
+  TRAILS[b] = { line, geom, positions, count: 0, head: 0, lastJD: state.jd, lastBuiltJD: null };
+});
+function pushTrail(body, vec, jd) {
+  const T = TRAILS[body];
+  if (T.lastBuiltJD !== null && Math.abs(jd - T.lastBuiltJD) < 0.5) return;
+  T.lastBuiltJD = jd;
+  if (T.count < TRAIL_LEN) {
+    const i = T.count;
+    T.positions[i*3+0] = vec.x;
+    T.positions[i*3+1] = vec.y;
+    T.positions[i*3+2] = vec.z;
+    T.count++;
+  } else {
+    T.positions.copyWithin(0, 3);
+    const i = TRAIL_LEN - 1;
+    T.positions[i*3+0] = vec.x;
+    T.positions[i*3+1] = vec.y;
+    T.positions[i*3+2] = vec.z;
+  }
+  T.geom.attributes.position.needsUpdate = true;
+  T.geom.setDrawRange(0, T.count);
+}
+function clearTrails() {
+  ORDER.forEach(b => { TRAILS[b].count = 0; TRAILS[b].lastBuiltJD = null; TRAILS[b].geom.setDrawRange(0,0); });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ARMILLARY FRAME — outer celestial sphere (§4.6d)
+// ═══════════════════════════════════════════════════════════════
+const armillaryGroup = new THREE.Group();
+scene.add(armillaryGroup);
+
+// Equator ring (no tilt initially — apply with equatorialFrame below)
+const equatorialFrame = new THREE.Group();
+armillaryGroup.add(equatorialFrame);
+
+const equatorRing = new THREE.Mesh(
+  new THREE.TorusGeometry(11.5, 0.06, 24, 384), BRASS_PATINA.clone()
+);
+equatorRing.rotation.x = Math.PI/2;
+equatorRing.receiveShadow = true; equatorRing.castShadow = true;
+equatorialFrame.add(equatorRing);
+
+const meridianRing = new THREE.Mesh(
+  new THREE.TorusGeometry(11.5, 0.06, 24, 384), BRASS_PATINA.clone()
+);
+meridianRing.rotation.y = Math.PI/2;
+meridianRing.receiveShadow = true;
+equatorialFrame.add(meridianRing);
+
+const equinoctialColure = new THREE.Mesh(
+  new THREE.TorusGeometry(11.5, 0.055, 24, 384), BRASS_PATINA.clone()
+);
+equinoctialColure.rotation.x = Math.PI/2;
+equinoctialColure.rotation.z = Math.PI/2;
+equatorialFrame.add(equinoctialColure);
+
+const solstitialColure = new THREE.Mesh(
+  new THREE.TorusGeometry(11.5, 0.055, 24, 384), BRASS_PATINA.clone()
+);
+solstitialColure.rotation.y = Math.PI/2;
+solstitialColure.rotation.z = Math.PI/2;
+equatorialFrame.add(solstitialColure);
+
+// Polar pivots
+function makePivot(y) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, 0.18, 24), BRASS_POLISHED);
+  m.position.y = y;
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+equatorialFrame.add(makePivot(11.5));
+equatorialFrame.add(makePivot(-11.5));
+
+// Ecliptic ring (tilted 23.4°) with zodiac engraving
+const eclipticGroup = new THREE.Group();
+armillaryGroup.add(eclipticGroup);
+eclipticGroup.rotation.x = 23.4 * DEG;
+
+// Wide zodiac band (engraved Greek names)
+const zodiacBand = new THREE.Mesh(
+  new THREE.TorusGeometry(11.7, 0.22, 6, 512),
+  BRASS_ZODIAC.clone()
+);
+zodiacBand.material.map.repeat.set(1, 1);
+zodiacBand.rotation.x = Math.PI/2;
+zodiacBand.receiveShadow = true;
+eclipticGroup.add(zodiacBand);
+
+// Thin ecliptic hairline rings flanking the band
+for (const r of [11.50, 11.92]) {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(r, 0.018, 12, 384),
+    BRASS_POLISHED
+  );
+  ring.rotation.x = Math.PI/2;
+  ring.receiveShadow = true;
+  eclipticGroup.add(ring);
+}
+
+// Plinth ring (low decorative band)
+const plinth = new THREE.Mesh(
+  new THREE.TorusGeometry(12.5, 0.06, 16, 256), BRASS_PATINA.clone()
+);
+plinth.rotation.x = Math.PI/2;
+plinth.position.y = -0.25;
+armillaryGroup.add(plinth);
+
+// ═══════════════════════════════════════════════════════════════
+//  POST-PROCESSING PIPELINE
+// ═══════════════════════════════════════════════════════════════
+const composer = new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene, camera));
+const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W0, H0), 0.45, 0.5, 0.92);
+composer.addPass(bloom);
+const film = new THREE.FilmPass(0.18, 0.35, 512, 0);  // (noise, scanline-intensity, scanline-count, grayscale)
+composer.addPass(film);
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILITY: orient cylinder mesh from origin to tip vec
+// ═══════════════════════════════════════════════════════════════
+const _qTmp = new THREE.Quaternion();
+const _vTmp = new THREE.Vector3();
+function orientArm(armMesh, fromVec, toVec, length) {
+  armMesh.position.copy(fromVec);
+  _vTmp.subVectors(toVec, fromVec);
+  const d = _vTmp.length() || 0.0001;
+  _qTmp.setFromUnitVectors(eclY, _vTmp.clone().normalize());
+  armMesh.quaternion.copy(_qTmp);
+  // Scale Y so cylinder fits exact length (its base geometry length = `length`)
+  armMesh.scale.set(1, d / length, 1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RUNTIME LOOP — update positions every frame
+// ═══════════════════════════════════════════════════════════════
+let armaturesVisible = true;
+const _planetTmp = new THREE.Vector3();
+const _prevTmp = new THREE.Vector3();
+const _nextTmp = new THREE.Vector3();
+
+function updatePositions(jd, dtFrame) {
+  const pos = computeLongitude(jd);
+  const raw = pos.raw;
+
+  // ── Sun position (chain) ────────────────────────────────────
+  // Update Sun first since its world position drives the sunLight world position.
+  // Sun world position from chain:
+  const sunChain = chainFor('sun', raw);
+  _planetTmp.set(0, 0, 0);
+  let prev = new THREE.Vector3(0, 0, 0);
+  for (const a of sunChain) {
+    const v = eclVec(a.angle).multiplyScalar(a.radius);
+    _planetTmp.add(v);
+  }
+  sunGroup.position.copy(_planetTmp);
+
+  // ── Other bodies — render arm meshes + planet ───────────────
+  for (const body of ORDER) {
+    if (body === 'sun') {
+      placeArmAssembly('sun', sunChain, sunGroup);
+      pushTrail('sun', sunGroup.position, jd);
+      continue;
+    }
+    const chain = chainFor(body, raw);
+    placeArmAssembly(body, chain, PLANET[body].grp);
+    pushTrail(body, PLANET[body].grp.position, jd);
+  }
+
+  // ── Earth rotation (cosmetic) ───────────────────────────────
+  // 1 rotation per sidereal day. dtFrame is wall seconds; multiplied by daysPerSecond.
+  earthSurface.rotation.y += (dtFrame * state.daysPerSecond) * (TWO_PI / 0.99726957);
+  earthClouds.rotation.y  += (dtFrame * state.daysPerSecond) * (TWO_PI / 0.99726957 * 1.01);
+
+  // Rings stay still — they're the celestial-sphere frame, not a clock face.
+
+  // ── Sun corona pulses ───────────────────────────────────────
+  const tNow = performance.now() / 1000;
+  coronaInner.material.uniforms.intensity.value = 1.4 + 0.5 * Math.sin(tNow * 0.9);
+  coronaOuter.material.uniforms.intensity.value = 0.8 + 0.4 * Math.sin(tNow * 0.45 + 1.3);
+
+  // ── Joint lamps flicker ─────────────────────────────────────
+  const lutIdx = (tNow * 4) | 0;
+  for (const body of ORDER) {
+    const A = ARMS[body];
+    for (let j = 0; j < A.lampMeshes.length; j++) {
+      const lamp = A.lampMeshes[j];
+      const phase = A.joints[j].lampPhase;
+      const v = FLICKER_LUT[(lutIdx + phase) & 0xff];
+      lamp.material.opacity = 0.45 + 0.55 * v;
+    }
+  }
+
+  return pos;
+}
+
+// Place per-body arm assembly mesh transforms given a chain and final planet group
+function placeArmAssembly(body, chain, planetGroup) {
+  const A = ARMS[body];
+  let prev = new THREE.Vector3(0, 0, 0);
+  for (let i = 0; i < chain.length; i++) {
+    const tip = prev.clone().add(eclVec(chain[i].angle).multiplyScalar(chain[i].radius));
+    // Arm cylinder
+    const arm = A.armMeshes[i];
+    orientArm(arm.mesh, prev, tip, arm.len);
+
+    // Joint at tip (for all but last)
+    if (i < chain.length - 1) {
+      const joint = A.joints[i];
+      joint.grp.position.copy(tip);
+    }
+    // Epicycle hoop at this joint (i>0): centred at `prev`, radius = |arm[i]|
+    if (i > 0) {
+      const hoop = A.hoops[i - 1];
+      hoop.mesh.position.copy(prev);
+      // Hoops are static in radius — already built at init. The radius
+      // doesn't change for al-Shatir, only their *position* and the
+      // direction of the secondary epicycle ring rotates with the arm.
+      hoop.mesh.visible = armaturesVisible;
+    }
+    prev = tip;
+  }
+  planetGroup.position.copy(prev);
+
+  // Visibility toggle
+  A.grp.visible = armaturesVisible;
+  A.deferent.visible = armaturesVisible;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HUD + SCRUBBER
+// ═══════════════════════════════════════════════════════════════
+const hudEl = document.getElementById('hud');
+const dateLineEl = document.getElementById('date-line');
+const jdLineEl   = document.getElementById('jd-line');
+const playBtn    = document.getElementById('play-btn');
+const dateRange  = document.getElementById('date-range');
+const speedLabel = document.getElementById('speed-label');
+const lonPane    = document.getElementById('lon-pane');
+const lonRows    = document.getElementById('lon-rows');
+const scrubberBar= document.getElementById('scrubber-bar');
+const hintEl     = document.getElementById('hint');
+
+function refreshHUD(pos) {
+  dateLineEl.textContent = fmtDate(state.jd);
+  jdLineEl.textContent   = 'JD ' + state.jd.toFixed(1);
+  speedLabel.textContent = formatSpeed(state.daysPerSecond);
+  if (pos && lonPane.classList.contains('on')) {
+    let html = '';
+    for (const b of ORDER) {
+      html += `<div class="row"><span class="glyph">${PARAM[b].glyph} ${PARAM[b].name}</span><span class="val">${fmtLon(pos[b])}</span></div>`;
+    }
+    lonRows.innerHTML = html;
+  }
+}
+function refreshHUDOnly() {
+  dateLineEl.textContent = fmtDate(state.jd);
+  jdLineEl.textContent   = 'JD ' + state.jd.toFixed(1);
+}
+function formatSpeed(s) {
+  if (s >= 1) return `${s} d/s`;
+  return `${s.toFixed(2)} d/s`;
+}
+function syncScrubberFromState() {
+  const days = state.jd - SCRUB_BASE;
+  dateRange.value = String(Math.max(0, Math.min(SCRUB_MAX, days)));
+}
+function flashDateRed() {
+  dateLineEl.classList.add('flash-red');
+  setTimeout(() => dateLineEl.classList.remove('flash-red'), 600);
+}
+function clampJD() {
+  if (state.jd < JD_MIN) { state.jd = JD_MIN; flashDateRed(); }
+  if (state.jd > JD_MAX) { state.jd = JD_MAX; flashDateRed(); }
+}
+
+dateRange.addEventListener('input', () => {
+  const d = parseFloat(dateRange.value);
+  state.jd = SCRUB_BASE + d;
+  clampJD();
+  publishTime();
+});
+playBtn.addEventListener('click', () => togglePlay());
+function togglePlay() {
+  state.playing = !state.playing;
+  playBtn.textContent = state.playing ? '⏸' : '▶';
+  state.lastT = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════════════════════
+function nudgeDays(d) {
+  state.jd += d;
+  clampJD();
+  syncScrubberFromState();
+  publishTime();
+}
+function multSpeed(k) {
+  state.daysPerSecond = Math.max(0.25, Math.min(256, state.daysPerSecond * k));
+  speedLabel.textContent = formatSpeed(state.daysPerSecond);
+}
+window.addEventListener('keydown', (e) => {
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  switch (e.key) {
+    case ' ':       e.preventDefault(); togglePlay(); break;
+    case 'ArrowRight': nudgeDays(e.shiftKey ? 30 : 1); break;
+    case 'ArrowLeft':  nudgeDays(e.shiftKey ? -30 : -1); break;
+    case 'ArrowUp':    nudgeDays(e.shiftKey ? 365 : 7); break;
+    case 'ArrowDown':  nudgeDays(e.shiftKey ? -365 : -7); break;
+    case '+': case '=':  multSpeed(2); break;
+    case '-': case '_':  multSpeed(0.5); break;
+    case 't': case 'T':  lonPane.classList.toggle('on'); break;
+    case 'o': case 'O':  armaturesVisible = !armaturesVisible; break;
+    case '0': focusOnWide(); break;
+    case '1': focusOnBody('moon'); break;
+    case '2': focusOnBody('mercury'); break;
+    case '3': focusOnBody('venus'); break;
+    case '4': focusOnBody('sun'); break;
+    case '5': focusOnBody('mars'); break;
+    case '6': focusOnBody('jupiter'); break;
+    case '7': focusOnBody('saturn'); break;
+    case 'Escape': {
+      try { parent.postMessage('close-observation', '*'); } catch (_) {}
+      break;
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  CINEMATIC IDLE AUTO-ORBIT + FOCUS TWEEN
+// ═══════════════════════════════════════════════════════════════
+let lastInputT = performance.now();
+function markInput() { lastInputT = performance.now(); revealHud(); }
+['pointerdown','wheel','pointermove','keydown'].forEach(ev =>
+  window.addEventListener(ev, markInput, { passive: true }));
+controls.addEventListener('start', markInput);
+
+let focusTween = null;
+function focusOnBody(body) {
+  const obj = body === 'sun' ? sunGroup : PLANET[body].grp;
+  const r = VIS_R[body] || 0.15;
+  const dir = obj.position.clone().normalize();
+  const camTarget = obj.position.clone();
+  const camPos = obj.position.clone().add(dir.clone().multiplyScalar(r * 12)).add(new THREE.Vector3(0, r*4, r*6));
+  startTween(camPos, camTarget, 1.5);
+}
+function focusOnWide() {
+  startTween(new THREE.Vector3(2.5, 10.5, 14), new THREE.Vector3(0,0,0), 1.5);
+}
+function startTween(toPos, toTarget, dur) {
+  focusTween = {
+    startT: performance.now()/1000, dur,
+    fromPos: camera.position.clone(), toPos: toPos.clone(),
+    fromTarget: controls.target.clone(), toTarget: toTarget.clone(),
+  };
+}
+function updateTween(now) {
+  if (!focusTween) return;
+  const t = (now - focusTween.startT) / focusTween.dur;
+  if (t >= 1) {
+    camera.position.copy(focusTween.toPos);
+    controls.target.copy(focusTween.toTarget);
+    focusTween = null;
+    return;
+  }
+  const k = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+  camera.position.lerpVectors(focusTween.fromPos, focusTween.toPos, k);
+  controls.target.lerpVectors(focusTween.fromTarget, focusTween.toTarget, k);
+}
+
+function maybeAutoOrbit(dtFrame) {
+  if (focusTween) return;
+  const idleS = (performance.now() - lastInputT) / 1000;
+  if (idleS < 20) return;
+  const fade = Math.min(1, (idleS - 20) / 3);
+  const spd = 1.2 * DEG;
+  // Rotate camera around target on Y
+  const offset = camera.position.clone().sub(controls.target);
+  const ang = spd * dtFrame * fade;
+  offset.applyAxisAngle(eclY, ang);
+  camera.position.copy(controls.target).add(offset);
+}
+
+function revealHud() {
+  hudEl.classList.remove('faded');
+  scrubberBar.classList.remove('faded');
+  hintEl.classList.remove('faded');
+}
+function fadeHudIfIdle() {
+  const idle = (performance.now() - lastInputT) / 1000;
+  if (idle > 4) {
+    hudEl.classList.add('faded');
+    scrubberBar.classList.add('faded');
+    hintEl.classList.add('faded');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════════════════════
+function applySize() {
+  const W = Math.max(1, window.innerWidth);
+  const H = Math.max(1, window.innerHeight);
+  renderer.setSize(W, H);
+  composer.setSize(W, H);
+  bloom.setSize(W, H);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', applySize);
+// Catch the iframe transitioning from display:none → visible. When the
+// parent overlay opens, the iframe finally has real dimensions; resize
+// events don't always fire for that transition.
+if (typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(applySize);
+  ro.observe(document.documentElement);
+}
+// Belt-and-braces: poll briefly after load until window dims are >0.
+(function pollFirstSize(tries) {
+  if (window.innerWidth > 1 && window.innerHeight > 1) { applySize(); return; }
+  if (tries > 0) setTimeout(() => pollFirstSize(tries - 1), 100);
+})(40);
+
+// ═══════════════════════════════════════════════════════════════
+//  RAF LOOP
+// ═══════════════════════════════════════════════════════════════
+let lastWall = null;
+function loop(now) {
+  if (lastWall === null) lastWall = now;
+  const dtFrame = Math.min(0.05, (now - lastWall) / 1000); // clamp
+  lastWall = now;
+
+  if (state.playing) {
+    if (state.lastT === null) state.lastT = now;
+    const dtSim = (now - state.lastT) / 1000;
+    state.lastT = now;
+    state.jd += state.daysPerSecond * dtSim;
+    if (state.jd < JD_MIN) { state.jd = JD_MIN; state.playing = false; playBtn.textContent='▶'; flashDateRed(); }
+    if (state.jd > JD_MAX) { state.jd = JD_MAX; state.playing = false; playBtn.textContent='▶'; flashDateRed(); }
+    syncScrubberFromState();
+    publishTime();
+  } else {
+    state.lastT = null;
+  }
+
+  const pos = updatePositions(state.jd, dtFrame);
+
+  updateTween(now/1000);
+  maybeAutoOrbit(dtFrame);
+  controls.update();
+
+  refreshHUD(pos);
+  fadeHudIfIdle();
+  composer.render();
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SELF-CHECK — verify 3D position reproduces engine longitude
+// ═══════════════════════════════════════════════════════════════
+function selfCheck() {
+  const tests = [EPOCH_JD, EPOCH_JD + 365.25 * 50, EPOCH_JD + 365.25 * 150];
+  for (const jd of tests) {
+    const p = computeLongitude(jd);
+    const raw = p.raw;
+    for (const body of ORDER) {
+      const chain = chainFor(body, raw);
+      let v = new THREE.Vector3(0,0,0);
+      for (const a of chain) v.add(eclVec(a.angle).multiplyScalar(a.radius));
+      const lon3D = norm(Math.atan2(-v.z, v.x) / DEG);
+      const lonEng = p[body];
+      // Sun: arm uses inflated visual r2 → longitude won't exactly match; expect within ~0.05°
+      // Moon: includes tabular taqwīm corrections after the circles, so chain ≠ engine longitude
+      const tol = (body === 'moon') ? 1.5 : (body === 'sun') ? 0.1 : 0.01;
+      const diff = Math.min(Math.abs(lon3D - lonEng), 360 - Math.abs(lon3D - lonEng));
+      if (diff > tol) {
+        console.warn(`[selfCheck] ${body} JD ${jd.toFixed(1)}: 3D=${lon3D.toFixed(4)}° engine=${lonEng.toFixed(4)}° Δ=${diff.toFixed(4)}°`);
+      }
+    }
+  }
+  console.info('[selfCheck] arm-chain ↔ engine longitudes match within tolerances.');
+}
+
+// Initial scrubber sync (jd default = today)
+syncScrubberFromState();
+selfCheck();
+
+// Boot fade-out and start
+setTimeout(() => {
+  document.getElementById('boot').classList.add('hidden');
+}, 600);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

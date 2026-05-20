@@ -2271,23 +2271,163 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshLangBtn);
   refreshLangBtn();
 
-  // World-model cycle: FE (geocentric disc, AE) → GE (globe sphere) → DP
-  // (geocentric disc, dual-pole AE) → FE. State key `WorldModel`
-  // ('fe' / 'ge' / 'dp'). Button face displays the *current* model.
-  // Stacked directly under the grids toggle (▦).
+  // World-model dropdown: FE / DP / GE with per-mode projection picker.
+  // Click opens an inline menu; selecting a mode flips `WorldModel`, and
+  // (for FE / GE) selecting a projection flips `MapProjection` or
+  // `MapProjectionGe` respectively. Dual-pole has no projection picker —
+  // it's locked to the equatorial-AE graticule.
   const btnWorld = document.createElement('button');
-  btnWorld.className = 'time-btn world-btn';
+  btnWorld.className = 'time-btn world-btn world-dropdown-trigger';
   btnWorld.type = 'button';
-  btnWorld.setAttribute('aria-pressed', 'true');
+  btnWorld.setAttribute('aria-haspopup', 'true');
+  btnWorld.setAttribute('aria-expanded', 'false');
+  btnWorld.style.position = 'relative';
+
+  const worldMenu = document.createElement('div');
+  worldMenu.className = 'world-menu';
+  worldMenu.setAttribute('role', 'menu');
+  worldMenu.style.cssText = [
+    'position: absolute',
+    'bottom: 100%',
+    'right: 0',
+    'margin-bottom: 6px',
+    'display: none',
+    'flex-direction: column',
+    'min-width: 230px',
+    'padding: 10px',
+    'background: rgba(8,10,14,0.96)',
+    'border: 1px solid rgba(200,160,96,0.55)',
+    'border-radius: 6px',
+    'box-shadow: 0 8px 28px rgba(0,0,0,0.55)',
+    'z-index: 6000',
+    "font-family: 'Cinzel', serif",
+    'font-size: 0.80rem',
+    'color: #e8c97e',
+    'letter-spacing: 0.08em',
+    'text-align: left',
+    'gap: 4px',
+  ].join(';');
+  worldMenu.addEventListener('click', (e) => e.stopPropagation());
+
+  const FE_PROJECTIONS = [
+    { id: 'ae',           label: 'AE (Normal)' },
+    { id: 'hq_gleasons',  label: "Gleason's Map" },
+    { id: 'proportional', label: 'Proportional AE' },
+    { id: 'hellerick',    label: 'Hellerick Boreal' },
+  ];
+  const GE_PROJECTIONS = [
+    { id: 'hq_equirect_day',    label: 'Blue Marble (day)' },
+    { id: 'hq_equirect_night',  label: 'Black Marble (night)' },
+    { id: 'hq_world_shaded',    label: 'Shaded Relief' },
+    { id: 'hq_ortho',           label: 'Orthographic' },
+    { id: 'ge_art_line',        label: 'Art — Line' },
+    { id: 'ge_art_blueprint',   label: 'Art — Blueprint' },
+    { id: 'ge_art_topo',        label: 'Art — Topo' },
+    { id: 'ge_art_sepia',       label: 'Art — Sepia' },
+    { id: 'ge_art_neon',        label: 'Art — Neon' },
+    { id: 'ge_art_translucent', label: 'Art — Translucent' },
+  ];
+
+  function _wmRowStyle(active, small) {
+    return [
+      'display: block',
+      'width: 100%',
+      'padding: ' + (small ? '6px 10px' : '8px 12px'),
+      'background: ' + (active ? 'rgba(200,160,96,0.22)' : 'transparent'),
+      'border: 1px solid ' + (active ? 'rgba(232,201,126,0.85)' : 'rgba(200,160,96,0.30)'),
+      'color: ' + (active ? '#ffe9b8' : '#e8c97e'),
+      'border-radius: 3px',
+      'cursor: pointer',
+      'text-align: left',
+      'font: inherit',
+      'font-size: ' + (small ? '0.74rem' : '0.80rem'),
+      'letter-spacing: 0.08em',
+    ].join(';');
+  }
+
+  function renderWorldMenu() {
+    const wm = model.state.WorldModel || 'fe';
+    worldMenu.innerHTML = '';
+
+    const h = document.createElement('div');
+    h.textContent = 'World';
+    h.style.cssText = 'font-size:0.62rem; letter-spacing:0.22em; color:#c8a06a; padding:2px 4px 6px; text-transform:uppercase;';
+    worldMenu.appendChild(h);
+
+    const modes = [
+      { id: 'fe', label: 'FE — Flat Earth' },
+      { id: 'dp', label: 'Dual Pole' },
+      { id: 'ge', label: 'GE — Globe' },
+    ];
+    modes.forEach((m) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = m.label;
+      b.style.cssText = _wmRowStyle(m.id === wm, false);
+      b.addEventListener('click', () => {
+        if (m.id !== model.state.WorldModel) {
+          model.setState({ WorldModel: m.id });
+        }
+        renderWorldMenu();
+      });
+      worldMenu.appendChild(b);
+    });
+
+    let projList = null;
+    if (wm === 'fe') projList = FE_PROJECTIONS;
+    else if (wm === 'ge') projList = GE_PROJECTIONS;
+
+    if (projList) {
+      const ph = document.createElement('div');
+      ph.textContent = 'Projection';
+      ph.style.cssText = 'font-size:0.62rem; letter-spacing:0.22em; color:#c8a06a; padding:10px 4px 6px; text-transform:uppercase; border-top:1px solid rgba(200,160,96,0.20); margin-top:6px;';
+      worldMenu.appendChild(ph);
+
+      const curProj = wm === 'fe' ? model.state.MapProjection : model.state.MapProjectionGe;
+      projList.forEach((p) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = p.label;
+        b.style.cssText = _wmRowStyle(p.id === curProj, true);
+        b.addEventListener('click', () => {
+          if (wm === 'fe') model.setState({ MapProjection: p.id });
+          else model.setState({ MapProjectionGe: p.id });
+          renderWorldMenu();
+        });
+        worldMenu.appendChild(b);
+      });
+    } else {
+      const note = document.createElement('div');
+      note.textContent = 'Dual Pole uses a fixed AE-equatorial graticule.';
+      note.style.cssText = 'font-size:0.66rem; color:#8090b0; padding:10px 4px 0; line-height:1.4; letter-spacing:0.04em;';
+      worldMenu.appendChild(note);
+    }
+  }
+
   const refreshWorldBtn = () => {
     const wm = model.state.WorldModel;
-    btnWorld.textContent = wm === 'ge' ? 'GE' : wm === 'dp' ? 'DP' : 'FE';
+    btnWorld.textContent = (wm === 'ge' ? 'GE' : wm === 'dp' ? 'DP' : 'FE') + ' ▾';
   };
-  btnWorld.addEventListener('click', () => {
-    const cur = model.state.WorldModel;
-    const next = cur === 'fe' ? 'ge' : cur === 'ge' ? 'dp' : 'fe';
-    model.setState({ WorldModel: next });
+  btnWorld.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = worldMenu.style.display === 'flex';
+    if (isOpen) {
+      worldMenu.style.display = 'none';
+      btnWorld.setAttribute('aria-expanded', 'false');
+    } else {
+      renderWorldMenu();
+      worldMenu.style.display = 'flex';
+      btnWorld.setAttribute('aria-expanded', 'true');
+    }
   });
+  document.addEventListener('click', () => {
+    if (worldMenu.style.display === 'flex') {
+      worldMenu.style.display = 'none';
+      btnWorld.setAttribute('aria-expanded', 'false');
+    }
+  });
+  btnWorld.appendChild(worldMenu);
+
   model.addEventListener('update', refreshWorldBtn);
   refreshWorldBtn();
 

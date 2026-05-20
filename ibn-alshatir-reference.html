@@ -1302,5 +1302,23 @@ function loop(now) {
 }
 requestAnimationFrame(loop);
 </script>
+
+<script>
+// ── Time sync with parent (§6.4 stub) ──────────────────────────
+// This page has no scrubber — animations advance off `t` only.
+// We accept the broker's JD messages for protocol completeness and
+// stash the value for any future consumer, but do not mutate the
+// existing animation parameter. No SEND path exists.
+(function () {
+  const MY_ID = 'reference';
+  window.__ptolJD = null;
+  window.addEventListener('message', (ev) => {
+    const m = ev.data;
+    if (!m || m.type !== 'ptol-time' || typeof m.jd !== 'number') return;
+    if (m.source === MY_ID) return;
+    window.__ptolJD = m.jd;
+  });
+})();
+</script>
 </body>
 </html>

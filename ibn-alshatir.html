@@ -1279,6 +1279,7 @@ function tick(now) {
       const { year } = jdToGregorian(state.jd);
       if (year > 2200) state.jd = gregorianToJD(2200, 12, 31);
       if (year < 1620) state.jd = gregorianToJD(1620, 1, 1);
+      if (window.publishTime) window.publishTime();
     }
     state.lastTime = now;
   } else {
@@ -1300,6 +1301,7 @@ function applyDateInputs() {
   const d = parseInt(document.getElementById('inp-day').value);
   if (y >= 1620 && y <= 2020 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
     state.jd = gregorianToJD(y, m, d);
+    if (window.publishTime) window.publishTime();
   }
 }
 
@@ -1321,6 +1323,7 @@ document.getElementById('btn-play').addEventListener('click', function() {
 document.getElementById('btn-today').addEventListener('click', () => {
   // Current date: 2026 May 18 — clamp to model's 2020 limit
   state.jd = gregorianToJD(2020, 1, 1);
+  if (window.publishTime) window.publishTime();
 });
 
 document.getElementById('btn-export').addEventListener('click', exportCSV);
@@ -1337,6 +1340,32 @@ document.getElementById('step-sel').addEventListener('change', () => {
 buildToggles();
 generateTable();
 requestAnimationFrame(tick);
+</script>
+
+<script>
+// ── Time sync with parent (§6.4) ───────────────────────────────
+(function () {
+  const MY_ID = 'ephemeris';
+  // RECEIVE: parent (or sibling) tells us what time it is.
+  window.addEventListener('message', (ev) => {
+    const m = ev.data;
+    if (!m || m.type !== 'ptol-time' || typeof m.jd !== 'number') return;
+    if (m.source === MY_ID) return;
+    if (Math.abs(m.jd - state.jd) < 1e-6) return;
+    state.jd = m.jd;
+    if (typeof updateUI === 'function') updateUI(computeLongitude(state.jd));
+    if (typeof generateTable === 'function') generateTable();
+  });
+  // SEND (throttled to 10 Hz)
+  let lastSent = 0;
+  window.publishTime = function () {
+    const now = performance.now();
+    if (now - lastSent < 100) return;
+    lastSent = now;
+    try { parent.postMessage({ type: 'ptol-time', jd: state.jd, source: MY_ID }, '*'); }
+    catch (_) {}
+  };
+})();
 </script>
 </body>
 </html>

@@ -674,6 +674,11 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       // Drag right = heading+, drag up = pitch+. Pitch stays 0..90°.
       const heading = model.state.ObserverHeading || 0;
       const pitch   = model.state.CameraHeight || 0;
+      // Any meaningful vertical drag in FP mode releases the FollowTarget
+      // pitch auto-aim so the user can free-look up to the zenith.
+      if (Math.abs(dy) > 0.5 && typeof window.__ptolMarkFpPitchOverride === 'function') {
+        window.__ptolMarkFpPitchOverride();
+      }
       scheduleMovePatch({
         ObserverHeading: ((heading + (dx / w) * FP_LOOK_INCR) % 360 + 360) % 360,
         CameraHeight: Math.max(0, Math.min(90,
@@ -746,8 +751,19 @@ export function attachMouseHandler(canvas, model, renderer = null) {
   // that's the whole point. CameraHeight pitch only auto-centers inside
   // Optical; Heavenly pitch stays user-controlled. Below horizon we pin
   // pitch to 0. Right?
+  // Auto-re-aim at FollowTarget. Heading always tracks. Pitch only tracks
+  // until the user manually drags pitch in FP mode — after that we let
+  // the user look anywhere they want (including the zenith) without the
+  // auto-aim snapping the view back to the tracked body's elevation.
+  // The override clears when FollowTarget changes (new body acquired).
+  let _lastFollowTarget = model.state.FollowTarget || null;
+  let _fpPitchOverridden = false;
   model.addEventListener('update', () => {
     const s = model.state;
+    if (s.FollowTarget !== _lastFollowTarget) {
+      _lastFollowTarget = s.FollowTarget;
+      _fpPitchOverridden = false;  // new acquisition — auto-aim pitch again
+    }
     if (!s.FollowTarget) return;
     if (s.FreeCameraMode) return;
     if (dragging) return;
@@ -759,7 +775,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     if (Math.abs(targetHeading - curHeading) >= CLICK_EPS_DEG) {
       patch.ObserverHeading = targetHeading;
     }
-    if (s.InsideVault) {
+    if (s.InsideVault && !_fpPitchOverridden) {
       const targetPitch = Math.max(0, Math.min(89.9, angles.elevation));
       const curPitch = s.CameraHeight || 0;
       if (Math.abs(targetPitch - curPitch) >= CLICK_EPS_DEG) {
@@ -768,4 +784,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     }
     if (Object.keys(patch).length > 0) model.setState(patch, false);
   });
+  // Expose a tiny setter so the FP drag handler (above) can flip the
+  // override flag the moment the user touches pitch.
+  window.__ptolMarkFpPitchOverride = () => { _fpPitchOverridden = true; };
 }
