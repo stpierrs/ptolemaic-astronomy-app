@@ -8,6 +8,7 @@
 import {
   ZODIAC_SYMBOLS, PLANET_SYMBOLS, lonToZodiac,
 } from '../core/astrology.js';
+import { fixedStarsAt } from '../core/fixedStars.js';
 
 const CX = 300, CY = 300;
 const R_OUTER  = 280;
@@ -82,6 +83,7 @@ export function renderChartWheelSvg(chart, opts = {}) {
   drawDegreeTicks(svg, asc);
   drawHouseDividers(svg, asc, mc);
   drawHouseLabels(svg, asc);
+  drawStarMarkers(svg, chart, asc);
   drawAspects(svg, chart, asc);
   drawPlanets(svg, chart, asc);
   drawLots(svg, chart, asc);
@@ -188,6 +190,37 @@ function drawAspects(svg, chart, ascLon) {
       'stroke-dasharray': style.strokeDasharray,
       opacity: a.aspect.applying ? style.opacity : style.opacity * 0.6,
     }));
+  }
+}
+
+// PART 16 — Render a small ✦ marker for any in-belt fixed star within 2°
+// of a planet. Avoids cluttering the wheel with the whole catalogue.
+function drawStarMarkers(svg, chart, ascLon) {
+  const planets = chart.planets || [];
+  if (!planets.length) return;
+  const refDate = chart.date instanceof Date ? chart.date : new Date();
+  let stars;
+  try { stars = fixedStarsAt(refDate); }
+  catch (_) { return; }
+  for (const s of stars) {
+    if (!s.inZodiacalBelt) continue;
+    let nearest = null;
+    for (const p of planets) {
+      const raw = Math.abs(p.lon - s.lon);
+      const sep = Math.min(raw, 360 - raw);
+      if (sep <= 2 && (!nearest || sep < nearest.sep)) nearest = { p, sep };
+    }
+    if (!nearest) continue;
+    const a = lonToWheel(s.lon, ascLon);
+    const pos = polar(R_STAR, a);
+    const text = el('text', {
+      x: pos.x, y: pos.y, 'font-size': 9, fill: '#a08ec8',
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'data-star': s.id,
+    }, '✦');
+    const title = el('title', {}, `${s.name} · ${(s.nature || []).join('/')} · ${nearest.sep.toFixed(2)}° from ${nearest.p.name}`);
+    text.appendChild(title);
+    svg.appendChild(text);
   }
 }
 
