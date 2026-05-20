@@ -3781,6 +3781,39 @@ body.fp-mode #god-fabs { display: none; }
 .pa-helio-evening-star          { color: #c4aa78; }
 .pa-helio-last-heliacal-setting { color: #ff9944; }
 
+/* Natal report (Guide 15) — verdict badges + collapsible sections */
+.pa-report-summary { margin-bottom: 18px; }
+.pa-summary-row {
+  display: flex; gap: 10px; padding: 4px 0; font-size: 12px;
+  align-items: baseline;
+}
+.pa-summary-verdict { min-width: 120px; font-size: 11px; }
+.pa-summary-key     { min-width: 90px;  color: var(--muted); text-transform: capitalize; }
+.pa-verdict-flourishing { color: #66dd88; }
+.pa-verdict-difficulty  { color: #ff7055; }
+.pa-verdict-mixed       { color: #d4a824; }
+.pa-verdict-neutral     { color: #888; }
+.pa-report-section,
+.pa-report-subsection { margin-bottom: 10px; }
+.pa-report-section summary,
+.pa-report-subsection summary {
+  display: flex; gap: 10px; cursor: pointer;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.pa-report-subsection summary {
+  background: rgba(255,255,255,0.015);
+  margin-left: 14px;
+  font-size: 11px;
+}
+.pa-section-key      { color: var(--accent); font-weight: 700; min-width: 90px; text-transform: capitalize; }
+.pa-section-verdict  { min-width: 120px; }
+.pa-section-headline { color: var(--fg); flex: 1; }
+.pa-section-body     { padding: 8px 12px; font-size: 12px; color: #ccc; }
+.pa-section-body p   { margin: 6px 0; }
+
 /* Ephemeris dignity overlay (Guide 14) — augments tracker HUD blocks */
 .tracker-block.dig-dom    { box-shadow: inset 3px 0 0 #c8a84b; }
 .tracker-block.dig-exalt  { box-shadow: inset 3px 0 0 #ffd060; }
