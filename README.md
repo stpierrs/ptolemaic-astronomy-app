@@ -15,6 +15,34 @@ historical epicycle geometry — no heliocentric stage, no gravitational constan
 The **Astrology tab** draws its charts directly from the same engine that drives the
 orbiting discs.
 
+## Classical Astrology
+
+The astrology layer is a working implementation of Ptolemy's *Tetrabiblos* (c. 150 CE)
+sitting on top of the Ibn al-Shatir geocentric engine.
+
+- Seven planets only — Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn.
+  No outer planets, no asteroids, no Black Moon Lilith.
+- Whole-sign houses; the five Ptolemaic aspects only (Conjunction, Sextile,
+  Quartile, Trine, Opposition).
+- Essential + accidental dignity scored separately per planet.
+- Heliacal phenomena: cazimi, combust, under-rays, first heliacal rising,
+  acronychal rising, last heliacal setting (arcus visionis per body).
+- Mundane astrology: eclipse interpretation with Ptolemaic geographic
+  triplicities, great superior conjunctions, cardinal ingresses,
+  Moon-sign weather verdict, 14-day qualitative forecast.
+- Predictive: annual profections with Lord of the Year, solar returns
+  (bi-wheel against natal), Apheta / Anareta length-of-life chain,
+  primary directions at 1°/yr.
+- Tetrabiblos-ordered natal report with verdict-style language
+  (Flourishing / Mixed / Difficulty / Neutral per topic).
+- Fixed-star catalogue with 1.396°/century precession and ±8° belt
+  filter for direct conjunctions.
+- Local-only IndexedDB chart library; JSON / SVG / PNG / PDF / social-share
+  export pipeline.
+
+Earth fixed and central. Verdicts, not tendencies. Physical qualities, not
+psychological symbols.
+
 ## Live demo
 
 `https://stpierrs.github.io/ptolemaic-astronomy-app/`

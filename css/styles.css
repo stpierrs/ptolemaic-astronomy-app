@@ -3781,6 +3781,24 @@ body.fp-mode #god-fabs { display: none; }
 .pa-helio-evening-star          { color: #c4aa78; }
 .pa-helio-last-heliacal-setting { color: #ff9944; }
 
+/* Today panel (Guide 17) — daily-engagement loop above the tabs */
+#pa-today-panel {
+  background: rgba(212,184,120,0.04);
+  border: 1px solid rgba(212,184,120,0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+#pa-today-panel:empty { display: none; }
+.pa-today-row { margin: 4px 0; line-height: 1.5; }
+.pa-today-row strong { color: var(--accent); margin-right: 4px; }
+.pa-today-events {
+  font-size: 11px; color: var(--muted); margin-top: 6px;
+  padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.pa-today-events div { padding: 1px 0; }
+
 /* Export menu (Guide 16) — centred overlay over the astrology view */
 .pa-menu-overlay {
   position: fixed; inset: 0; z-index: 1100;
