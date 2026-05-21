@@ -3915,6 +3915,23 @@ body.fp-mode #god-fabs { display: none; }
 .pa-transit-meta    { font-size: 10px; color: #888; margin-top: 4px; }
 .pa-transit-station { color: #d4a824; margin: 0 4px; }
 
+/* + New chart button in the astrology header */
+.pa-newchart {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 4px 10px;
+  background: rgba(212, 184, 120, 0.08);
+  border: 1px solid rgba(212, 184, 120, 0.35);
+  color: var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.pa-newchart:hover {
+  background: rgba(212, 184, 120, 0.18);
+  border-color: var(--accent);
+}
+
 /* Astrology onboarding modal (Guide 09) */
 .pa-onb-overlay {
   position: fixed; inset: 0; z-index: 1000;
