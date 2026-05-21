@@ -5,10 +5,9 @@
 
 import { lonToZodiac, PLANET_SYMBOLS } from './astrology.js';
 import { wholeSignHouseOf } from './houses.js';
-import { getPlanetDignity, DOMICILE, HOUSE_MEANINGS } from './dignities.js';
+import { getPlanetDignity, getAccidentalDignity, DOMICILE, HOUSE_MEANINGS } from './dignities.js';
 import { computeLots } from './lots.js';
 import { computeTemperament } from './qualities.js';
-import { accidentalDignity } from './solarPhase.js';
 import { selectApheta, findAnaretae, primaryDirections } from './lifespan.js';
 
 const RULER_OF_SIGN = {};
@@ -96,7 +95,7 @@ function buildHouseTopic(chart, houseNum) {
   let lordCondition = null;
   if (lord) {
     const dig = getPlanetDignity(lordName, lord.lon, chart.isDiurnal);
-    const acc = accidentalDignity(lordName, chart);
+    const acc = getAccidentalDignity(lordName, chart);
     lordCondition = {
       dignity:    dig,
       accidental: acc,
