@@ -790,7 +790,7 @@ window.demos = demos;
 
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
-  closeBtn.title = 'Close Observation Mode';
+  closeBtn.title = 'Close the Orrery';
   closeBtn.innerHTML = '✕ Close';
   Object.assign(closeBtn.style, {
     position:'absolute', top:'10px', right:'14px', zIndex:'8501',
@@ -804,7 +804,7 @@ window.demos = demos;
 
   const iframe = document.createElement('iframe');
   iframe.src = './observation-mode.html';
-  iframe.title = '3D Observation Mode — al-Shatir Geocentric';
+  iframe.title = 'The Orrery — al-Shatir Geocentric';
   Object.assign(iframe.style, { width:'100%', height:'100%', border:'none', display:'block' });
 
   overlay.appendChild(closeBtn);
@@ -827,7 +827,7 @@ window.demos = demos;
     const btn = document.createElement('button');
     btn.className = 'info-btn header-action-btn';
     btn.type = 'button';
-    btn.title = 'Observation Mode (3D)';
+    btn.title = 'The Orrery';
     btn.textContent = '◉';
     btn.addEventListener('click', () => { overlay.style.display = 'flex'; });
     const astrologyBtn = headerEl.querySelector('[title="Ptolemaic Astrology"]');
@@ -862,7 +862,7 @@ window.demos = demos;
 
   const iframe = document.createElement('iframe');
   iframe.src = './observation-mode-explained.html';
-  iframe.title = 'Observation Mode — Explained';
+  iframe.title = 'The Orrery — Explained';
   Object.assign(iframe.style, { width:'100%', height:'100%', border:'none', display:'block' });
 
   overlay.appendChild(closeBtn);
@@ -882,7 +882,7 @@ window.demos = demos;
     const btn = document.createElement('button');
     btn.className = 'info-btn header-action-btn';
     btn.type = 'button';
-    btn.title = 'Observation Mode — Explained';
+    btn.title = 'The Orrery — Explained';
     btn.textContent = '◎';
     btn.addEventListener('click', () => { overlay.style.display = 'flex'; });
     const astrologyBtn = headerEl.querySelector('[title="Ptolemaic Astrology"]');

@@ -311,7 +311,7 @@ function buildBottomStrip(model) {
 
   // ── Observation Mode (3D al-Shatir cinematic) ────────────────────
   // Dispatches a custom event that main.js's overlay listens for.
-  const obsBtn = mkBtn('fp-strip-btn', '◉', 'Observation Mode (3D)');
+  const obsBtn = mkBtn('fp-strip-btn', '◉', 'The Orrery');
   obsBtn.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('ptol-open-observation'));
   });

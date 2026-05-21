@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Observation Mode — Explained · al-Shatir Geometry</title>
+<title>The Orrery — Explained · al-Shatir Geometry</title>
 <style>
   :root {
     --gold:   #c8a060;
@@ -154,13 +154,13 @@
 <body>
 
 <header class="page-head">
-  <h1>Observation Mode — How the Calculations Work</h1>
+  <h1>The Orrery — How the Calculations Work</h1>
   <div class="sub">Ibn al-Shatir · Nihāyat al-Suʾl fī Taṣḥīḥ al-Uṣūl · Damascus c. 1350 CE</div>
   <div class="time-cap">Showing positions for: <span id="time-cap">1700 Jan 01</span></div>
 </header>
 
 <section class="intro">
-  <p>This page documents the geometry behind the 3D <em>Observation Mode</em>. Every body's position is computed by accumulating 2–3 vector arms from Earth at the world origin. Each arm has a uniform angular rate; their sum traces out the body's apparent geocentric longitude. There is no eccentric, no equant — this is al-Shatir's reform of Ptolemy, made purely from uniform circular motions.</p>
+  <p>This page documents the geometry behind <em>the Orrery</em>. Every body's position is computed by accumulating 2–3 vector arms from Earth at the world origin. Each arm has a uniform angular rate; their sum traces out the body's apparent geocentric longitude. There is no eccentric, no equant — this is al-Shatir's reform of Ptolemy, made purely from uniform circular motions.</p>
 </section>
 
 <!-- Sections built dynamically below -->
@@ -168,7 +168,7 @@
 
 <section class="mapping">
   <h2>§ 8.  From 2D diagram to 3D position</h2>
-  <p>The diagrams above are 2D translations of vectors in canvas pixels: each arm has <em>(dx, dy)</em> proportional to <em>R·cos α</em> and <em>−R·sin α</em>, and the next joint sits at the previous joint plus that vector. Observation Mode does exactly the same thing in 3D, lifted onto the ecliptic plane:</p>
+  <p>The diagrams above are 2D translations of vectors in canvas pixels: each arm has <em>(dx, dy)</em> proportional to <em>R·cos α</em> and <em>−R·sin α</em>, and the next joint sits at the previous joint plus that vector. The Orrery does exactly the same thing in 3D, lifted onto the ecliptic plane:</p>
   <pre class="formula"><span class="c">// helper</span>
 eclVec(lonDeg) = (cos(lonDeg), 0, −sin(lonDeg))
 
@@ -178,7 +178,7 @@ eclVec(lonDeg) = (cos(lonDeg), 0, −sin(lonDeg))
    pos += eclVec(arm.angle) * arm.radius;
 planet[body].position = pos;</pre>
   <p>Earth sits at the world origin in both. The Sun mesh is the light source, so phase illumination on the inner planets (Mercury, Venus) and on the Moon emerges as a natural consequence of placing each body where the calculation says it is — not as a separate astronomical computation. The retrograde loops you see in the trails of Mars, Jupiter, and Saturn are likewise just the geometric output: the 2D arm chain swings past Earth's line-of-sight to the Sun, the planet appears to reverse, and the trail draws it.</p>
-  <p>If you compare a snapshot from Observation Mode against the 2D ephemeris page (the <code>⊕</code> button on the main app) at the same Julian Date, the angles will agree to within a fraction of a degree — the chains are equivalent.</p>
+  <p>If you compare a snapshot from the Orrery against the 2D ephemeris page (the <code>⊕</code> button on the main app) at the same Julian Date, the angles will agree to within a fraction of a degree — the chains are equivalent.</p>
 </section>
 
 <footer>
