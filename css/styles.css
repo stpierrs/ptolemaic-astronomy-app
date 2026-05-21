@@ -3781,6 +3781,28 @@ body.fp-mode #god-fabs { display: none; }
 .pa-helio-evening-star          { color: #c4aa78; }
 .pa-helio-last-heliacal-setting { color: #ff9944; }
 
+/* Export menu (Guide 16) — centred overlay over the astrology view */
+.pa-menu-overlay {
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex; align-items: center; justify-content: center;
+}
+.pa-menu-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  min-width: 220px;
+}
+.pa-menu-title {
+  font-family: 'Cinzel', Georgia, serif;
+  color: var(--accent); font-size: 14px; text-align: center;
+  margin-bottom: 6px;
+}
+.pa-menu-opt    { padding: 8px 18px; font-size: 13px; cursor: pointer; text-align: center; }
+.pa-menu-cancel { padding: 6px 12px; font-size: 11px; color: var(--muted); }
+
 /* Natal report (Guide 15) — verdict badges + collapsible sections */
 .pa-report-summary { margin-bottom: 18px; }
 .pa-summary-row {
